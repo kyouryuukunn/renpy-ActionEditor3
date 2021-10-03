@@ -101,54 +101,54 @@ screen _action_editor(tab="images", layer="master", name="", time=0):
 
                 if name in state:
                     for p, d in _viewers.transform_viewer.props:
-                        $prop = _viewers.transform_viewer.get_property(layer, name.split()[0], p)
+                        $value = _viewers.transform_viewer.get_property(layer, name.split()[0], p)
                         $ f = _viewers.transform_viewer.generate_changed(layer, name, p)
-                        if p not in _viewers.transform_viewer.force_float and (p in _viewers.camera_viewer.force_int_range or ((prop is None and isinstance(d, int)) or isinstance(prop, int))):
+                        if p not in _viewers.transform_viewer.force_float and (p in _viewers.transform_viewer.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
                                 textbutton "[p]" action [SensitiveIf((name, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((name, layer, p))), Show("_edit_keyframe", k=(name, layer, p), int=True)]
-                                if isinstance(prop, int):
-                                    textbutton "[prop]" action Function(_viewers.transform_viewer.edit_value, f, int=True, default=prop, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
+                                if isinstance(value, int):
+                                    textbutton "[value]" action Function(_viewers.transform_viewer.edit_value, f, int=True, default=value, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
                                 else:
-                                    textbutton "[prop:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, int=True, default=prop, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
+                                    textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, int=True, default=value, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
                                 if p in _viewers.transform_viewer.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range, value=prop, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range*2, value=prop+_viewers.transform_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range*2, value=value+_viewers.transform_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
                         else:
                             hbox:
                                 style_group "action_editor"
                                 textbutton "[p]" action [SensitiveIf((name, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((name, layer, p))), Show("_edit_keyframe", k=(name, layer, p))]
-                                textbutton "[prop:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, int=False, default=prop, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
+                                textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, int=False, default=value, force_plus=p in _viewers.transform_viewer.force_plus) alternate Function(_viewers.transform_viewer.reset, name, layer, p)
                                 if p in _viewers.transform_viewer.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=prop, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range*2, value=prop+_viewers.transform_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range*2, value=value+_viewers.transform_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
             elif tab == "Camera":
                 for p, d in _viewers.camera_viewer.props:
-                    $prop = _viewers.camera_viewer.get_property(p)
+                    $value = _viewers.camera_viewer.get_property(p)
                     $ f = _viewers.camera_viewer.generate_changed(p)
-                    if p not in _viewers.camera_viewer.force_float and (p in _viewers.camera_viewer.force_int_range or ((prop is None and isinstance(d, int)) or isinstance(prop, int))):
+                    if p not in _viewers.camera_viewer.force_float and (p in _viewers.camera_viewer.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                         hbox:
                             style_group "action_editor"
                             textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, int=True)]
-                            if isinstance(prop, int):
-                                textbutton "[prop]" action Function(_viewers.camera_viewer.edit_value, f, int=True, default=prop, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
+                            if isinstance(value, int):
+                                textbutton "[value]" action Function(_viewers.camera_viewer.edit_value, f, int=True, default=value, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
                             else:
-                                textbutton "[prop:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, int=True, default=prop, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
+                                textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, int=True, default=value, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
                             if p in _viewers.camera_viewer.force_plus:
-                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range, value=prop, page=1, changed=f) xalign 1. yalign .5
+                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5
                             else:
-                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range*2, value=prop+_viewers.camera_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
+                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range*2, value=value+_viewers.camera_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
                     else:
                         hbox:
                             style_group "action_editor"
                             textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p)]
-                            textbutton "[prop:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, int=False, default=prop, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
+                            textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, int=False, default=value, force_plus=p in _viewers.camera_viewer.force_plus) alternate Function(_viewers.camera_viewer.reset, p)
                             if p in _viewers.camera_viewer.force_plus:
-                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=prop, page=.05, changed=f) xalign 1. yalign .5
+                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
                             else:
-                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range*2, value=prop+_viewers.camera_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
+                                bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range*2, value=value+_viewers.camera_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
             hbox:
                 style_group "action_editor"
                 xfill False
@@ -333,10 +333,10 @@ init -1598 python in _viewers:
                 self.state[layer] = {}
                 for tag in sle.layers[layer]:
                     if not tag[0]:
-                        break
+                        continue
                     d = sle.get_displayable_by_tag(layer, tag[0])
                     if isinstance(d, renpy.display.screen.ScreenDisplayable):
-                        break
+                        continue
                     pos = renpy.get_placement(d)
                     state = getattr(d, "state", None)
 
@@ -355,9 +355,9 @@ init -1598 python in _viewers:
             state_org={k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[name][prop]
             kwargs = {}
             for p, d in self.props:
-                state = self.get_property(layer, name.split()[0], p, False)
-                if state is not None:
-                    kwargs[p] = state
+                value = self.get_property(layer, name.split()[0], p, False)
+                if value is not None:
+                    kwargs[p] = value
                 elif p != "rotate":
                     kwargs[p] = d
             kwargs[prop] = state_org
@@ -526,14 +526,14 @@ init -1598 python in _viewers:
             if tag:
                 d = sle.get_displayable_by_tag(layer, tag)
                 pos = renpy.get_placement(d)
-                state = getattr(pos, prop, None)
-                if state is None:
-                    state = getattr(getattr(d, "state", None), prop, None)
-                if state is None and default:
-                    for p, value in self.props:
+                value = getattr(pos, prop, None)
+                if value is None:
+                    value = getattr(getattr(d, "value", None), prop, None)
+                if value is None and default:
+                    for p, v in self.props:
                         if p == prop:
-                            state = value
-                return state
+                            value = v
+                return value
             return None
 
         def put_clipboard(self, name, layer):
@@ -642,9 +642,9 @@ init -1598 python in _viewers:
         def reset(self, prop):
             kwargs = {}
             for p, d in self.props:
-                state = self.get_property(p, False)
-                if state is not None:
-                    kwargs[p] = state
+                value = self.get_property(p, False)
+                if value is not None:
+                    kwargs[p] = value
             kwargs[prop] = self.state_org[prop]
             renpy.exports.show_layer_at(renpy.store.Transform(**kwargs), camera=True)
             renpy.restart_interaction()
@@ -723,18 +723,18 @@ init -1598 python in _viewers:
                 renpy.exports.show_layer_at(renpy.store.Transform(**kwargs), camera=True)
 
         def generate_changed(self, prop):
-            value = self.state_org[prop]
+            value_org = self.state_org[prop]
             def changed(v):
                 kwargs = {}
                 for p, d in self.props:
-                    state = self.get_property(p, False)
-                    if state is not None:
-                        kwargs[p] = state
+                    value = self.get_property(p, False)
+                    if value is not None:
+                        kwargs[p] = value
                     else:
                         kwargs[p] = d
                     if p == prop:
                         default = d
-                if prop not in self.force_float and (prop in self.force_int_range or ( (value is None and isinstance(default, int)) or isinstance(value, int) )):
+                if prop not in self.force_float and (prop in self.force_int_range or ( (value_org is None and isinstance(default, int)) or isinstance(value_org, int) )):
                     if isinstance(self.get_property(prop), float) and prop in self.force_int_range:
                         if prop in self.force_plus:
                             kwargs[prop] = float(v)
@@ -759,14 +759,14 @@ init -1598 python in _viewers:
         def get_property(self, prop, default=True):
             if "master" in renpy.game.context().scene_lists.camera_transform:
                 props = renpy.game.context().scene_lists.camera_transform["master"]
-                state = getattr(props, prop, None)
+                value = getattr(props, prop, None)
             else:
-                state = None
-            if state is None and default:
-                for p, value in self.props:
+                value = None
+            if value is None and default:
+                for p, v in self.props:
                     if p == prop:
-                        state = value
-            return state
+                        value = v
+            return value
 
         # def focus_changed(self, v):
         #     v=int(v)
@@ -1122,8 +1122,8 @@ init -1598 python in _viewers:
             for p, d in camera_viewer.props:
                 if p in kwargs and len(kwargs[p]) == 1:
                     string += "{} {} ".format(p, kwargs[p][0][0])
-                elif d != {k2: v2 for dic in [camera_viewer.state_org, camera_viewer.state] for k2, v2 in dic.items()}[p]:
-                    string += "{} {} ".format(p, {k2: v2 for dic in [camera_viewer.state_org, camera_viewer.state] for k2, v2 in dic.items()}[p])
+                elif d != camera_viewr.state_org[p]:
+                    string += "{} {} ".format(p, camera_viewer.state_org[p])
             for p, check_points in kwargs.items():
                 if len(check_points) > 1:
                     string += """
