@@ -528,7 +528,7 @@ init -1598 python in _viewers:
                 pos = renpy.get_placement(d)
                 value = getattr(pos, prop, None)
                 if value is None:
-                    value = getattr(getattr(d, "value", None), prop, None)
+                    value = getattr(getattr(d, "state", None), prop, None)
                 if value is None and default:
                     for p, v in self.props:
                         if p == prop:
