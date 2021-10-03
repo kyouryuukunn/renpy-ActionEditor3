@@ -1122,7 +1122,7 @@ init -1598 python in _viewers:
             for p, d in camera_viewer.props:
                 if p in kwargs and len(kwargs[p]) == 1:
                     string += "{} {} ".format(p, kwargs[p][0][0])
-                elif d != camera_viewr.state_org[p]:
+                elif d != camera_viewer.state_org[p]:
                     string += "{} {} ".format(p, camera_viewer.state_org[p])
             for p, check_points in kwargs.items():
                 if len(check_points) > 1:
