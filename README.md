@@ -53,6 +53,7 @@ lemma forum
  Note
  * blur transform property of each images are used for simulating camera blur in function transform prperty,
  so blur transform properties of each images aren't availabe when focusing is enabled.
+ Set function property to None when you want to disable camera blur for already shownd images.
  * Can't get correct value If any other transform_matrix than below Matrixes are used.
     OffsetMatrix * RotateMatrix
     OffsetMatrix
@@ -112,6 +113,8 @@ lemma forum
 
  注意
  focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります
+ funtion transform propertyにcamera_blurを使用して表示している画像にはblurをかけられません。既に表示している画像の
+ focusingを無効にしたい場合はfunctionプロパティーをNoneにしてください
  matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わのみに対応しています。
     OffsetMatrix * RotateMatrix
     OffsetMatrix
