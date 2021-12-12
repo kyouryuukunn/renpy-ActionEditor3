@@ -1,3 +1,4 @@
+#画像ビューワー
 #Shift+U: Open Image Viewer
 #2016 1/22 v6.99
 
@@ -111,9 +112,12 @@ init -1 python:
                                 self.check = True
                         except:
                             self.check = True #text displayable
-            if self.check:
-                renpy.show(self.string, at_list=[renpy.store.truecenter], layer="screens", tag="preview")
-            else:
+            try:
+                if self.check:
+                    renpy.show(self.string, at_list=[renpy.store.truecenter], layer="screens", tag="preview")
+                else:
+                    renpy.show("preview", what=renpy.text.text.Text("No files", color="#F00"), at_list=[renpy.store.truecenter], layer="screens")
+            except:
                 renpy.show("preview", what=renpy.text.text.Text("No files", color="#F00"), at_list=[renpy.store.truecenter], layer="screens")
             renpy.restart_interaction()
 
@@ -124,30 +128,30 @@ init -1 python:
         #     else:
         #         return False
 
-# init python:
-#     @renpy.pure
-#     class _ImageInputValue(ScreenVariableInputValue, FieldEquality):
-#
-#         def __init__(self, variable, default=True):
-#             super(_ImageInputValue, self).__init__(variable, default, returnable=True)
-#
-#         def set_text(self, s):
-#             if s and s[-1] == " ":
-#                 for n in renpy.display.image.images:
-#                     if set(n) == set(name.split()):
-#                         self.state[layer][name] = {}
-#                         renpy.show(name, layer=layer)
-#                         for p, d in self.props:
-#                             self.state[layer][name][p] = self.get_property(layer, name.split()[0], p, False)
-#                         all_keyframes[(name, layer, "xpos")] = [(self.state[layer][name]["xpos"], 0, None)]
-#                         remove_list = [n_org for n_org in self.state_org[layer] if n_org.split()[0] == n[0]]
-#                         for n_org in remove_list:
-#                             del self.state_org[layer][n_org]
-#                             transform_viewer.remove_keyframes(n_org, layer)
-#                         sort_keyframes()
-#                         renpy.show_screen("_action_editor", tab="images", layer=layer, name=name)
-#                         return
-#                 default = tuple(s.split())
-#                 renpy.show_screen("_image_selecter", default=default)
-#             super(_ImageInputValue, self).set_text(s)
-#
+init python:
+    @renpy.pure
+    class _ImageInputValue(ScreenVariableInputValue, FieldEquality):
+
+        def __init__(self, variable, default=True):
+            super(_ImageInputValue, self).__init__(variable, default, returnable=True)
+
+        def set_text(self, s):
+            if s and s[-1] == " ":
+                for n in renpy.display.image.images:
+                    if set(n) == set(name.split()):
+                        self.state[layer][name] = {}
+                        renpy.show(name, layer=layer)
+                        for p, d in self.props:
+                            self.state[layer][name][p] = self.get_property(layer, name.split()[0], p, False)
+                        all_keyframes[(name, layer, "xpos")] = [(self.state[layer][name]["xpos"], 0, None)]
+                        remove_list = [n_org for n_org in self.state_org[layer] if n_org.split()[0] == n[0]]
+                        for n_org in remove_list:
+                            del self.state_org[layer][n_org]
+                            transform_viewer.remove_keyframes(n_org, layer)
+                        sort_keyframes()
+                        renpy.show_screen("_action_editor", tab="images", layer=layer, name=name)
+                        return
+                default = tuple(s.split())
+                renpy.show_screen("_image_selecter", default=default)
+            super(_ImageInputValue, self).set_text(s)
+
