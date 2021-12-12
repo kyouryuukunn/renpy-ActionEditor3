@@ -59,6 +59,8 @@ init -1600 python in _viewers:
     ("rotateX", 0.),
     ("rotateY", 0.),
     ("rotateZ", 0.),
+    ("dof", 400),
+    ("focusing", renpy.config.perspective[1]), 
     ("alpha", 1.), 
     ("additive", 0.), 
     ("blur", 0.), 
