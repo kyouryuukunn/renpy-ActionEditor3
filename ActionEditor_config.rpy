@@ -1,4 +1,6 @@
 
+init 1600 python in _viewers:
+    default_transition = "dissolve"
 init -1600 python in _viewers:
     # If True, show rot default.
     default_rot = False
@@ -15,14 +17,16 @@ init -1600 python in _viewers:
     time_range = 7.0
     default_warper = "linear"
     props_set = [
-        ("xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"), 
+        ("child", "xpos", "ypos", "zpos", "rotate"), 
+        ("xanchor", "yanchor", "xoffset", "yoffset"), 
         ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
         ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ", "dof", "focusing"),
         ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue")
     ]
     props_set_names = [
-        "pos, rotate", 
-        "zoom,crop  ", 
+        "Child / Pos", 
+        "Other Pos  ", 
+        "Zoom / Crop", 
         "3D Matrix  ",
         "Effect     "
     ]
@@ -34,11 +38,14 @@ init -1600 python in _viewers:
         "focusing":["focusing", "dof"], 
     }
 
+    special_props = ["child"]
+
     force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright"]
     force_int_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing"]
     force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing"]
 
     transform_props = (
+    ("child", (None, None)), 
     ("xpos", 0.5), 
     ("ypos", 1.), 
     ("zpos", 0.), 
