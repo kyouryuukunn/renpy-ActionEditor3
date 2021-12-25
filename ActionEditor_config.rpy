@@ -12,6 +12,7 @@ init -1600 python in _viewers:
 
     int_range = 1500
     float_range = 7.0
+    time_range = 7.0
     default_warper = "linear"
     props_set = [
         ("xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"), 

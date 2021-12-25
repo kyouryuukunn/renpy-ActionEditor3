@@ -81,7 +81,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                 textbutton _("time: [_viewers.time:>.2f] s") action Function(_viewers.edit_time)
                 textbutton _("<") action Function(_viewers.prev_time)
                 textbutton _(">") action Function(_viewers.next_time)
-                bar adjustment ui.adjustment(range=7.0, value=_viewers.time, changed=_viewers.change_time) xalign 1. yalign .5
+                bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.time, changed=_viewers.change_time) xalign 1. yalign .5
             hbox:
                 style_group "action_editor_a"
                 hbox:
@@ -309,7 +309,7 @@ screen _move_keyframes:
         background "#0006"
         has vbox
         textbutton _("time: [_viewers.moved_time:>.2f] s") action Function(_viewers.edit_move_all_keyframe)
-        bar adjustment ui.adjustment(range=7.0, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5
+        bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
 # _edit_keyframe((name, layer), "xpos")
@@ -358,7 +358,7 @@ screen _edit_keyframe(k, force_int=False):
                     textbutton _("{}".format(v)) action [Function(_viewers.edit_value, check_points=check_points, old=t, value_org=v, force_int=force_int)]
                     textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, check_points=check_points_list, old=t)
-                    bar adjustment ui.adjustment(range=7.0, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5
+                    bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5
         hbox:
             textbutton _("loop") action loop_button_action
             textbutton _("close") action Hide("_edit_keyframe") xalign .98
