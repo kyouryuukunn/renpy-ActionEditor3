@@ -561,29 +561,20 @@ init -1598 python in _viewers:
                     if play:
                         renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop))], layer=layer)
                     else:
-                        # check_points = { prop: ( (value, time, warper).. ) }
-                        kwargs = {}
-                        kwargs["subpixel"] = True
-                        # kwargs.transform_anchor = True
-                        st = renpy.store._viewers.time
+                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.time))], layer=layer)
 
-                        for p, cs in check_points.items():
-                            kwargs[p] = self.get_value((name, layer, p), st)
-
-                        kwargs = self.set_group_property(kwargs, state[name])
-                        renpy.show(name, [renpy.store.Transform(**kwargs)], layer=layer)
-
-        def transform(self, tran, st, at, check_points, loop, subpixel=True, crop_relative=True):
+        def transform(self, tran, st, at, check_points, loop, subpixel=True, crop_relative=True, time=None):
             # check_points = { prop: [ (value, time, warper).. ] }
             if subpixel is not None:
                 tran.subpixel = subpixel
             if crop_relative is not None:
                 tran.crop_relative = crop_relative
+            if time is None:
+                time = st
             # tran.transform_anchor = True
             group_cache = defaultdict(lambda:{})
 
             for p, cs in check_points.items():
-                time = st
                 if loop[p+"_loop"] and cs[-1][1]:
                     if time % cs[-1][1] != 0:
                         time = time % cs[-1][1]
@@ -686,7 +677,7 @@ init -1598 python in _viewers:
                                 camera_zpos += props.matrixtransform.zdw
                         result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                         setattr(tran, "blur", result)
-            return .005
+            return 0
 
 
         def generate_changed(self, layer, name, prop):
@@ -1105,20 +1096,7 @@ init -1598 python in _viewers:
             if play:
                 renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop)), camera=True)
             else:
-                # check_points = { prop: ( (value, time, warper).. ) }
-                kwargs = {}
-                kwargs["subpixel"] = True
-                # kwargs.transform_anchor = True
-                st = renpy.store._viewers.time
-
-                try:
-                    for p, cs in check_points.items():
-                        kwargs[p] = self.get_value(p, st)
-                except:
-                    raise Exception(check_points.copy().keys(), p)
-
-                kwargs = self.set_group_property(kwargs, self.state_org)
-                renpy.exports.show_layer_at(renpy.store.Transform(**kwargs), camera=True)
+                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.time)), camera=True)
 
         def generate_changed(self, prop):
             value_org = self.state_org[prop]
@@ -1703,5 +1681,4 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform_viewer.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None)
-
 
