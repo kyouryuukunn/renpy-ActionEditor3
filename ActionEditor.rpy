@@ -325,7 +325,7 @@ screen _edit_keyframe(k, force_int=False):
             if p in ps:
                 $k_list = [(n, l, p) for p in _viewers.props_groups[gn]]
                 $check_points_list = [_viewers.all_keyframes[k2] for k2 in k_list]
-                $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list]
+                $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list+[(n, l, gn)]]
     else:
         $k_list = k
         $check_points_list = check_points
@@ -342,7 +342,7 @@ screen _edit_keyframe(k, force_int=False):
                 else:
                     $k_list = _viewers.props_groups[gn]
                     $check_points_list = [_viewers.all_keyframes[k2] for k2 in k_list]
-                    $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list]
+                    $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list+[gn]]
 
     modal True
     key "game_menu" action Hide("_edit_keyframe")
