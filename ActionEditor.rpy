@@ -1,6 +1,5 @@
 #課題
 #アニメーション中のクリックで最後の位置に移動する?本体でやるべき
-#キーフレームのバグ関連
 
 #再現条件不明
 #hideが動作しないときがある
@@ -79,16 +78,16 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                     textbutton _("focusing") action [SelectedIf(_viewers.focusing), ToggleField(_viewers, "focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
                     textbutton _("hide") action HideInterface()
                     # textbutton _("window") action _viewers.AddWindow() #renpy.config.empty_window
-                    textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
+                    textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
                     textbutton _("clipboard") action Function(_viewers.put_clipboard)
                 hbox:
                     xalign 1.
                     textbutton _("x") action Return()
             hbox:
                 style_group "action_editor_a"
-                textbutton _("clear keyframes") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.clear_keyframes), renpy.restart_interaction]
+                # textbutton _("clear keyframes") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.clear_keyframes), renpy.restart_interaction]
                 textbutton _("remove keyframes") action [SensitiveIf(_viewers.current_time in _viewers.sorted_keyframes), Function(_viewers.remove_all_keyframe, _viewers.current_time), renpy.restart_interaction]
-                textbutton _("move keyframes") action [SensitiveIf(_viewers.current_time in _viewers.sorted_keyframes), SetField(_viewers, "moved_time", _viewers.current_time), Show("_move_keyframes")]
+                textbutton _("move keyframes") action [SensitiveIf(_viewers.current_time in _viewers.sorted_keyframes), SelectedIf(False), SetField(_viewers, "moved_time", _viewers.current_time), Show("_move_keyframes")]
                 # textbutton _("last moves") action [SensitiveIf(_last_camera_arguments), Function(_viewers.last_moves), renpy.restart_interaction]
             null height 10
             hbox:
@@ -502,21 +501,21 @@ init -1598 python in _viewers:
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
                     if time < t:
-                        keyframes.insert(i, (value, time, warper))
+                        keyframes.insert(i, (value, time, default_warper))
                         break
                     elif time == t:
-                        keyframes[i] = ( value, time, warper)
+                        keyframes[i] = ( value, time, default_warper)
                         break
                 else:
-                    keyframes.append((value, time, warper))
+                    keyframes.append((value, time, default_warper))
             else:
                 if time == 0:
-                    all_keyframes[(name, layer, prop)] = [(value, time, warper)]
+                    all_keyframes[(name, layer, prop)] = [(value, time, default_warper)]
                 else:
                     org = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[name][prop]
                     if org is None:
                         org = self.get_default(prop)
-                    all_keyframes[(name, layer, prop)] = [(org, 0, None), (value, time, warper)]
+                    all_keyframes[(name, layer, prop)] = [(org, 0, default_warper), (value, time, default_warper)]
             sort_keyframes()
             
             for gn, ps in props_groups.items():
@@ -586,6 +585,8 @@ init -1598 python in _viewers:
             group_cache = defaultdict(lambda:{})
 
             for p, cs in check_points.items():
+                if not cs:
+                    break
                     
                 if loop[p+"_loop"] and cs[-1][1]:
                     if time % cs[-1][1] != 0:
@@ -688,6 +689,8 @@ init -1598 python in _viewers:
 
             if "child" in check_points:
                 cs = check_points["child"]
+                if not cs:
+                    return 0
                 for i in xrange(-1, -len(cs), -1):
                     checkpoint = cs[i][1]
                     pre_checkpoint = cs[i-1][1]
@@ -696,6 +699,7 @@ init -1598 python in _viewers:
                         goal = cs[i]
                         if start[0][0] is None and goal[0][0] is None:
                             tran.set_child(renpy.store.Null())
+                            break
                         elif start[0][0] is None:
                             new_widget = renpy.easy.displayable(goal[0][0])
                             w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
@@ -831,7 +835,7 @@ init -1598 python in _viewers:
                 else:
                     if p not in special_props:
                         value = self.get_property(layer, name, p, False)
-                        if value is not None and value != d and (p != "blur" or not focusing):
+                        if value is not None and value != d and (p != "blur" or not focusing) or (name in self.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                             if string.find(":") < 0:
                                 string += ":\n        "
                             string += "%s %s " % (p, value)
@@ -910,7 +914,6 @@ init -1598 python in _viewers:
                                     self.set_keyframe(layer, string, p, (string, default_transition))
                                 else:
                                     self.state[layer][string][p] = self.get_property(layer, string, p, False)
-                            all_keyframes[(string, layer, "xpos")] = [(self.state[layer][string]["xpos"], 0, None)]
                             remove_list = [n_org for n_org in self.state_org[layer] if n_org.split()[0] == n[0]]
                             for n_org in remove_list:
                                 del self.state_org[layer][n_org]
@@ -1078,21 +1081,21 @@ init -1598 python in _viewers:
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
                     if time < t:
-                        keyframes.insert(i, (value, time, warper))
+                        keyframes.insert(i, (value, time, default_warper))
                         break
                     elif time == t:
-                        keyframes[i] = (value, time, warper)
+                        keyframes[i] = (value, time, default_warper)
                         break
                 else:
-                    keyframes.append((value, time, warper))
+                    keyframes.append((value, time, default_warper))
             else:
                 if time == 0:
-                    all_keyframes[prop] = [(value, time, warper)]
+                    all_keyframes[prop] = [(value, time, default_warper)]
                 else:
                     org = self.state_org[prop]
                     if org is None:
                         org = self.get_default(prop)
-                    all_keyframes[prop] = [(org, 0, None), (value, time, warper)]
+                    all_keyframes[prop] = [(org, 0, default_warper), (value, time, default_warper)]
             sort_keyframes()
 
             for gn, ps in props_groups.items():
@@ -1350,7 +1353,6 @@ init -1598 python in _viewers:
     ##########################################################################
     moved_time = 0
     loops = defaultdict(lambda:False)
-    warper = default_warper
     all_keyframes = {}
     sorted_keyframes = []
 
@@ -1426,10 +1428,10 @@ init -1598 python in _viewers:
                 change_time(sorted_keyframes[-1])
 
     def select_default_warper():
-        global warper
+        global default_warper
         v = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter")
         if v:
-            warper = v
+            default_warper = v
 
     # @renpy.pure
     # class AddWindow(renpy.store.Action, renpy.store.DictEquality):
@@ -1499,14 +1501,10 @@ init -1598 python in _viewers:
                         if new < t:
                             cs.insert(n, (value, new, warper))
                             break
-                        elif new == t:
-                            # cs[n] = (new, (value, new, w))
-                            cs.insert(n, (value, new, warper))
-                            break
                     else:
                         cs.append((value, new, warper))
                     if old == 0 and new != 0:
-                        cs.insert(0, (value, 0, None))
+                        cs.insert(0, (value, 0, default_warper))
         sort_keyframes()
         renpy.restart_interaction()
 
@@ -1601,14 +1599,15 @@ init -1598 python in _viewers:
         string = ""
         camera_keyframes = {k:v for k, v in all_keyframes.items() if not isinstance(k, tuple)}
         camera_keyframes = set_group_keyframes(camera_keyframes)
-        camera_properties = set()
+        camera_properties = []
         for p, d in camera_viewer.props:
             for gn, ps in props_groups.items():
                 if p in ps:
-                    camera_properties.add(gn)
+                    if gn not in camera_properties:
+                        camera_properties.append(gn)
                     break
             else:
-                camera_properties.add(p)
+                camera_properties.append(p)
         if hide_window_in_animation and get_animation_delay() > 0:
             if renpy.store._window_auto:
                 window_mode = "window auto"
@@ -1649,16 +1648,18 @@ init -1598 python in _viewers:
                 image_keyframes = set_group_keyframes(image_keyframes)
                 if focusing and "blur" in image_keyframes:
                     del image_keyframes["blur"]
-                image_properties = set()
+                image_properties = []
                 for p, d in transform_viewer.props:
                     for gn, ps in props_groups.items():
                         if p in ps:
-                            image_properties.add(gn)
+                            image_properties.append(gn)
+                            if gn not in image_properties:
+                                image_properties.append(gn)
                             break
                     else:
                         if p not in special_props:
-                            image_properties.add(p)
-                if image_keyframes or focusing:
+                            image_properties.append(p)
+                if image_keyframes or focusing or name in transform_viewer.state[layer]:
                     image_name = name
                     if "child" in image_keyframes:
                         image = image_keyframes["child"][-1][0][0]
@@ -1679,6 +1680,8 @@ init -1598 python in _viewers:
                     for p in image_properties:
                         if p in image_keyframes and len(image_keyframes[p]) == 1:
                             string += "{} {} ".format(p, image_keyframes[p][0][0])
+                        if name in transform_viewer.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"] and p not in image_keyframes:
+                            string += "{} {} ".format(p, transform_viewer.get_property(layer, name, p, False))
                     if focusing:
                         focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
                         if "focusing" in all_keyframes:
@@ -1725,18 +1728,19 @@ init -1598 python in _viewers:
                                         if image is not None:
                                             widget = image
                                     if widget is None:
-                                        continue
-                                    w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
-
+                                        null = "Null()"
+                                    else:
+                                        w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
+                                        null = "Null({}, {})".format(w, h)
                                     if (t - last_time) > 0:
                                         string += """
             {}""".format(t-last_time)
                                     if i == 0 and (image is not None and transition is not None):
                                         string += """
-            Null({}, {})""".format(w, h)
+            {}""".format(null)
                                     if image is None:
                                         string += """
-            Null({}, {})""".format(w, h)
+            {}""".format(null)
                                     else:
                                         string += """
             '{}'""".format(image)
