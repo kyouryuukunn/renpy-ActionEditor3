@@ -1,24 +1,20 @@
 #課題
-#focusingのエラー
-#キーフレームの移動
+#アニメーション中のクリックで最後の位置に移動する?本体でやるべき
+#キーフレームのバグ関連
 
 #再現条件不明
 #hideが動作しないときがある
-#ホイールが片側動作しない
+#ホイールが片側動作しない, warper選択画面でのスクロールもできなかった
 
 #既知の問題
 #colormatrix, transformmatrixは十分再現できない
-#画像追加時、keyframesがchildだけだが、キーフレームはトランジション開始までの時間であるため再生してもスクリーンはhideしない
 
 # tab="images"/"3Dstage", layer="master",  
 screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     key "game_menu" action Return()
     key "rollback"    action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")+100+_viewers.camera_viewer.int_range)
     key "rollforward" action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")-100+_viewers.camera_viewer.int_range)
-    if _viewers.sorted_keyframes:
-        key "K_SPACE" action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.sorted_keyframes[-1]), renpy.restart_interaction]
-    else:
-        key "K_SPACE" action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), renpy.restart_interaction]
+    key "K_SPACE" action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
     $offsetX, offsetY = _viewers.camera_viewer.get_property("offsetX"), _viewers.camera_viewer.get_property("offsetY")
     $range = _viewers.camera_viewer.int_range
     $move_amount1 = 100
@@ -44,7 +40,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
         key "L" action Function(_viewers.camera_viewer.generate_changed("offsetX"), offsetX + move_amount2 + range)
 
     if time:
-        timer time+1 action Function(_viewers.change_time, _viewers.time)
+        timer time+1 action Function(_viewers.change_time, _viewers.current_time)
     #camera transformはget_properyで所得できるようになるまで時間差があるので定期更新する
     #camera transform properties need some times until being allowed to get property so I update screen.
     timer .1 action renpy.restart_interaction repeat True
@@ -71,31 +67,28 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
 
             hbox:
                 style_group "action_editor_a"
-                textbutton _("time: [_viewers.time:>.2f] s") action Function(_viewers.edit_time)
+                textbutton _("time: [_viewers.current_time:>.2f] s") action Function(_viewers.edit_time)
                 textbutton _("<") action Function(_viewers.prev_time)
                 textbutton _(">") action Function(_viewers.next_time)
-                bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.time, changed=_viewers.change_time) xalign 1. yalign .5
+                bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.current_time, changed=_viewers.change_time) xalign 1. yalign .5
             hbox:
                 style_group "action_editor_a"
                 hbox:
-                    textbutton _("default warper") action _viewers.select_default_warper
+                    # textbutton _("default warper") action _viewers.select_default_warper
                     textbutton _("rot") action [SelectedIf(renpy.get_screen("_rot")), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
-                    textbutton _("focusing") action [SelectedIf(_viewers.focusing), ToggleField(_viewers, "focusing")]
+                    textbutton _("focusing") action [SelectedIf(_viewers.focusing), ToggleField(_viewers, "focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
                     textbutton _("hide") action HideInterface()
                     # textbutton _("window") action _viewers.AddWindow() #renpy.config.empty_window
-                    if _viewers.sorted_keyframes:
-                        textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.sorted_keyframes[-1]), renpy.restart_interaction]
-                    else:
-                        textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), renpy.restart_interaction]
+                    textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
                     textbutton _("clipboard") action Function(_viewers.put_clipboard)
                 hbox:
                     xalign 1.
-                    textbutton _("close") action Return()
+                    textbutton _("x") action Return()
             hbox:
                 style_group "action_editor_a"
                 textbutton _("clear keyframes") action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.clear_keyframes), renpy.restart_interaction]
-                textbutton _("remove keyframes") action [SensitiveIf(_viewers.time in _viewers.sorted_keyframes), Function(_viewers.remove_all_keyframe, _viewers.time), renpy.restart_interaction]
-                textbutton _("move keyframes") action [SensitiveIf(_viewers.time in _viewers.sorted_keyframes), SetField(_viewers, "moved_time", _viewers.time), Show("_move_keyframes")]
+                textbutton _("remove keyframes") action [SensitiveIf(_viewers.current_time in _viewers.sorted_keyframes), Function(_viewers.remove_all_keyframe, _viewers.current_time), renpy.restart_interaction]
+                textbutton _("move keyframes") action [SensitiveIf(_viewers.current_time in _viewers.sorted_keyframes), SetField(_viewers, "moved_time", _viewers.current_time), Show("_move_keyframes")]
                 # textbutton _("last moves") action [SensitiveIf(_last_camera_arguments), Function(_viewers.last_moves), renpy.restart_interaction]
             null height 10
             hbox:
@@ -122,11 +115,11 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         if p in _viewers.props_groups["focusing"]:
                             for l in renpy.config.layers:
                                 $state={n: v for dic in [_viewers.transform_viewer.state_org[l], _viewers.transform_viewer.state[l]] for n, v in dic.items()}
-                                $reset_action = reset_action + [Function(_viewers.transform_viewer.reset, (name, l, p)) for name in state]
+                                $reset_action += [Function(_viewers.transform_viewer.reset, (name, l, p)) for name in state]
                         if p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, force_int=True)]
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, force_int=True, edit_func=_viewers.camera_viewer.edit_value, change_func=f)]
                                 if isinstance(value, int):
                                     textbutton "[value]" action Function(_viewers.camera_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 else:
@@ -138,7 +131,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p)]
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, edit_func=_viewers.camera_viewer.edit_value, change_func=f)]
                                 textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
@@ -163,13 +156,13 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             hbox:
                                 style_group "action_editor"
                                 textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True)]
-                                textbutton "[value[0]]" action [SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), Function(_viewers.transform_viewer.change_child, layer, tab)] size_group None
+                                textbutton "[value[0]]" action [SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), Function(_viewers.transform_viewer.change_child, layer, tab, default=value[0])] size_group None
                                 textbutton "with" action None size_group None
                                 textbutton "[value[1]]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), Function(_viewers.transform_viewer.edit_transition, layer, tab)] size_group None
                         elif p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True)]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True, edit_func=_viewers.transform_viewer.edit_value, change_func=f)]
                                 if isinstance(value, int):
                                     textbutton "[value]" action Function(_viewers.transform_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 else:
@@ -181,7 +174,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p))]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), edit_func=_viewers.transform_viewer.edit_value, change_func=f)]
                                 textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
@@ -314,7 +307,7 @@ screen _move_keyframes:
 
 # _edit_keyframe((name, layer), "xpos")
 # _edit_keyframe(_camera_x)
-screen _edit_keyframe(k, force_int=False):
+screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
     $check_points = _viewers.all_keyframes[k]
     if isinstance(k, tuple):
         $n, l, p = k
@@ -337,7 +330,7 @@ screen _edit_keyframe(k, force_int=False):
                     $k_list = [k]
                     for layer in renpy.config.layers:
                         $state={n: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for n, v in dic.items()}
-                        $k_list = k_list + [(n, layer, k) for n in state]
+                        $k_list += [(n, layer, k) for n in state]
                     $check_points_list = [_viewers.all_keyframes[k2] for k2 in k_list]
                     $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list]
                 else:
@@ -357,11 +350,11 @@ screen _edit_keyframe(k, force_int=False):
                 hbox:
                     textbutton _("x") action [Function(_viewers.remove_keyframe, remove_time=t, key=k_list), renpy.restart_interaction] background None
                     if p == "child":
-                        textbutton "[v[0]]" action Function(_viewers.transform_viewer.change_child, l, n, time=t) size_group None
+                        textbutton "[v[0]]" action Function(_viewers.transform_viewer.change_child, l, n, time=t, default=v[0]) size_group None
                         textbutton "with" action None size_group None background None
                         textbutton "[v[1]]" action Function(_viewers.transform_viewer.edit_transition, l, n, time=t) size_group None
                     else:
-                        textbutton _("{}".format(v)) action [Function(_viewers.edit_value, check_points=check_points, old=t, value_org=v, force_int=force_int)]
+                        textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t)]
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, check_points=check_points_list, old=t)
                     bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5
@@ -496,7 +489,7 @@ init -1598 python in _viewers:
                 kwargs[prop] = v
                 #もともとNoneでNoneとデフォルトで結果が違うPropertyはリセット時にずれるが、デフォルの値で入力すると考えてキーフレーム設定した方が自然
                 self.set_keyframe(layer, name, prop, v)
-            change_time(time)
+            change_time(current_time)
 
         def image_reset(self):
             key_list = [(name, layer, prop) for layer in renpy.config.layers for name, props in {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}.items() for prop in props]
@@ -504,7 +497,7 @@ init -1598 python in _viewers:
 
         def set_keyframe(self, layer, name, prop, value, recursion=False, time=None):
             if time is None:
-                time = renpy.store._viewers.time
+                time = renpy.store._viewers.current_time
             keyframes = all_keyframes.get((name, layer, prop), [])
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
@@ -531,7 +524,7 @@ init -1598 python in _viewers:
                 if prop in ps_set and gn != "focusing" and recursion == False:
                     ps_set.remove(prop)
                     for p in ps_set:
-                        self.set_keyframe(layer, name, p, self.get_property(layer, name, p), True)
+                        self.set_keyframe(layer, name, p, self.get_property(layer, name, p), True, time=time)
 
         def play(self, play):
             global focusing
@@ -542,36 +535,44 @@ init -1598 python in _viewers:
                     for prop, d in self.props:
                         if (name, layer, prop) in all_keyframes:
                             check_points[prop] = all_keyframes[(name, layer, prop)]
-                    if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
-                        continue
+                    # if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
+                    #     continue
                     #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
                     for gn, ps in props_groups.items():
-                        if gn != "focusing":
-                            group_flag = False
-                            for prop in ps:
-                                if not prop in check_points:
-                                    if state[name].get(prop, None) is not None:
-                                        v = state[name][prop]
-                                    else:
-                                        v = self.get_default(prop)
-                                    check_points[prop] = [(v, 0, None)]
+                        group_flag = False
+                        for prop in ps:
+                            if not prop in check_points:
+                                if state[name].get(prop, None) is not None:
+                                    v = state[name][prop]
                                 else:
-                                    group_flag = True
-                            if not group_flag:
-                                for prop in ps:
-                                    del check_points[prop]
+                                    v = self.get_default(prop)
+                                check_points[prop] = [(v, 0, None)]
+                            else:
+                                group_flag = True
+                        if not group_flag:
+                            for prop in ps:
+                                del check_points[prop]
                     if focusing:
                         if "blur" in check_points:
                             del check_points["blur"]
+                        if "focusing" not in check_points:
+                            check_points["focusing"] = [(self.get_default("focusing"), 0, None)]
+                            check_points["dof"] = [(self.get_default("dof"), 0, None)]
                     else:
                         for p in ["focusing", "dof"]:
                             if p in check_points:
                                 del check_points[p]
+                        if "blur" not in check_points:
+                            blur = state[name].get("blur", None)
+                            if blur is None:
+                                blur = self.get_default("blur")
+                            check_points["blur"] = [(blur, 0, None)]
                     loop = {prop+"_loop": loops[(name, layer, prop)] for prop, d in self.props}
+                    renpy.store.test = check_points
                     if play:
                         renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop))], layer=layer)
                     else:
-                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.time))], layer=layer)
+                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.current_time))], layer=layer)
 
         def transform(self, tran, st, at, check_points, loop, subpixel=True, crop_relative=True, time=None):
             # check_points = { prop: [ (value, time, warper).. ] }
@@ -617,23 +618,55 @@ init -1598 python in _viewers:
                                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                                 result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
+                                                setattr(tran, gn, result)
                                             elif gn ==  "matrixcolor":
                                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
                                                 result = renpy.store.InvertMatrix(i)*renpy.store.ContrastMatrix(c)*renpy.store.SaturationMatrix(s)*renpy.store.BrightnessMatrix(b)*renpy.store.HueMatrix(h)
+                                                setattr(tran, gn, result)
                                             elif gn == "crop":
                                                 result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                                            setattr(tran, gn, result)
+                                                setattr(tran, gn, result)
+                                            elif gn == "focusing":
+                                                focusing = group_cache["focusing"]["focusing"]
+                                                dof = group_cache["focusing"]["dof"]
+                                                image_zpos = 0
+                                                if tran.zpos:
+                                                    image_zpos = tran.zpos
+                                                if tran.matrixtransform:
+                                                    image_zpos += tran.matrixtransform.zdw
+                                                camera_zpos = 0
+                                                if "master" in renpy.game.context().scene_lists.camera_transform:
+                                                    props = renpy.game.context().scene_lists.camera_transform["master"]
+                                                    if props.zpos:
+                                                        camera_zpos = props.zpos
+                                                    if props.matrixtransform:
+                                                        camera_zpos -= props.matrixtransform.zdw
+                                                result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
+                                                setattr(tran, "blur", result)
                                         break
                                 else:
                                     setattr(tran, p, v)
-
-                                if p in props_groups["focusing"]:
-                                    focusing = self.get_default("focusing")
-                                    if "focusing" in group_cache["focusing"]:
-                                        focusing = group_cache["focusing"]["focusing"]
-                                    dof = self.get_default("dof")
-                                    if "dof" in group_cache["focusing"]:
-                                        dof = group_cache["focusing"]["dof"]
+                        break
+                else:
+                    for gn, ps in props_groups.items():
+                        if p in ps:
+                            group_cache[gn][p] = cs[-1][0]
+                            if len(group_cache[gn]) == len(props_groups[gn]):
+                                if gn == "matrixtransform":
+                                    rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
+                                    ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
+                                    result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
+                                    setattr(tran, gn, result)
+                                elif gn ==  "matrixcolor":
+                                    i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
+                                    result = renpy.store.InvertMatrix(i)*renpy.store.ContrastMatrix(c)*renpy.store.SaturationMatrix(s)*renpy.store.BrightnessMatrix(b)*renpy.store.HueMatrix(h)
+                                    setattr(tran, gn, result)
+                                elif gn == "crop":
+                                    result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
+                                    setattr(tran, gn, result)
+                                elif gn == "focusing":
+                                    focusing = group_cache["focusing"]["focusing"]
+                                    dof = group_cache["focusing"]["dof"]
                                     image_zpos = 0
                                     if tran.zpos:
                                         image_zpos = tran.zpos
@@ -645,51 +678,13 @@ init -1598 python in _viewers:
                                         if props.zpos:
                                             camera_zpos = props.zpos
                                         if props.matrixtransform:
-                                            camera_zpos += props.matrixtransform.zdw
+                                            camera_zpos -= props.matrixtransform.zdw
                                     result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                                     setattr(tran, "blur", result)
-                        break
-                else:
-                    for gn, ps in props_groups.items():
-                        if p in ps:
-                            group_cache[gn][p] = cs[-1][0]
-                            if len(group_cache[gn]) == len(props_groups[gn]):
-                                if gn == "matrixtransform":
-                                    rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
-                                    ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                    result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
-                                elif gn ==  "matrixcolor":
-                                    i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                                    result = renpy.store.InvertMatrix(i)*renpy.store.ContrastMatrix(c)*renpy.store.SaturationMatrix(s)*renpy.store.BrightnessMatrix(b)*renpy.store.HueMatrix(h)
-                                elif gn == "crop":
-                                    result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                                setattr(tran, gn, result)
                             break
                     else:
                         if p != "child":
                             setattr(tran, p, cs[-1][0])
-
-                    if p in props_groups["focusing"]:
-                        focusing = self.get_default("focusing")
-                        if "focusing" in group_cache["focusing"]:
-                            focusing = group_cache["focusing"]["focusing"]
-                        dof = self.get_default("dof")
-                        if "dof" in group_cache["focusing"]:
-                            dof = group_cache["focusing"]["dof"]
-                        image_zpos = 0
-                        if tran.zpos:
-                            image_zpos = tran.zpos
-                        if tran.matrixtransform:
-                            image_zpos += tran.matrixtransform.zdw
-                        camera_zpos = 0
-                        if "master" in renpy.game.context().scene_lists.camera_transform:
-                            props = renpy.game.context().scene_lists.camera_transform["master"]
-                            if props.zpos:
-                                camera_zpos = props.zpos
-                            if props.matrixtransform:
-                                camera_zpos += props.matrixtransform.zdw
-                        result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
-                        setattr(tran, "blur", result)
 
             if "child" in check_points:
                 cs = check_points["child"]
@@ -737,51 +732,30 @@ init -1598 python in _viewers:
 
             return 0
 
-
         def generate_changed(self, layer, name, prop):
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
             global focusing
-            def changed(v):
-                kwargs = {}
-                for p, d in self.props:
-                    value = self.get_property(layer, name, p, False)
-                    if value is not None:
-                        kwargs[p] = value
-                    # elif p != "rotate":
-                    #     kwargs[p] = d
-                    if p == prop:
-                        default = d
+            def changed(v, time=None):
+                if time is None:
+                    time = renpy.store._viewers.current_time
+                default = self.get_default(prop)
                 if prop not in force_float and (prop in force_int_range or ( (state[name][prop] is None and isinstance(default, int)) or isinstance(state[name][prop], int) )):
                     if isinstance(self.get_property(layer, name, prop), float) and prop in force_int_range:
                         if prop in force_plus:
-                            kwargs[prop] = float(v)
+                            v = float(v)
                         else:
-                            kwargs[prop] = v - float(self.int_range)
+                            v -= float(self.int_range)
                     else:
-                        if prop in force_plus:
-                            kwargs[prop] = v
-                        else:
-                            kwargs[prop] = v - self.int_range
+                        if prop not in force_plus:
+                            v -= self.int_range
                 else:
                     if prop in force_plus:
-                        kwargs[prop] = round(float(v), 2)
+                        v = round(float(v), 2)
                     else:
-                        kwargs[prop] = round(v -self.float_range, 2)
+                        v = round(v -self.float_range, 2)
 
-                self.set_keyframe(layer, name, prop, kwargs[prop])
-                if focusing:
-                    if "blur" in kwargs:
-                        del kwargs["blur"]
-                else:
-                    for p in props_groups["focusing"]:
-                        if p in kwargs:
-                            del kwargs[p]
-                kwargs = self.set_group_property(kwargs, state[name])
-                for sp in special_props:
-                    if sp in kwargs:
-                        del kwargs[sp]
-                renpy.show(name, [renpy.store.Transform(**kwargs)], layer=layer)
-                renpy.restart_interaction()
+                self.set_keyframe(layer, name, prop, v, time=time)
+                change_time(time)
             return changed
 
         def get_property(self, layer, name, prop, default=True):
@@ -821,76 +795,6 @@ init -1598 python in _viewers:
                     return value
             return None
 
-        def set_group_property(self, kwargs, default):
-
-            gn_cache = set()
-            for gn, ps in props_groups.items():
-                for p in ps:
-                    if p in kwargs:
-                        gn_cache.add(gn)
-
-            if not gn_cache:
-                return kwargs
-
-            for gn in gn_cache:
-                kwargs2 = {}
-                if gn == "matrixtransform":
-                    for p in ["offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"]:
-                        if p in kwargs:
-                            kwargs2[p] = kwargs.pop(p)
-                        elif default[p] is not None:
-                            kwargs2[p] = default[p]
-                        else:
-                            kwargs2[p] = self.get_default(p)
-                    ox, oy, oz = [kwargs2[i] for i in ["offsetX", "offsetY", "offsetZ"]]
-                    rx, ry, rz = [kwargs2[i] for i in ["rotateX", "rotateY", "rotateZ"]]
-                    if ox is not None:
-                        kwargs[gn] = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
-                elif gn == "matrixcolor":
-                    for p in ["invert", "contrast", "saturate", "bright", "hue"]:
-                        if p in kwargs:
-                            kwargs2[p] = kwargs.pop(p)
-                        elif default[p] is not None:
-                            kwargs2[p] = default[p]
-                        else:
-                            kwargs2[p] = self.get_default(p)
-                    i, c, s, b, h = [kwargs2[i] for i in ["invert", "contrast", "saturate", "bright", "hue"]]
-                    if i is not None:
-                        kwargs[gn] = renpy.store.InvertMatrix(i)*renpy.store.ContrastMatrix(c)*renpy.store.SaturationMatrix(s)*renpy.store.BrightnessMatrix(b)*renpy.store.HueMatrix(h)
-                elif gn == "crop":
-                    for p in ["cropX", "cropY", "cropW", "cropH"]:
-                        if p in kwargs:
-                            kwargs2[p] = kwargs.pop(p)
-                        elif default[p] is not None:
-                            kwargs2[p] = default[p]
-                        else:
-                            kwargs2[p] = self.get_default(p)
-                    x, y, w, h = [kwargs2[i] for i in ["cropX", "cropY", "cropW", "cropH"]]
-                    if x is not None:
-                        kwargs[gn] = (x, y, w, h)
-                        kwargs["crop_relative"] = True
-                elif gn == "focusing":
-                    if "dof" in kwargs:
-                        d = kwargs.pop("dof")
-                    else:
-                        d = self.get_default("dof")
-                    if "focusing" in kwargs:
-                        f = kwargs.pop("focusing")
-                    else:
-                        f = self.get_default("focusing")
-                    image_zpos = 0
-                    if "zpos" in kwargs:
-                        image_zpos = kwargs["zpos"]
-                    if "matrixtransform" in kwargs:
-                        image_zpos += kwargs["matrixtransform"].zdw
-                    kwargs["blur"] = camera_blur_amount(image_zpos, dof=d, focusing=f)
-                else:
-                    for p in props_groups[gn]:
-                        if p in kwargs:
-                            kwargs.pop(p)
-                    continue
-            return kwargs
-
         def put_clipboard(self, name, layer):
             global focusing
             group_cache = defaultdict(lambda:{})
@@ -898,7 +802,9 @@ init -1598 python in _viewers:
             for gn, ps in props_groups.items():
                 group_flag[gn] = False
             string = """
-    show %s onlayer %s""" % (name, layer)
+    show %s""" % name
+            if layer != "master":
+                    string += " onlayer %s" % layer
             for p, d in self.props:
                 value = self.get_property(layer, name, p)
                 for gn, ps in props_groups.items():
@@ -947,7 +853,7 @@ init -1598 python in _viewers:
             else:
                 renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
-        def edit_value(self, function, force_int=False, default="", force_plus=False):
+        def edit_value(self, function, force_int=False, default="", force_plus=False, time=None):
             v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
             if v:
                 try:
@@ -962,7 +868,7 @@ init -1598 python in _viewers:
                         else:
                             v = renpy.python.py_eval(v) + self.float_range
                     if not force_plus or 0 <= v:
-                        function(v)
+                        function(v, time=time)
                     else:
                         renpy.notify(_("Please type plus value"))
                 except:
@@ -970,7 +876,7 @@ init -1598 python in _viewers:
 
         def edit_transition(self, layer, name, time=None):
             if time is None:
-                time = renpy.store._viewers.time
+                time = renpy.store._viewers.current_time
             v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
             if v:
                 if v == "None":
@@ -986,7 +892,6 @@ init -1598 python in _viewers:
             renpy.notify(_("Please Input Transition"))
 
         def add_image(self, layer):
-            global time
             default = ()
             while True:
                 name = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
@@ -998,10 +903,10 @@ init -1598 python in _viewers:
                                 string += e + " "
                             string = string[:-1]
                             self.state[layer][string] = {}
-                            renpy.show(string, layer=layer)
+                            renpy.show(string, layer=layer, at_list=[])
                             for p, d in self.props:
                                 if p == "child":
-                                    self.state[layer][string][p] = (string, default_transition)
+                                    self.state[layer][string][p] = (None, None)
                                     self.set_keyframe(layer, string, p, (string, default_transition))
                                 else:
                                     self.state[layer][string][p] = self.get_property(layer, string, p, False)
@@ -1012,8 +917,8 @@ init -1598 python in _viewers:
                                 for k in [k for k in all_keyframes if isinstance(k, tuple) and k[0] == n_org and k[1] == layer]:
                                     del all_keyframes[k]
                             sort_keyframes()
-                            change_time(time)
-                            renpy.show_screen("_action_editor", tab=string, layer=layer)
+                            change_time(current_time)
+                            # renpy.show_screen("_action_editor", tab=string, layer=layer)
                             return
                     else:
                         default = name
@@ -1037,25 +942,34 @@ init -1598 python in _viewers:
                     renpy.notify(_("Please type image name"))
                     return
 
-        def change_child(self, layer, name, time=None):
-            default = tuple(name.split())
+        def change_child(self, layer, name, time=None, default=None):
+            org = default
+            if org is None:
+                default = tuple(name.split())
+            else:
+                default = tuple(default.split())
             while True:
                 new_image = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
                 if isinstance(new_image, tuple): #press button
                     for n in renpy.display.image.images:
                         if set(n) == set(new_image):
+                            if org is not None and set(new_image) == set(org.split()):
+                                return
                             string=""
                             for e in n:
                                 string += e + " "
                             string = string[:-1]
                             self.set_keyframe(layer, name, "child", (string, default_transition), time=time)
                             return
-                    else:
-                        default = new_image
+                    renpy.notify(_("This image is not found"))
+                    return
                 elif new_image:
                     if new_image == "None":
-                        self.set_keyframe(layer, name, "child", (None, default_transition), time=time)
-                        return
+                        if org is not None:
+                            self.set_keyframe(layer, name, "child", (None, default_transition), time=time)
+                            return
+                        else:
+                            return
                     default = tuple(new_image.split())
                 else:
                     renpy.notify(_("Please type image name"))
@@ -1084,7 +998,7 @@ init -1598 python in _viewers:
             cs = all_keyframes[key]
 
             if time is None:
-                time = renpy.store._viewers.time
+                time = renpy.store._viewers.current_time
 
             if prop == "child":
                 for i in xrange(-1, -len(cs)-1, -1):
@@ -1152,12 +1066,14 @@ init -1598 python in _viewers:
                         else:
                             v = d
                 self.set_keyframe(prop, v)
-            change_time(time)
+            change_time(current_time)
 
         def camera_reset(self):
             self.reset([p for p, d in self.props])
 
-        def set_keyframe(self, prop, value, recursion=False):
+        def set_keyframe(self, prop, value, recursion=False, time=None):
+            if time is None:
+                time = renpy.store._viewers.current_time
             keyframes = all_keyframes.get(prop, [])
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
@@ -1184,7 +1100,7 @@ init -1598 python in _viewers:
                 if prop in ps_set and gn != "focusing" and recursion == False:
                     ps_set.remove(prop)
                     for p in ps_set:
-                        self.set_keyframe(p, self.get_property(p), True)
+                        self.set_keyframe(p, self.get_property(p), True, time=time)
 
         def play(self, play):
             check_points = {}
@@ -1216,63 +1132,40 @@ init -1598 python in _viewers:
             if play:
                 renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop)), camera=True)
             else:
-                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.time)), camera=True)
+                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.current_time)), camera=True)
 
         def generate_changed(self, prop):
             value_org = self.state_org[prop]
-            def changed(v):
+            def changed(v, time=None):
+                if time is None:
+                    time = renpy.store._viewers.current_time
                 global focusing
-                kwargs = {}
-                for p, d in self.props:
-                    value = self.get_property(p, False)
-                    if value is not None:
-                        kwargs[p] = value
-                    # else:
-                    #     kwargs[p] = d
-                    if p == prop:
-                        default = d
+                default = self.get_default(prop)
                 if prop not in force_float and (prop in force_int_range or ( (value_org is None and isinstance(default, int)) or isinstance(value_org, int) )):
                     if isinstance(self.get_property(prop), float) and prop in force_int_range:
                         if prop in force_plus:
-                            kwargs[prop] = float(v)
+                            v = float(v)
                         else:
-                            kwargs[prop] = float(v - self.int_range)
+                            v = float(v - self.int_range)
                     else:
-                        if prop in force_plus:
-                            kwargs[prop] = v
-                        else:
-                            kwargs[prop] = v - self.int_range
+                        if prop not in force_plus:
+                            v -= self.int_range
                 else:
                     if prop in force_plus:
-                        kwargs[prop] = round(float(v), 2)
+                        v = round(float(v), 2)
                     else:
-                        kwargs[prop] = round(v - self.float_range, 2)
+                        v = round(v - self.float_range, 2)
 
-                self.set_keyframe(prop, kwargs[prop])
-                for p in props_groups["focusing"]:
-                    if p in kwargs:
-                        del kwargs[p]
-                kwargs = self.set_group_property(kwargs, self.state_org)
-                for sp in special_props:
-                    if sp in kwargs:
-                        del kwargs[sp]
-                renpy.exports.show_layer_at(renpy.store.Transform(**kwargs), camera=True)
-                renpy.restart_interaction()
-                if prop in ["zpos", "offsetZ", "dof", "focusing"]:
+                self.set_keyframe(prop, v, time=time)
+                if prop in props_groups["focusing"]:
                     for l in transform_viewer.state_org:
                         state={k: v2 for dic in [transform_viewer.state_org[l], transform_viewer.state[l]] for k, v2 in dic.items()}
                         for n, v2 in state.items():
                             if prop == "dof":
-                                transform_viewer.generate_changed(l, n, "dof")(v)
+                                transform_viewer.generate_changed(l, n, "dof")(v, time=time)
                             elif prop == "focusing":
-                                transform_viewer.generate_changed(l, n, "focusing")(v)
-                            elif focusing:
-                                if prop == "zpos":
-                                    camera_zpos = self.get_property("offsetZ")+kwargs[prop]
-                                elif prop == "offsetZ":
-                                    camera_zpos = kwargs[prop]+self.get_property("zpos")
-                                image_zpos = transform_viewer.get_property(l, n, "offsetZ")+transform_viewer.get_property(l, n, "zpos")
-                                renpy.show(n, [renpy.store.Transform(blur=camera_blur_amount(image_zpos, camera_zpos))], layer=l)
+                                transform_viewer.generate_changed(l, n, "focusing")(v, time=time)
+                change_time(time)
             return changed
 
         def get_property(self, prop, default=True):
@@ -1461,22 +1354,6 @@ init -1598 python in _viewers:
     all_keyframes = {}
     sorted_keyframes = []
 
-    def edit_value(check_points, old, value_org, force_int=False):
-        value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value_org)
-        try:
-            value = renpy.python.py_eval(value)
-        except:
-            renpy.notify(_("Please type value"))
-        if force_int:
-            value = int(value)
-        else:
-            value = float(value)
-        for i, (v, t, w) in enumerate(check_points):
-            if t == old:
-                check_points[i] = (value, t, w)
-                break
-        change_time(time)
-
     def edit_warper(check_points, old, value_org):
         warper = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter", current_warper=value_org)
         if warper:
@@ -1515,8 +1392,7 @@ init -1598 python in _viewers:
                 renpy.notify(_("Please type value"))
 
     def edit_time():
-        global time
-        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=time)
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=current_time)
         if v:
             try:
                 v = renpy.python.py_eval(v)
@@ -1532,7 +1408,7 @@ init -1598 python in _viewers:
             return
         else:
             for i, t in enumerate(sorted_keyframes):
-                if time < t:
+                if current_time < t:
                     change_time(sorted_keyframes[i])
                     return
             change_time(sorted_keyframes[0])
@@ -1543,7 +1419,7 @@ init -1598 python in _viewers:
             return
         else:
             for i, t in enumerate(sorted_keyframes):
-                if time <= t:
+                if current_time <= t:
                     change_time(sorted_keyframes[i-1])
                     break
             else:
@@ -1590,7 +1466,7 @@ init -1598 python in _viewers:
                 if not all_keyframes[k]:
                     del all_keyframes[k]
         sort_keyframes()
-        change_time(time)
+        change_time(current_time)
 
     def remove_all_keyframe(time):
         keylist = [k for k in all_keyframes]
@@ -1639,22 +1515,22 @@ init -1598 python in _viewers:
             return False
         check_points = all_keyframes[k]
         for c in check_points:
-            if c[1] == time:
+            if c[1] == current_time:
                 return True
         return False
 
     def change_time(v):
-        global time
-        time = round(v, 2)
+        global current_time
+        current_time = round(v, 2)
         transform_viewer.play(False)
         camera_viewer.play(False)
         renpy.restart_interaction()
 
     def action_editor():
-        global time
+        global current_time
         if not renpy.config.developer:
             return
-        time = 0
+        current_time = 0
         moved_time = 0
         loops.clear()
         clear_keyframes()
@@ -1665,6 +1541,21 @@ init -1598 python in _viewers:
         renpy.invoke_in_new_context(renpy.call_screen, "_action_editor")
         # camera_viewer.layer_reset()
         # camera_viewer.camera_reset()
+
+    def get_animation_delay():
+        animation_time = 0
+        for cs in all_keyframes.values():
+            for (v, t, w) in cs:
+                if isinstance(v, tuple):
+                    if isinstance(v[1], str):
+                        transition = renpy.python.py_eval("renpy.store."+v[1])
+                        delay = getattr(transition, "delay", None)
+                        if delay is None:
+                            delay = getattr(transition, "args")[0]
+                        t += delay
+                if t > animation_time:
+                    animation_time = t
+        return animation_time
 
     def set_group_keyframes(keyframes):
         result = {}
@@ -1718,6 +1609,13 @@ init -1598 python in _viewers:
                     break
             else:
                 camera_properties.add(p)
+        if hide_window_in_animation and get_animation_delay() > 0:
+            if renpy.store._window_auto:
+                window_mode = "window auto"
+            else:
+                window_mode = "window"
+            string += """
+    {} hide""".format(window_mode)
         if camera_keyframes:
             string += """
     camera:
@@ -1764,11 +1662,17 @@ init -1598 python in _viewers:
                     image_name = name
                     if "child" in image_keyframes:
                         image = image_keyframes["child"][-1][0][0]
-                        tag = image.split()[0]
-                        if tag == name.split()[0]:
-                            image_name = image
+                        if image is not None:
+                            tag = image.split()[0]
+                            if tag == name.split()[0]:
+                                image_name = image
                     string += """
-    show {} onlayer {}:
+    show {}""".format(image_name)
+                    if layer != "master":
+                        string += " onlayer {}".format(layer)
+                    if name in transform_viewer.state[layer]:
+                        string += " at default"
+                    string += """:
         subpixel True """.format(image_name, layer)
                     if "crop" in camera_keyframes:
                         string += "{} {} ".format("crop_relative", True)
@@ -1808,17 +1712,52 @@ init -1598 python in _viewers:
         parallel:"""
                                 for i in xrange(0, len(image_keyframes["child"]), 1):
                                     (image, transition), t, w = image_keyframes["child"][i]
+                                    widget = None
+                                    if i > 0:
+                                        old_widget = image_keyframes["child"][i-1][0][0]
+                                        if old_widget is not None:
+                                            widget = old_widget
+                                    if i < len(image_keyframes["child"])-1:
+                                        new_widget = image_keyframes["child"][i+1][0][0]
+                                        if new_widget is not None:
+                                            widget = new_widget
+                                    if widget is None:
+                                        if image is not None:
+                                            widget = image
+                                    if widget is None:
+                                        continue
+                                    w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
+
                                     if (t - last_time) > 0:
                                         string += """
             {}""".format(t-last_time)
-                                    string += """
+                                    if i == 0 and (image is not None and transition is not None):
+                                        string += """
+            Null({}, {})""".format(w, h)
+                                    if image is None:
+                                        string += """
+            Null({}, {})""".format(w, h)
+                                    else:
+                                        string += """
             '{}'""".format(image)
                                     if transition is not None:
                                         string += " with {}".format(transition)
+
+                                        transition = renpy.python.py_eval("renpy.store."+transition)
+                                        delay = getattr(transition, "delay", None)
+                                        if delay is None:
+                                            delay = getattr(transition, "args")[0]
+                                        t += delay
                                     last_time = t
                                 if loops[(name,layer,p)]:
                                     string += """
             repeat"""
+
+        if hide_window_in_animation and get_animation_delay() > 0:
+            string += """
+    pause {}
+    {} show""".format(get_animation_delay(), window_mode)
+        string += "\n\n"
 
         if string:
             string = string.replace("u'", "'", 999)

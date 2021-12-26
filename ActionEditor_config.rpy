@@ -1,33 +1,44 @@
 
 init 1600 python in _viewers:
+    #this is used for default transition
     default_transition = "dissolve"
 init -1600 python in _viewers:
+    #hide winodw during animation in clipboard data
+    hide_window_in_animation = True
+    #this is used for default warper
+    default_warper = "linear"
     # If True, show rot default.
     default_rot = False
-    # simulate defpth of field and focusing
+    # If True, simulate defpth of field and focusing is enable by default.
     focusing = False
     # If True, set camera keymap FPS(wasd), otherwise vim(hjkl)
     fps_keymap = False
+    # the number of tabs shown at onece.
     tab_amount_in_page = 5
-    _camera_blur_amount = 2.0 #The blur value where the distance from focus position is dof.
-    _camera_blur_warper = "linear" #warper function name which is used for the distance from focus position and blur amount.
-
+    #The blur value where the distance from focus position is dof.
+    _camera_blur_amount = 2.0 
+    #warper function name which is used for the distance from focus position and blur amount.
+    _camera_blur_warper = "linear" 
+    # the range of values of properties for int type
     int_range = 1500
+    # the range of values of properties for float type
     float_range = 7.0
+    # the range of time
     time_range = 7.0
-    default_warper = "linear"
+
+
     props_set = [
         ("child", "xpos", "ypos", "zpos", "rotate"), 
         ("xanchor", "yanchor", "xoffset", "yoffset"), 
-        ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
         ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ", "dof", "focusing"),
+        ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
         ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue")
     ]
     props_set_names = [
         "Child / Pos", 
         "Other Pos  ", 
-        "Zoom / Crop", 
         "3D Matrix  ",
+        "Zoom / Crop", 
         "Effect     "
     ]
 
