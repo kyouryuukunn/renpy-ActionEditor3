@@ -49,7 +49,7 @@ lemma forum
     Editor will generate a script and place it on your clipboard for pasting
     into your Ren'Py scripts. (v6.99 and later only)
   * Introducing the concept of depth of field and allow to adjust focus position and dof.
-  * Showing and replacing image with transition
+  * Showing and replacing, hiding image with transition(use None for image name to hide image)
   * There is the option for hiding window during the ATL animation in clipboard data.
 
  some config variables is availabe in ActionEditor_config.rpy
@@ -113,7 +113,7 @@ lemma forum
  * 動画編集ソフトの様にキーフレームを設定して時間軸にそった演出を作成
  * 作成した演出のコードをクリップボードに送る(v6.99以上, Windows限定)
  * 被写界深度の概念を導入し、フォーカス位置と被写界深度を操作可能
- * トランジションを伴う画像の表示、置き換え
+ * トランジションを伴う画像の表示、置き換え、非表示(画像を非表示するには画像名にNoneを入力してください)
  * クリップボードへの出力データでアニメーション中はウィンドウを非表示するようにするオプション
 
    ActionEditor_config.rpyで細かい挙動を調整できます。
