@@ -4,6 +4,7 @@
 
 screen _image_selecter(default=""):
     default filter_string = default
+    default filter_string_cache = default
     key "game_menu" action Return("")
     zorder 20
     frame:
@@ -23,11 +24,14 @@ screen _image_selecter(default=""):
                     for image_name in filtered_list:
                         textbutton image_name action Return(tuple(image_name.split())) hovered _viewers.ShowImage(tuple(image_name.split())) unhovered Function(renpy.hide, "preview", layer="screens")
             textbutton _("clipboard") action [SensitiveIf(filter_string), Function(_viewers.put_clipboard_text, filter_string)] xalign 1.0 idle_background None insensitive_background None
-    if len(filtered_list) == 1:
-        if "preview" not in renpy.get_showing_tags("screens"):
-            $_viewers.ShowImage(tuple(filtered_list[0].split()))()
-    elif "preview" in renpy.get_showing_tags("screens"):
-        $_viewers._image_viewer_hide()
+    if filter_string_cache != filter_string:
+        if len(filtered_list) == 1:
+            if "preview" not in renpy.get_showing_tags("screens"):
+                $filter_string_cache = filter_string
+                $_viewers.ShowImage(tuple(filtered_list[0].split()))()
+        elif "preview" in renpy.get_showing_tags("screens"):
+            $filter_string_cache = filter_string
+            $_viewers._image_viewer_hide()
     key "K_TAB" action Function(_viewers.completion, filter_string, filtered_list)
 
 init:
