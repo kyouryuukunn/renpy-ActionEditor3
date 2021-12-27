@@ -366,7 +366,7 @@ init -1098 python:
     config.underlay.append(renpy.Keymap(
         # self_voicing = Preference("self voicing", "toggle"), #TODO ???
         action_editor = _viewers.action_editor,
-        image_viewer = _open_image_viewer,
+        image_viewer = _viewers.open_image_viewer,
         ))
 
 init -1598 python in _viewers:
@@ -567,7 +567,6 @@ init -1598 python in _viewers:
                                 blur = self.get_default("blur")
                             check_points["blur"] = [(blur, 0, None)]
                     loop = {prop+"_loop": loops[(name, layer, prop)] for prop, d in self.props}
-                    renpy.store.test = check_points
                     if play:
                         renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop))], layer=layer)
                     else:
@@ -896,87 +895,52 @@ init -1598 python in _viewers:
             renpy.notify(_("Please Input Transition"))
 
         def add_image(self, layer):
-            default = ()
-            while True:
-                name = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
-                if isinstance(name, tuple): #press button
-                    for n in renpy.display.image.images:
-                        if set(n) == set(name):
-                            string=""
-                            for e in n:
-                                string += e + " "
-                            string = string[:-1]
-                            self.state[layer][string] = {}
-                            renpy.show(string, layer=layer, at_list=[])
-                            for p, d in self.props:
-                                if p == "child":
-                                    self.state[layer][string][p] = (None, None)
-                                    self.set_keyframe(layer, string, p, (string, default_transition))
-                                else:
-                                    self.state[layer][string][p] = self.get_property(layer, string, p, False)
-                            remove_list = [n_org for n_org in self.state_org[layer] if n_org.split()[0] == n[0]]
-                            for n_org in remove_list:
-                                del self.state_org[layer][n_org]
-                                for k in [k for k in all_keyframes if isinstance(k, tuple) and k[0] == n_org and k[1] == layer]:
-                                    del all_keyframes[k]
-                            sort_keyframes()
-                            change_time(current_time)
-                            # renpy.show_screen("_action_editor", tab=string, layer=layer)
+            name = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter")
+            if not isinstance(name, tuple):
+                name = tuple(name.split())
+            for n in renpy.display.image.images:
+                if set(n) == set(name):
+                    for n_org in self.state_org[layer]:
+                        tag = n_org.split()[0]
+                        if tag == n[0]:
+                            renpy.notify(_("%s is already shown" % tag))
                             return
-                    else:
-                        default = name
-                elif name: #from input text
-                    # for n in renpy.display.image.images: #テキスト入力からはいきなり表示しないようにする。
-                    #     if set(n) == set(name.split()):
-                    #         self.state[layer][name] = {}
-                    #         renpy.show(name, layer=layer)
-                    #         for p, d in self.props:
-                    #             self.state[layer][name][p] = self.get_property(layer, name.split()[0], p, False)
-                    #         all_keyframes[(name, layer, "xpos")] = [(self.state[layer][name]["xpos"], 0, None)]
-                    #         remove_list = [n_org for n_org in self.state_org[layer] if n_org.split()[0] == n[0]]
-                    #         for n_org in remove_list:
-                    #             del self.state_org[layer][n_org]
-                    #             transform_viewer.remove_keyframes(n_org, layer)
-                    #         sort_keyframes()
-                    #         renpy.show_screen("_action_editor", tab="images", layer=layer, name=name)
-                    #         return
-                    default = tuple(name.split())
-                else:
-                    renpy.notify(_("Please type image name"))
+                    string = " ".join(n)
+                    self.state[layer][string] = {}
+                    renpy.show(string, layer=layer, at_list=[])
+                    for p, d in self.props:
+                        if p == "child":
+                            self.state[layer][string][p] = (None, None)
+                            self.set_keyframe(layer, string, p, (string, default_transition))
+                        else:
+                            self.state[layer][string][p] = self.get_property(layer, string, p, False)
+                    change_time(current_time)
                     return
+            else:
+                renpy.notify(_("Please type image name"))
+                return
 
         def change_child(self, layer, name, time=None, default=None):
             org = default
             if org is None:
-                default = tuple(name.split())
+                default = name
+            new_image = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
+            if not isinstance(new_image, tuple): #press button
+                new_image = tuple(new_image.split())
+            for n in renpy.display.image.images:
+                if set(n) == set(new_image) and n[0] == new_image[0]:
+                    if org is not None and set(new_image) == set(org.split()):
+                        return
+                    string = " ".join(n)
+                    string = string.strip()
+                    self.set_keyframe(layer, name, "child", (string, default_transition), time=time)
+                    return
             else:
-                default = tuple(default.split())
-            while True:
-                new_image = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
-                if isinstance(new_image, tuple): #press button
-                    for n in renpy.display.image.images:
-                        if set(n) == set(new_image):
-                            if org is not None and set(new_image) == set(org.split()):
-                                return
-                            string=""
-                            for e in n:
-                                string += e + " "
-                            string = string[:-1]
-                            self.set_keyframe(layer, name, "child", (string, default_transition), time=time)
-                            return
-                    renpy.notify(_("This image is not found"))
+                if new_image and new_image[0] == "None" and org is not None:
+                    self.set_keyframe(layer, name, "child", (None, default_transition), time=time)
                     return
-                elif new_image:
-                    if new_image == "None":
-                        if org is not None:
-                            self.set_keyframe(layer, name, "child", (None, default_transition), time=time)
-                            return
-                        else:
-                            return
-                    default = tuple(new_image.split())
-                else:
-                    renpy.notify(_("Please type image name"))
-                    return
+                renpy.notify(_("Please type image name"))
+                return
         
         def remove_image(self, layer, name):
             renpy.hide(name, layer)
