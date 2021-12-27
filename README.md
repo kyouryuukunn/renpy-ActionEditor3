@@ -49,6 +49,10 @@ lemma forum
     Editor will generate a script and place it on your clipboard for pasting
     into your Ren'Py scripts. (v6.99 and later only)
   * Introducing the concept of depth of field and allow to adjust focus position and dof.
+  * Showing and replacing image with transition
+  * There is the option for hiding window during the ATL animation in clipboard data.
+
+ some config variables is availabe in ActionEditor_config.rpy
 
  Note
  * blur transform property of each images are used for simulating camera blur in function transform prperty,
@@ -63,6 +67,7 @@ lemma forum
  Image Viewer
 ================
  Showing defined images and filtering that by tag and atrribute.
+ The completion feature is availabe by tab
  
  Press Shift+U to open Image Viewer and view all currently generated displayables.
 
@@ -108,8 +113,10 @@ lemma forum
  * 動画編集ソフトの様にキーフレームを設定して時間軸にそった演出を作成
  * 作成した演出のコードをクリップボードに送る(v6.99以上, Windows限定)
  * 被写界深度の概念を導入し、フォーカス位置と被写界深度を操作可能
+ * トランジションを伴う画像の表示、置き換え
+ * クリップボードへの出力データでアニメーション中はウィンドウを非表示するようにするオプション
 
-   camera_config.rpyで細かい挙動を調整できます。
+   ActionEditor_config.rpyで細かい挙動を調整できます。
 
  注意
  focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります
@@ -125,6 +132,7 @@ lemma forum
  画像ビューワー
 ================
  定義された画像を画像タグ、属性から縛り込んで表示します。
+ タブでの補間も可能です。
 
  config.developer が True なら、Shift+Uで起動します。
 
