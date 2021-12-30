@@ -29,21 +29,22 @@ init -1600 python in _viewers:
 
     props_set = [
         ("child", "xpos", "ypos", "zpos", "rotate"), 
-        ("xanchor", "yanchor", "xoffset", "yoffset"), 
         ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ", "dof", "focusing"),
+        ("xanchor", "yanchor", "matrixxanchor", "matrixyanchor", "xoffset", "yoffset"), 
         ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
         ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue")
     ]
     props_set_names = [
-        "Child / Pos", 
-        "Other Pos  ", 
-        "3D Matrix  ",
-        "Zoom / Crop", 
-        "Effect     "
+        "Child/Pos    ", 
+        "3D Matrix    ",
+        "anchor/offset", 
+        "Zoom/Crop    ", 
+        "Effect       "
     ]
 
     props_groups = {
         "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
+        "matrixanchor":["matrixxanchor", "matrixyanchor"], 
         "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
         "crop":["cropX", "cropY", "cropW", "cropH"], 
         "focusing":["focusing", "dof"], 
@@ -62,6 +63,8 @@ init -1600 python in _viewers:
     ("zpos", 0.), 
     ("xanchor", 0.5), 
     ("yanchor", 1.), 
+    ("matrixxanchor", 0.5), 
+    ("matrixyanchor", 0.5), 
     ("xoffset", 0), 
     ("yoffset", 0), 
     ("rotate", 0,),
@@ -97,6 +100,8 @@ init -1600 python in _viewers:
     ("zpos", 0.), 
     ("xanchor", 0.), 
     ("yanchor", 0.), 
+    ("matrixxanchor", 0.5), 
+    ("matrixyanchor", 0.5), 
     ("xoffset", 0), 
     ("yoffset", 0), 
     ("rotate", 0,),

@@ -455,6 +455,8 @@ init -1598 python in _viewers:
 
                 return rx*180.0/pi, ry*180.0/pi, rz*180.0/pi, ox, oy, oz
 
+            elif group_name == "matrixanchor":
+                return group
             elif group_name == "matrixcolor":
                 #can't get properties from matrixcolor
                 return 0., 1., 1., 0., 0.
@@ -619,6 +621,10 @@ init -1598 python in _viewers:
                                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                                 result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
                                                 setattr(tran, gn, result)
+                                            elif gn == "matrixanchor":
+                                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                                result = (mxa, mya)
+                                                setattr(tran, gn, result)
                                             elif gn ==  "matrixcolor":
                                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
                                                 result = renpy.store.InvertMatrix(i)*renpy.store.ContrastMatrix(c)*renpy.store.SaturationMatrix(s)*renpy.store.BrightnessMatrix(b)*renpy.store.HueMatrix(h)
@@ -656,6 +662,10 @@ init -1598 python in _viewers:
                                     rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                     ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                     result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
+                                    setattr(tran, gn, result)
+                                elif gn == "matrixanchor":
+                                    mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                    result = (mxa, mya)
                                     setattr(tran, gn, result)
                                 elif gn ==  "matrixcolor":
                                     i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
@@ -821,6 +831,9 @@ init -1598 python in _viewers:
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                 result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)" % (ox, oy, oz, rx, ry, rz)
+                            elif gn == "matrixanchor":
+                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                result = "matrixanchor (%s, %s)" % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
                                 result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)" % (i, c, s, b, h)
@@ -848,6 +861,7 @@ init -1598 python in _viewers:
                 result = "function camera_blur({'focusing':[(%s, 0, None)], 'dof':[(%s, 0, None)]})" % (focus, dof)
                 string += "\n        "
                 string += result
+            string += "\n\n"
             try:
                 from pygame import scrap, locals
                 scrap.put(locals.SCRAP_TEXT, string)
@@ -1178,7 +1192,10 @@ init -1598 python in _viewers:
                             if gn == "matrixtransform":
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)" % (ox, oy, oz, rx, ry, rz)
+                                result = "matrixtransform OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)" % (ox, oy, oz, rx, ry, rz)
+                            elif gn == "matrixanchor":
+                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                result = "matrixanchor (%s, %s)" % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
                                 result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)" % (i, c, s, b, h)
@@ -1195,6 +1212,7 @@ init -1598 python in _viewers:
                         if string.find(":") < 0:
                             string += ":\n        "
                         string += "%s %s " % (p, value)
+            string += "\n\n"
             try:
                 from pygame import scrap, locals
                 scrap.put(locals.SCRAP_TEXT, string)
@@ -1531,6 +1549,9 @@ init -1598 python in _viewers:
                         if gn == "matrixtransform":
                             v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
                             r = [(v%(oxc[0], oyc[0], ozc[0], rxc[0], ryc[0], rzc[0]), oxc[1], oxc[2]) for oxc, oyc, ozc, rxc, ryc, rzc  in zip(group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"], group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"])]
+                        elif gn == "matrixanchor":
+                            v = "(%s, %s)"
+                            r = [(v%(mxa[0], mya[0]), mxa[1], mxa[2]) for mxa, mya  in zip(group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"])]
                         elif gn ==  "matrixcolor":
                             v = "InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)"
                             r = [(v%(ic[0], cc[0], sc[0], bc[0], hc[0]), ic[1], ic[2]) for ic, cc, sc, bc, hc in zip(group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"])]
