@@ -1659,7 +1659,7 @@ init -1598 python in _viewers:
                         string += " at default"
                     string += """:
         subpixel True """.format(image_name, layer)
-                    if "crop" in camera_keyframes:
+                    if "crop" in image_keyframes:
                         string += "{} {} ".format("crop_relative", True)
                     for p in image_properties:
                         if p in image_keyframes and len(image_keyframes[p]) == 1:
