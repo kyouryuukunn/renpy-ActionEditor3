@@ -1637,7 +1637,6 @@ init -1598 python in _viewers:
                 for p, d in transform_viewer.props:
                     for gn, ps in props_groups.items():
                         if p in ps:
-                            image_properties.append(gn)
                             if gn not in image_properties:
                                 image_properties.append(gn)
                             break
