@@ -830,15 +830,15 @@ init -1598 python in _viewers:
                             if gn == "matrixtransform":
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)" % (ox, oy, oz, rx, ry, rz)
+                                result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
                             elif gn == "matrixanchor":
                                 mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
-                                result = "matrixanchor (%s, %s)" % (mxa, mya)
+                                result = "matrixanchor (%s, %s) " % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                                result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)" % (i, c, s, b, h)
+                                result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s) " % (i, c, s, b, h)
                             elif gn == "crop":
-                                result = "crop_relative True crop (%s, %s, %s, %s)" % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
+                                result = "crop_relative True crop (%s, %s, %s, %s) " % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
                             if result:
                                 if string.find(":") < 0:
                                     string += ":\n        "
@@ -1192,15 +1192,15 @@ init -1598 python in _viewers:
                             if gn == "matrixtransform":
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = "matrixtransform OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)" % (ox, oy, oz, rx, ry, rz)
+                                result = "matrixtransform OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
                             elif gn == "matrixanchor":
                                 mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
-                                result = "matrixanchor (%s, %s)" % (mxa, mya)
+                                result = "matrixanchor (%s, %s) " % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                                result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)" % (i, c, s, b, h)
+                                result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s) " % (i, c, s, b, h)
                             elif gn == "crop":
-                                result = "crop_relative True crop (%s, %s, %s, %s)" % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
+                                result = "crop_relative True crop (%s, %s, %s, %s) " % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
                             if result:
                                 if string.find(":") < 0:
                                     string += ":\n        "
