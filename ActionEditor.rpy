@@ -427,31 +427,55 @@ init -1598 python in _viewers:
                 return None
 
             if group_name == "matrixtransform":
-                a = (-group.zdx)
-                a = 1.0 if a > 1.0 else a
-                a = -1.0 if a < -1.0 else a
-                ry = asin(a)
-
-                a = group.zdy/cos(ry)
-                a = 1.0 if a > 1.0 else a
-                a = -1.0 if a < -1.0 else a
-                rx = asin(a)
-
-                a = group.xdx/cos(ry)
-                a = 1.0 if a > 1.0 else a
-                a = -1.0 if a < -1.0 else a
-                rz = acos(a)
-
-                ox = group.xdw
-                oy = group.ydw
-                oz = group.zdw
-
                 # can't get correct value If any other transform_matrix than below Matrixes is used
                 #OffsetMatrix * RotateMatrix
                 #OffsetMatrix
                 #RotateMatrix
-                if (self.decimal(group.xdy) != self.decimal(-cos(rx)*sin(rz)+cos(rz)*sin(rx)*sin(ry))) or (self.decimal(group.xdz) != self.decimal(cos(rx)*cos(rz)*sin(ry)+sin(rx)*sin(rz))) or (self.decimal(group.ydx) != self.decimal(cos(ry)*sin(rz))) or (self.decimal(group.ydy) != self.decimal(cos(rx)*cos(rz)+sin(rx)*sin(ry)*sin(rz))) or (self.decimal(group.ydz) != self.decimal(cos(rx)*sin(ry)*sin(rz)-cos(rz)*sin(rx))) or (self.decimal(group.zdz) != self.decimal(cos(rx)*cos(ry))):
+                ox = group.xdw
+                oy = group.ydw
+                oz = group.zdw
+
+                sinry = (-group.zdx)
+                sinry = 1.0 if sinry > 1.0 else sinry
+                sinry = -1.0 if sinry < -1.0 else sinry
+                ry = asin(sinry)
+
+                for i in xrange(2):
+                    sinrx = group.zdy/cos(ry)
+                    sinrx = 1.0 if sinrx > 1.0 else sinrx
+                    sinrx = -1.0 if sinrx < -1.0 else sinrx
+                    rx = asin(sinrx)
+                    if self.decimal(group.zdz) != self.decimal(cos(rx)*cos(ry)):
+                        rx = 2*pi - rx
+                
+                    cosrz = group.xdx/cos(ry)
+                    cosrz = 1.0 if cosrz > 1.0 else cosrz
+                    cosrz = -1.0 if cosrz < -1.0 else cosrz
+                    rz = acos(cosrz)
+                    if self.decimal(group.ydx) != self.decimal(cos(ry)*sin(rz)):
+                        rz = 2*pi - rz
+
+                    if self.decimal(group.ydy) != self.decimal(cos(rx)*cos(rz)+sin(rx)*sin(ry)*sin(rz)):
+                        ry = pi - ry
+                    else:
+                        break
+                if (self.decimal(group.xdy) != self.decimal(-cos(rx)*sin(rz)+cos(rz)*sin(rx)*sin(ry))) or (self.decimal(group.xdz) != self.decimal(cos(rx)*cos(rz)*sin(ry)+sin(rx)*sin(rz))) or (self.decimal(group.ydz) != self.decimal(cos(rx)*sin(ry)*sin(rz)-cos(rz)*sin(rx))):
+                    #no supported matrix is used.
                     return 0., 0., 0., 0., 0., 0.
+
+                if self.decimal(rx) >= self.decimal(2*pi):
+                    rx = rx - 2*pi
+                if self.decimal(ry) >= self.decimal(2*pi):
+                    ry = ry - 2*pi
+                if self.decimal(rz) >= self.decimal(2*pi):
+                    rz = rz - 2*pi
+
+                if self.decimal(rx) <= -self.decimal(2*pi):
+                    rx = rx + 2*pi
+                if self.decimal(ry) <= -self.decimal(2*pi):
+                    ry = ry + 2*pi
+                if self.decimal(rz) <= -self.decimal(2*pi):
+                    rz = rz + 2*pi
 
                 return rx*180.0/pi, ry*180.0/pi, rz*180.0/pi, ox, oy, oz
 
