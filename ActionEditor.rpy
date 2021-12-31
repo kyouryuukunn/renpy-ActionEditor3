@@ -746,7 +746,7 @@ init -1598 python in _viewers:
                         else:
                             old_widget = renpy.easy.displayable(start[0][0])
                             new_widget = renpy.easy.displayable(goal[0][0])
-                        if goal[0][1] is not None:
+                        if goal[0][1] is not None and goal[0][1] != "None":
                             transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                             during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
                             tran.set_child(during_transition_displayable)
@@ -762,7 +762,7 @@ init -1598 python in _viewers:
                         new_widget = renpy.easy.displayable(goal[0][0])
                         w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                         old_widget = renpy.store.Null(w, h)
-                        if goal[0][1] is not None:
+                        if goal[0][1] is not None and goal[0][1] != "None":
                             transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                             during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-goal[1], 0)
                             tran.set_child(during_transition_displayable)
