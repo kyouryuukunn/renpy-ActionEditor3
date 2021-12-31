@@ -1793,26 +1793,34 @@ init -1598 python in _viewers:
             if allow_animation_skip:
 
                 if camera_keyframes:
-                    string += """
-    camera:
+                    for p, cs in camera_keyframes.items():
+                        if len(cs) > 1:
+                            string += """
+    camera:"""
+                            for p, cs in camera_keyframes.items():
+                                if len(cs) > 1 and loops[p]:
+                                    string += """
+        animation"""
+                                    break
+                            first = True
+                            for p, cs in camera_keyframes.items():
+                                if len(cs) > 1 and not loops[p]:
+                                    if first:
+                                        first = False
+                                        string += """
         """
-                    for p, cs in camera_keyframes.items():
-                        if len(cs) > 1 and loops[p]:
-                            string += "animation "
-                            break
-                    for p, cs in camera_keyframes.items():
-                        if len(cs) > 1 and not loops[p]:
-                            string += "{} {} ".format(p, camera_keyframes[p][-1][0])
-                    for p, cs in camera_keyframes.items():
-                        if len(cs) > 1 and loops[p]:
-                            string += """
+                                    string += "{} {} ".format(p, camera_keyframes[p][-1][0])
+                            for p, cs in camera_keyframes.items():
+                                if len(cs) > 1 and loops[p]:
+                                    string += """
         parallel:"""
-                            string += """
+                                    string += """
             {} {}""".format(p, cs[0][0])
-                            for i, c in enumerate(cs[1:]):
-                                string += """
+                                    for i, c in enumerate(cs[1:]):
+                                        string += """
             {} {} {} {}
             repeat""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                            break
 
                 for layer in transform_viewer.state_org:
                     state_org = {k: v for dic in [transform_viewer.state_org[layer], transform_viewer.state[layer]] for k, v in dic.items()}
@@ -1833,6 +1841,11 @@ init -1598 python in _viewers:
                                     image_properties.append(p)
 
                         if not image_keyframes:
+                            continue
+                        for p, cs in image_keyframes.items():
+                            if len(cs) > 1:
+                                break
+                        else:
                             continue
 
                         image_name = name
@@ -1874,17 +1887,18 @@ init -1598 python in _viewers:
                                 focusing_cs["focusing"] = all_keyframes["focusing"]
                             if "dof" in all_keyframes:
                                 focusing_cs["dof"] = all_keyframes["dof"]
-                            if not loops["focusing"]:
-                                focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
-                            if not loops["dof"]:
-                                focusing_cs["dof"] = [focusing_cs["dof"][-1]]
-                            if loops["focusing"] or loops["dof"]:
-                                focusing_loop = {}
-                                focusing_loop["focusing_loop"] = loops["focusing"]
-                                focusing_loop["dof_loop"] = loops["dof"]
-                                string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                            else:
-                                string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
+                            if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
+                                if not loops["focusing"]:
+                                    focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
+                                if not loops["dof"]:
+                                    focusing_cs["dof"] = [focusing_cs["dof"][-1]]
+                                if loops["focusing"] or loops["dof"]:
+                                    focusing_loop = {}
+                                    focusing_loop["focusing_loop"] = loops["focusing"]
+                                    focusing_loop["dof_loop"] = loops["dof"]
+                                    string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                                else:
+                                    string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
 
                         for p, cs in image_keyframes.items():
                             if p not in special_props:
@@ -1976,5 +1990,3 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform_viewer.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None)
-
-
