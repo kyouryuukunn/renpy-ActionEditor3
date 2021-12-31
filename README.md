@@ -51,6 +51,7 @@ lemma forum
   * Introducing the concept of depth of field and allow to adjust focus position and dof.
   * Showing and replacing, hiding image with transition(use None for image name to hide image)
   * There is the option for hiding window during the ATL animation in clipboard data.
+  * There is the option for allowing to skip ATL animation in clipboard data.
 
  some config variables is availabe in ActionEditor_config.rpy
 
@@ -63,6 +64,7 @@ lemma forum
     OffsetMatrix
     RotateMatrix
  * Can't get colormatrix property.
+ * Skipping animations may not work when the animations includes loop and the tag is already shown.
 
  Image Viewer
 ================
@@ -115,18 +117,22 @@ lemma forum
  * 被写界深度の概念を導入し、フォーカス位置と被写界深度を操作可能
  * トランジションを伴う画像の表示、置き換え、非表示(画像を非表示するには画像名にNoneを入力してください)
  * クリップボードへの出力データでアニメーション中はウィンドウを非表示するようにするオプション
+ * クリップボードへの出力データでアニメーションスキップ可能にするオプション
 
    ActionEditor_config.rpyで細かい挙動を調整できます。
 
  注意
- focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります
- funtion transform propertyにcamera_blurを使用して表示している画像にはblurをかけられません。既に表示している画像の
- focusingを無効にしたい場合はfunctionプロパティーをNoneにしてください
- matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わのみに対応しています。
+ *focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります
+ *funtion transform propertyにcamera_blurを使用して表示している画像にはblurをかけられません。既に表示している画像の
+ focusingを無効にしたい場合はfunctionプロパティーをいったんNoneにしてください
+ *matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
     OffsetMatrix * RotateMatrix
     OffsetMatrix
     RotateMatrix
- colormatrixプロパティーは現在の値をエディターでは読み込めません。
+ *colormatrixプロパティーは現在の値をエディターでは読み込めません。
+ *アニメーション終了後と同じ画像を表示してスキップを可能にしていますが、ループが含まれ、同じタグの画像がすでに表示されている場合は正常に動作しません。
+ 参考リンク
+ http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
    
 
  画像ビューワー
