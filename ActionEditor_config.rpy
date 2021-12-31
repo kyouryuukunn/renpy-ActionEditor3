@@ -5,6 +5,8 @@ init 1600 python in _viewers:
 init -1600 python in _viewers:
     #hide winodw during animation in clipboard data
     hide_window_in_animation = True
+    #If this is True and hide_window_in_animation is True, allow animation to be skipped
+    allow_animation_skip = True
     #this is used for default warper
     default_warper = "linear"
     # If True, show rot default.

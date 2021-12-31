@@ -1,5 +1,4 @@
 #課題
-#アニメーション中のクリックで最後の位置に移動する?本体でやるべき
 
 #再現条件不明
 #hideが動作しないときがある
@@ -1698,7 +1697,7 @@ init -1598 python in _viewers:
                     if name in transform_viewer.state[layer]:
                         string += " at default"
                     string += """:
-        subpixel True """.format(image_name, layer)
+        subpixel True """
                     if "crop" in image_keyframes:
                         string += "{} {} ".format("crop_relative", True)
                     for p in image_properties:
@@ -1716,7 +1715,7 @@ init -1598 python in _viewers:
                             focusing_loop = {}
                             focusing_loop["focusing_loop"] = loops["focusing"]
                             focusing_loop["dof_loop"] = loops["dof"]
-                            string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                            string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
                         else:
                             string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
                     for p, cs in image_keyframes.items():
@@ -1783,8 +1782,96 @@ init -1598 python in _viewers:
 
         if hide_window_in_animation and get_animation_delay() > 0:
             string += """
-    pause {}
-    {} show""".format(get_animation_delay(), window_mode)
+    pause {}""".format(get_animation_delay())
+            if allow_animation_skip:
+
+                if camera_keyframes:
+                    string += """
+    camera:
+        """
+                    for p, cs in camera_keyframes.items():
+                        if len(cs) > 1 and not loops[p]:
+                            string += "{} {} ".format(p, camera_keyframes[p][-1][0])
+                    for p, cs in camera_keyframes.items():
+                        if len(cs) > 1 and loops[p]:
+                            string += """
+        parallel:"""
+                            string += """
+            {} {}""".format(p, cs[0][0])
+                            for i, c in enumerate(cs[1:]):
+                                string += """
+            {} {} {} {}
+            repeat""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+
+                for layer in transform_viewer.state_org:
+                    state_org = {k: v for dic in [transform_viewer.state_org[layer], transform_viewer.state[layer]] for k, v in dic.items()}
+                    for name, value_org in state_org.items():
+                        image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == name and k[1] == layer}
+                        image_keyframes = set_group_keyframes(image_keyframes)
+                        if focusing and "blur" in image_keyframes:
+                            del image_keyframes["blur"]
+                        image_properties = []
+                        for p, d in transform_viewer.props:
+                            for gn, ps in props_groups.items():
+                                if p in ps:
+                                    if gn not in image_properties:
+                                        image_properties.append(gn)
+                                    break
+                            else:
+                                if p not in special_props:
+                                    image_properties.append(p)
+                        if image_keyframes or focusing or name in transform_viewer.state[layer]:
+                            image_name = name
+                            if "child" in image_keyframes:
+                                image = image_keyframes["child"][-1][0][0]
+                                if image is not None:
+                                    tag = image.split()[0]
+                                    if tag == name.split()[0]:
+                                        image_name = image
+                            string += """
+    show {}""".format(image_name)
+                            if layer != "master":
+                                string += " onlayer {}".format(layer)
+                            string += """:
+        """
+                            for p, cs in image_keyframes.items():
+                                if p not in special_props:
+                                    if len(cs) > 1 and not loops[p]:
+                                        string += "{} {} ".format(p, image_keyframes[p][-1][0])
+
+                            if focusing:
+                                focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
+                                if "focusing" in all_keyframes:
+                                    focusing_cs["focusing"] = all_keyframes["focusing"]
+                                if "dof" in all_keyframes:
+                                    focusing_cs["dof"] = all_keyframes["dof"]
+                                if not loops["focusing"]:
+                                    focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
+                                if not loops["dof"]:
+                                    focusing_cs["dof"] = [focusing_cs["dof"][-1]]
+                                if loops["focusing"] or loops["dof"]:
+                                    focusing_loop = {}
+                                    focusing_loop["focusing_loop"] = loops["focusing"]
+                                    focusing_loop["dof_loop"] = loops["dof"]
+                                    string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                                else:
+                                    string += "{} camera_blur({}) ".format("function", focusing_cs)
+
+                            for p, cs in image_keyframes.items():
+                                if p not in special_props:
+                                    if len(cs) > 1 and loops[p]:
+                                        string += """
+        parallel:"""
+                                        string += """
+            {} {}""".format(p, cs[0][0])
+                                        for i, c in enumerate(cs[1:]):
+                                            string += """
+            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                        string += """
+            repeat"""
+
+            string += """
+    {} show""".format(window_mode)
         string += "\n\n"
 
         if string:
