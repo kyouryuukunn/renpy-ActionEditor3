@@ -9,10 +9,11 @@
 
 # tab="images"/"3Dstage", layer="master",  
 screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
+    $play_action = [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
     key "game_menu" action Return()
     key "rollback"    action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")+100+_viewers.camera_viewer.int_range)
     key "rollforward" action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")-100+_viewers.camera_viewer.int_range)
-    key "K_SPACE" action [SensitiveIf(_viewers.sorted_keyframes), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
+    key "K_SPACE" action play_action
     $offsetX, offsetY = _viewers.camera_viewer.get_property("offsetX"), _viewers.camera_viewer.get_property("offsetY")
     $range = _viewers.camera_viewer.int_range
     $move_amount1 = 100
@@ -38,10 +39,12 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
         key "L" action Function(_viewers.camera_viewer.generate_changed("offsetX"), offsetX + move_amount2 + range)
 
     if time:
-        timer time+1 action Function(_viewers.change_time, _viewers.current_time)
+        timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
     #camera transformはget_properyで所得できるようになるまで時間差があるので定期更新する
-    #camera transform properties need some times until being allowed to get property so I update screen.
-    timer .1 action renpy.restart_interaction repeat True
+    # かなり動作が重くなる
+    # camera transform properties need some times until being allowed to get property so I update screen.
+    if not time:
+        timer .2 action renpy.restart_interaction repeat True
     $state={k: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for k, v in dic.items()}
     $state_list = list(state)
     $page_list = []
@@ -60,7 +63,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     frame:
         background "#0006"
         if time:
-            at _delay_show(time + 1)
+            at _no_show()
         vbox:
 
             hbox:
@@ -77,7 +80,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                     textbutton _("focusing") action [SelectedIf(_viewers.focusing), ToggleField(_viewers, "focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
                     textbutton _("hide") action HideInterface()
                     # textbutton _("window") action _viewers.AddWindow() #renpy.config.empty_window
-                    textbutton _("play") action [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay()), renpy.restart_interaction]
+                    textbutton _("play") action play_action
                     textbutton _("clipboard") action Function(_viewers.put_clipboard)
                 hbox:
                     xalign 1.
@@ -199,9 +202,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                     textbutton _("clipboard") action Function(_viewers.transform_viewer.put_clipboard, tab, layer)
                     textbutton _("reset") action [_viewers.transform_viewer.image_reset, renpy.restart_interaction]
 
-    if time:
-        add _viewers.dragged at _delay_show(time + 1)
-    else:
+    if not time:
         add _viewers.dragged
 
 init -1598:
@@ -245,10 +246,8 @@ init -1598:
     style input_screen_label xalign .5
     style input_screen_hbox  xalign .5
 
-transform _delay_show(time):
+transform _no_show(time):
     alpha 0
-    pause time
-    alpha 1
 
 screen _rot(): #show rule of thirds
     for i in range(1, 3):
