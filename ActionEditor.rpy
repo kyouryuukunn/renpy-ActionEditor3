@@ -1798,6 +1798,10 @@ init -1598 python in _viewers:
     camera:
         """
                     for p, cs in camera_keyframes.items():
+                        if len(cs) > 1 and loops[p]:
+                            string += "animation "
+                            break
+                    for p, cs in camera_keyframes.items():
                         if len(cs) > 1 and not loops[p]:
                             string += "{} {} ".format(p, camera_keyframes[p][-1][0])
                     for p, cs in camera_keyframes.items():
@@ -1828,58 +1832,119 @@ init -1598 python in _viewers:
                             else:
                                 if p not in special_props:
                                     image_properties.append(p)
-                        if image_keyframes or focusing or name in transform_viewer.state[layer]:
-                            image_name = name
-                            if "child" in image_keyframes:
-                                image = image_keyframes["child"][-1][0][0]
-                                if image is not None:
-                                    tag = image.split()[0]
-                                    if tag == name.split()[0]:
-                                        image_name = image
-                            string += """
+
+                        if not image_keyframes:
+                            continue
+
+                        image_name = name
+                        if "child" in image_keyframes:
+                            image = image_keyframes["child"][-1][0][0]
+                            if image is not None:
+                                tag = image.split()[0]
+                                if tag == name.split()[0]:
+                                    image_name = image
+                        string += """
     show {}""".format(image_name)
-                            if layer != "master":
-                                string += " onlayer {}".format(layer)
-                            string += ":"
-                            first = True
-                            for p, cs in image_keyframes.items():
-                                if p not in special_props:
-                                    if len(cs) > 1 and not loops[p]:
-                                        if first:
-                                            first = False
-                                            string += """
+                        if layer != "master":
+                            string += " onlayer {}".format(layer)
+
+                        for p, cs in image_keyframes.items():
+                            if len(cs) > 1 and (p != "child" or loops[(name, layer, "child")]):
+                                break
+                        else:
+                            continue
+                        string += ":"
+                        for p, cs in image_keyframes.items():
+                            if len(cs) > 1 and loops[(name, layer, p)]:
+                                string += """
+        animation"""
+                                break
+                        first = True
+                        for p, cs in image_keyframes.items():
+                            if p not in special_props:
+                                if len(cs) > 1 and not loops[(name, layer, p)]:
+                                    if first:
+                                        first = False
+                                        string += """
         """
-                                        string += "{} {} ".format(p, image_keyframes[p][-1][0])
+                                    string += "{} {} ".format(p, image_keyframes[p][-1][0])
 
-                            if focusing:
-                                focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
-                                if "focusing" in all_keyframes:
-                                    focusing_cs["focusing"] = all_keyframes["focusing"]
-                                if "dof" in all_keyframes:
-                                    focusing_cs["dof"] = all_keyframes["dof"]
-                                if not loops["focusing"]:
-                                    focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
-                                if not loops["dof"]:
-                                    focusing_cs["dof"] = [focusing_cs["dof"][-1]]
-                                if loops["focusing"] or loops["dof"]:
-                                    focusing_loop = {}
-                                    focusing_loop["focusing_loop"] = loops["focusing"]
-                                    focusing_loop["dof_loop"] = loops["dof"]
-                                    string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                                else:
-                                    string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
+                        if focusing:
+                            focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
+                            if "focusing" in all_keyframes:
+                                focusing_cs["focusing"] = all_keyframes["focusing"]
+                            if "dof" in all_keyframes:
+                                focusing_cs["dof"] = all_keyframes["dof"]
+                            if not loops["focusing"]:
+                                focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
+                            if not loops["dof"]:
+                                focusing_cs["dof"] = [focusing_cs["dof"][-1]]
+                            if loops["focusing"] or loops["dof"]:
+                                focusing_loop = {}
+                                focusing_loop["focusing_loop"] = loops["focusing"]
+                                focusing_loop["dof_loop"] = loops["dof"]
+                                string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                            else:
+                                string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
 
-                            for p, cs in image_keyframes.items():
-                                if p not in special_props:
-                                    if len(cs) > 1 and loops[p]:
-                                        string += """
+                        for p, cs in image_keyframes.items():
+                            if p not in special_props:
+                                if len(cs) > 1 and loops[(name, layer, p)]:
+                                    string += """
         parallel:"""
-                                        string += """
+                                    string += """
             {} {}""".format(p, cs[0][0])
-                                        for i, c in enumerate(cs[1:]):
-                                            string += """
-            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                    for i, c in enumerate(cs[1:]):
                                         string += """
+            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                    string += """
+            repeat"""
+
+                        if "child" in image_keyframes and loops[(name,layer,"child")]:
+                            last_time = 0.0
+                            string += """
+        parallel:"""
+                            for i in xrange(0, len(image_keyframes["child"]), 1):
+                                (image, transition), t, w = image_keyframes["child"][i]
+                                widget = None
+                                if i > 0:
+                                    old_widget = image_keyframes["child"][i-1][0][0]
+                                    if old_widget is not None:
+                                        widget = old_widget
+                                if i < len(image_keyframes["child"])-1:
+                                    new_widget = image_keyframes["child"][i+1][0][0]
+                                    if new_widget is not None:
+                                        widget = new_widget
+                                if widget is None:
+                                    if image is not None:
+                                        widget = image
+                                if widget is None:
+                                    null = "Null()"
+                                else:
+                                    w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
+                                    null = "Null({}, {})".format(w, h)
+                                if (t - last_time) > 0:
+                                    string += """
+            {}""".format(t-last_time)
+                                if i == 0 and (image is not None and transition is not None):
+                                    string += """
+            {}""".format(null)
+                                if image is None:
+                                    string += """
+            {}""".format(null)
+                                else:
+                                    string += """
+            '{}'""".format(image)
+                                if transition is not None:
+                                    string += " with {}".format(transition)
+
+                                    transition = renpy.python.py_eval("renpy.store."+transition)
+                                    delay = getattr(transition, "delay", None)
+                                    if delay is None:
+                                        delay = getattr(transition, "args")[0]
+                                    t += delay
+                                last_time = t
+                            string += """
             repeat"""
 
             string += """
