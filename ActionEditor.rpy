@@ -106,6 +106,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         hbox:
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+                textbutton " - " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()]
                 for p, d in _viewers.camera_viewer.props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or _viewers.focusing):
                         $value = _viewers.camera_viewer.get_property(p)
@@ -147,6 +148,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         hbox:
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+                text "- " + _viewers.props_set_names[opened]
                 for p, d in _viewers.transform_viewer.props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((_viewers.focusing and p != "blur") or (not _viewers.focusing))):
                         $value = _viewers.transform_viewer.get_property(layer, tab, p)
@@ -646,7 +648,7 @@ init -1598 python in _viewers:
                                                 result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
                                                 setattr(tran, gn, result)
                                             elif gn == "matrixanchor":
-                                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                                mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
                                                 result = (mxa, mya)
                                                 setattr(tran, gn, result)
                                             elif gn ==  "matrixcolor":
@@ -688,7 +690,7 @@ init -1598 python in _viewers:
                                     result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
                                     setattr(tran, gn, result)
                                 elif gn == "matrixanchor":
-                                    mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                    mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
                                     result = (mxa, mya)
                                     setattr(tran, gn, result)
                                 elif gn ==  "matrixcolor":
@@ -856,7 +858,7 @@ init -1598 python in _viewers:
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                 result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
                             elif gn == "matrixanchor":
-                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
                                 result = "matrixanchor (%s, %s) " % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
@@ -1218,7 +1220,7 @@ init -1598 python in _viewers:
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
                                 result = "matrixtransform OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
                             elif gn == "matrixanchor":
-                                mxa, mya = group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"]
+                                mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
                                 result = "matrixanchor (%s, %s) " % (mxa, mya)
                             elif gn == "matrixcolor":
                                 i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
@@ -1575,7 +1577,7 @@ init -1598 python in _viewers:
                             r = [(v%(oxc[0], oyc[0], ozc[0], rxc[0], ryc[0], rzc[0]), oxc[1], oxc[2]) for oxc, oyc, ozc, rxc, ryc, rzc  in zip(group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"], group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"])]
                         elif gn == "matrixanchor":
                             v = "(%s, %s)"
-                            r = [(v%(mxa[0], mya[0]), mxa[1], mxa[2]) for mxa, mya  in zip(group_cache[gn]["matrixxanchor"], group_cache[gn]["matrixyanchor"])]
+                            r = [(v%(mxa[0], mya[0]), mxa[1], mxa[2]) for mxa, mya  in zip(group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"])]
                         elif gn ==  "matrixcolor":
                             v = "InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)"
                             r = [(v%(ic[0], cc[0], sc[0], bc[0], hc[0]), ic[1], ic[2]) for ic, cc, sc, bc, hc in zip(group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"])]
