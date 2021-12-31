@@ -56,8 +56,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     else:
         $page_list.append(state_list)
 
-    if _viewers.default_rot and store._first_load:
-        $store._first_load = False
+    if persistent._viewer_rot:
         on "show" action Show("_rot")
 
     frame:
@@ -75,11 +74,8 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
             hbox:
                 style_group "action_editor_a"
                 hbox:
-                    # textbutton _("default warper") action _viewers.select_default_warper
-                    textbutton _("rot") action [SelectedIf(renpy.get_screen("_rot")), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
-                    textbutton _("focusing") action [SelectedIf(_viewers.focusing), ToggleField(_viewers, "focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
+                    textbutton _("option") action Show("_action_editor_option")
                     textbutton _("hide") action HideInterface()
-                    # textbutton _("window") action _viewers.AddWindow() #renpy.config.empty_window
                     textbutton _("play") action play_action
                     textbutton _("clipboard") action Function(_viewers.put_clipboard)
                 hbox:
@@ -110,7 +106,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.camera_viewer.props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or _viewers.focusing):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or persistent._viewer_focusing):
                         $value = _viewers.camera_viewer.get_property(p)
                         $ f = _viewers.camera_viewer.generate_changed(p)
                         $reset_action = [Function(_viewers.camera_viewer.reset, p)]
@@ -152,7 +148,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.transform_viewer.props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((_viewers.focusing and p != "blur") or (not _viewers.focusing))):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((persistent._viewer_focusing and p != "blur") or (not persistent._viewer_focusing))):
                         $value = _viewers.transform_viewer.get_property(layer, tab, p)
                         $ f = _viewers.transform_viewer.generate_changed(layer, tab, p)
                         if p == "child":
@@ -254,6 +250,26 @@ screen _rot(): #show rule of thirds
         add Solid("#F00", xsize=config.screen_width, ysize=1, ypos=config.screen_height*i//3)
         add Solid("#F00", xsize=1, ysize=config.screen_height, xpos=config.screen_width*i//3)
 
+screen _action_editor_option():
+    modal True
+    key "game_menu" action Hide("_action_editor_option")
+    frame:
+        background "#0006"
+
+        has vbox
+        text _("Show/Hide rot")
+        textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
+        text _("Show/Hide window during animation in clipboard")
+        textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
+        text _("Allow/Disallow skipping animation in clipboard(*This doesn't work when the animation include loops and that tag is already shown)")
+        textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
+        text _("Enable/Disable simulating camera blur")
+        textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
+        text _("Assign default warper")
+        textbutton _("default warper") action _viewers.select_default_warper
+        text _("Assign default transition(None is available)")
+        textbutton _("default transition") action _viewers.transform_viewer.edit_default_transition
+
 screen _warper_selecter(current_warper=""):
     modal True
     key "game_menu" action Return("")
@@ -273,7 +289,7 @@ screen _warper_selecter(current_warper=""):
             scrollbars "vertical"
             vbox:
                 for warper in sorted(renpy.atl.warpers.keys()):
-                    textbutton warper action [SelectedIf((_viewers.warper == warper and not current_warper) or warper == current_warper), Return(warper)] hovered Show("_warper_graph", warper=warper) unhovered Hide("_warper")
+                    textbutton warper action [SelectedIf((persistent._viewer_warper == warper and not current_warper) or warper == current_warper), Return(warper)] hovered Show("_warper_graph", warper=warper) unhovered Hide("_warper")
         hbox:
             textbutton _("add") action OpenURL("http://renpy.org/wiki/renpy/doc/cookbook/Additional_basic_move_profiles")
             textbutton _("close") action Return("")
@@ -529,21 +545,21 @@ init -1598 python in _viewers:
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
                     if time < t:
-                        keyframes.insert(i, (value, time, default_warper))
+                        keyframes.insert(i, (value, time, renpy.store.persistent._viewer_warper))
                         break
                     elif time == t:
-                        keyframes[i] = ( value, time, default_warper)
+                        keyframes[i] = ( value, time, renpy.store.persistent._viewer_warper)
                         break
                 else:
-                    keyframes.append((value, time, default_warper))
+                    keyframes.append((value, time, renpy.store.persistent._viewer_warper))
             else:
                 if time == 0:
-                    all_keyframes[(name, layer, prop)] = [(value, time, default_warper)]
+                    all_keyframes[(name, layer, prop)] = [(value, time, renpy.store.persistent._viewer_warper)]
                 else:
                     org = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[name][prop]
                     if org is None:
                         org = self.get_default(prop)
-                    all_keyframes[(name, layer, prop)] = [(org, 0, default_warper), (value, time, default_warper)]
+                    all_keyframes[(name, layer, prop)] = [(org, 0, renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
             sort_keyframes()
             
             for gn, ps in props_groups.items():
@@ -554,7 +570,6 @@ init -1598 python in _viewers:
                         self.set_keyframe(layer, name, p, self.get_property(layer, name, p), True, time=time)
 
         def play(self, play):
-            global focusing
             for layer in renpy.config.layers:
                 state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
                 for name in state:
@@ -579,7 +594,7 @@ init -1598 python in _viewers:
                         if not group_flag:
                             for prop in ps:
                                 del check_points[prop]
-                    if focusing:
+                    if renpy.store.persistent._viewer_focusing:
                         if "blur" in check_points:
                             del check_points["blur"]
                         if "focusing" not in check_points:
@@ -773,7 +788,6 @@ init -1598 python in _viewers:
 
         def generate_changed(self, layer, name, prop):
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
-            global focusing
             def changed(v, time=None):
                 if time is None:
                     time = renpy.store._viewers.current_time
@@ -835,7 +849,6 @@ init -1598 python in _viewers:
             return None
 
         def put_clipboard(self, name, layer):
-            global focusing
             group_cache = defaultdict(lambda:{})
             group_flag = {}
             for gn, ps in props_groups.items():
@@ -873,11 +886,11 @@ init -1598 python in _viewers:
                 else:
                     if p not in special_props:
                         value = self.get_property(layer, name, p, False)
-                        if value is not None and value != d and (p != "blur" or not focusing) or (name in self.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
+                        if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing) or (name in self.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                             if string.find(":") < 0:
                                 string += ":\n        "
                             string += "%s %s " % (p, value)
-            if focusing:
+            if renpy.store.persistent._viewer_focusing:
                 focus = self.get_default("focusing")
                 if "focusing" in group_cache["focusing"]:
                     focus = group_cache["focusing"]["focusing"]
@@ -917,6 +930,15 @@ init -1598 python in _viewers:
                 except:
                     renpy.notify(_("Please type value"))
 
+        def edit_default_transition(self):
+            v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
+            if v:
+                if v == "None":
+                    v = None
+                renpy.store.persistent._viewer_transition = v
+                return
+            renpy.notify(_("Please Input Transition"))
+
         def edit_transition(self, layer, name, time=None):
             if time is None:
                 time = renpy.store._viewers.current_time
@@ -951,7 +973,7 @@ init -1598 python in _viewers:
                     for p, d in self.props:
                         if p == "child":
                             self.state[layer][string][p] = (None, None)
-                            self.set_keyframe(layer, string, p, (string, default_transition))
+                            self.set_keyframe(layer, string, p, (string, renpy.store.persistent._viewer_transition))
                         else:
                             self.state[layer][string][p] = self.get_property(layer, string, p, False)
                     change_time(current_time)
@@ -973,11 +995,11 @@ init -1598 python in _viewers:
                         return
                     string = " ".join(n)
                     string = string.strip()
-                    self.set_keyframe(layer, name, "child", (string, default_transition), time=time)
+                    self.set_keyframe(layer, name, "child", (string, renpy.store.persistent._viewer_transition), time=time)
                     return
             else:
                 if new_image and new_image[0] == "None" and org is not None:
-                    self.set_keyframe(layer, name, "child", (None, default_transition), time=time)
+                    self.set_keyframe(layer, name, "child", (None, renpy.store.persistent._viewer_transition), time=time)
                     return
                 renpy.notify(_("Please type image name"))
                 return
@@ -1097,21 +1119,21 @@ init -1598 python in _viewers:
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
                     if time < t:
-                        keyframes.insert(i, (value, time, default_warper))
+                        keyframes.insert(i, (value, time, renpy.store.persistent._viewer_warper))
                         break
                     elif time == t:
-                        keyframes[i] = (value, time, default_warper)
+                        keyframes[i] = (value, time, renpy.store.persistent._viewer_warper)
                         break
                 else:
-                    keyframes.append((value, time, default_warper))
+                    keyframes.append((value, time, renpy.store.persistent._viewer_warper))
             else:
                 if time == 0:
-                    all_keyframes[prop] = [(value, time, default_warper)]
+                    all_keyframes[prop] = [(value, time, renpy.store.persistent._viewer_warper)]
                 else:
                     org = self.state_org[prop]
                     if org is None:
                         org = self.get_default(prop)
-                    all_keyframes[prop] = [(org, 0, default_warper), (value, time, default_warper)]
+                    all_keyframes[prop] = [(org, 0, renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
             sort_keyframes()
 
             for gn, ps in props_groups.items():
@@ -1158,7 +1180,6 @@ init -1598 python in _viewers:
             def changed(v, time=None):
                 if time is None:
                     time = renpy.store._viewers.current_time
-                global focusing
                 default = self.get_default(prop)
                 if prop not in force_float and (prop in force_int_range or ( (value_org is None and isinstance(default, int)) or isinstance(value_org, int) )):
                     if isinstance(self.get_property(prop), float) and prop in force_int_range:
@@ -1448,10 +1469,9 @@ init -1598 python in _viewers:
                 change_time(sorted_keyframes[-1])
 
     def select_default_warper():
-        global default_warper
         v = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter")
         if v:
-            default_warper = v
+            renpy.store.persistent._viewer_warper = v
 
     # @renpy.pure
     # class AddWindow(renpy.store.Action, renpy.store.DictEquality):
@@ -1524,7 +1544,7 @@ init -1598 python in _viewers:
                     else:
                         cs.append((value, new, warper))
                     if old == 0 and new != 0:
-                        cs.insert(0, (value, 0, default_warper))
+                        cs.insert(0, (value, 0, renpy.store.persistent._viewer_warper))
         sort_keyframes()
         renpy.restart_interaction()
 
@@ -1552,7 +1572,18 @@ init -1598 python in _viewers:
         moved_time = 0
         loops.clear()
         clear_keyframes()
-        renpy.store._first_load = True
+        if renpy.store.persistent._viewer_transition is None:
+            renpy.store.persistent._viewer_transition = default_transition
+        if renpy.store.persistent._viewer_warper is None:
+            renpy.store.persistent._viewer_warper = default_warper
+        if renpy.store.persistent._viewer_hide_window is None:
+            renpy.store.persistent._viewer_hide_window = hide_window_in_animation
+        if renpy.store.persistent._viewer_allow_skip is None:
+            renpy.store.persistent._viewer_allow_skip = allow_animation_skip
+        if renpy.store.persistent._viewer_rot is None:
+            renpy.store.persistent._viewer_rot = default_rot
+        if renpy.store.persistent._viewer_focusing is None:
+            renpy.store.persistent._viewer_focusing = focusing
         transform_viewer.init()
         camera_viewer.init()
         dragged.init(True, True)
@@ -1631,7 +1662,7 @@ init -1598 python in _viewers:
                     break
             else:
                 camera_properties.append(p)
-        if hide_window_in_animation and get_animation_delay() > 0:
+        if renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0:
             if renpy.store._window_auto:
                 window_mode = "window auto"
             else:
@@ -1669,7 +1700,7 @@ init -1598 python in _viewers:
             for name, value_org in state_org.items():
                 image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == name and k[1] == layer}
                 image_keyframes = set_group_keyframes(image_keyframes)
-                if focusing and "blur" in image_keyframes:
+                if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                     del image_keyframes["blur"]
                 image_properties = []
                 for p, d in transform_viewer.props:
@@ -1681,7 +1712,7 @@ init -1598 python in _viewers:
                     else:
                         if p not in special_props:
                             image_properties.append(p)
-                if image_keyframes or focusing or name in transform_viewer.state[layer]:
+                if image_keyframes or renpy.store.persistent._viewer_focusing or name in transform_viewer.state[layer]:
                     image_name = name
                     if "child" in image_keyframes:
                         image = image_keyframes["child"][-1][0][0]
@@ -1765,7 +1796,7 @@ init -1598 python in _viewers:
                                 if loops[(name,layer,p)]:
                                     string += """
             repeat"""
-                    if focusing:
+                    if renpy.store.persistent._viewer_focusing:
                         focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
                         for p, cs in image_keyframes.items():
                             if len(cs) > 1:
@@ -1787,10 +1818,10 @@ init -1598 python in _viewers:
                         else:
                             string += "{} camera_blur({}) ".format("function", focusing_cs)
 
-        if hide_window_in_animation and get_animation_delay() > 0:
+        if renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0:
             string += """
     pause {}""".format(get_animation_delay())
-            if allow_animation_skip:
+            if renpy.store.persistent._viewer_allow_skip:
 
                 if camera_keyframes:
                     for p, cs in camera_keyframes.items():
@@ -1827,7 +1858,7 @@ init -1598 python in _viewers:
                     for name, value_org in state_org.items():
                         image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == name and k[1] == layer}
                         image_keyframes = set_group_keyframes(image_keyframes)
-                        if focusing and "blur" in image_keyframes:
+                        if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                             del image_keyframes["blur"]
                         image_properties = []
                         for p, d in transform_viewer.props:
@@ -1881,7 +1912,7 @@ init -1598 python in _viewers:
         """
                                     string += "{} {} ".format(p, image_keyframes[p][-1][0])
 
-                        if focusing:
+                        if renpy.store.persistent._viewer_focusing:
                             focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
                             if "focusing" in all_keyframes:
                                 focusing_cs["focusing"] = all_keyframes["focusing"]
