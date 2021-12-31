@@ -1705,19 +1705,6 @@ init -1598 python in _viewers:
                             string += "{} {} ".format(p, image_keyframes[p][0][0])
                         if name in transform_viewer.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"] and p not in image_keyframes:
                             string += "{} {} ".format(p, transform_viewer.get_property(layer, name, p, False))
-                    if focusing:
-                        focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
-                        if "focusing" in all_keyframes:
-                            focusing_cs["focusing"] = all_keyframes["focusing"]
-                        if "dof" in all_keyframes:
-                            focusing_cs["dof"] = all_keyframes["dof"]
-                        if loops["focusing"] or loops["dof"]:
-                            focusing_loop = {}
-                            focusing_loop["focusing_loop"] = loops["focusing"]
-                            focusing_loop["dof_loop"] = loops["dof"]
-                            string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                        else:
-                            string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
                     for p, cs in image_keyframes.items():
                         if p not in special_props:
                             if len(cs) > 1:
@@ -1779,6 +1766,27 @@ init -1598 python in _viewers:
                                 if loops[(name,layer,p)]:
                                     string += """
             repeat"""
+                    if focusing:
+                        focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
+                        for p, cs in image_keyframes.items():
+                            if len(cs) > 1:
+                                string += """
+        parallel:
+            """
+                                break
+                        else:
+                            string += "\n        "
+                        if "focusing" in all_keyframes:
+                            focusing_cs["focusing"] = all_keyframes["focusing"]
+                        if "dof" in all_keyframes:
+                            focusing_cs["dof"] = all_keyframes["dof"]
+                        if loops["focusing"] or loops["dof"]:
+                            focusing_loop = {}
+                            focusing_loop["focusing_loop"] = loops["focusing"]
+                            focusing_loop["dof_loop"] = loops["dof"]
+                            string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                        else:
+                            string += "{} camera_blur({}) ".format("function", focusing_cs)
 
         if hide_window_in_animation and get_animation_delay() > 0:
             string += """
@@ -1832,11 +1840,15 @@ init -1598 python in _viewers:
     show {}""".format(image_name)
                             if layer != "master":
                                 string += " onlayer {}".format(layer)
-                            string += """:
-        """
+                            string += ":"
+                            first = True
                             for p, cs in image_keyframes.items():
                                 if p not in special_props:
                                     if len(cs) > 1 and not loops[p]:
+                                        if first:
+                                            first = False
+                                            string += """
+        """
                                         string += "{} {} ".format(p, image_keyframes[p][-1][0])
 
                             if focusing:
@@ -1853,9 +1865,9 @@ init -1598 python in _viewers:
                                     focusing_loop = {}
                                     focusing_loop["focusing_loop"] = loops["focusing"]
                                     focusing_loop["dof_loop"] = loops["dof"]
-                                    string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                                    string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
                                 else:
-                                    string += "{} camera_blur({}) ".format("function", focusing_cs)
+                                    string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
 
                             for p, cs in image_keyframes.items():
                                 if p not in special_props:
