@@ -106,7 +106,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         hbox:
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
-                textbutton " - " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()]
+                textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.camera_viewer.props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or _viewers.focusing):
                         $value = _viewers.camera_viewer.get_property(p)
@@ -148,7 +148,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         hbox:
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
-                text "- " + _viewers.props_set_names[opened]
+                textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.transform_viewer.props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((_viewers.focusing and p != "blur") or (not _viewers.focusing))):
                         $value = _viewers.transform_viewer.get_property(layer, tab, p)
@@ -195,6 +195,8 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                     textbutton _("reset") action [_viewers.camera_viewer.camera_reset, renpy.restart_interaction]
                 else:
                     textbutton _("remove") action [SensitiveIf(tab in _viewers.transform_viewer.state[layer]), Show("_action_editor", tab="3Dstage", layer=layer, opened=opened, page=page), Function(_viewers.transform_viewer.remove_image, layer, tab)]
+                    # $state={n: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for n, v in dic.items()}
+                    # textbutton _("zzoom") action [SelectedIf(_viewers.transform_viewer.get_zzoom(tab, layer)), Function(_viewers.transform_viewer.toggle_zzoom, tab, layer)]
                     textbutton _("clipboard") action Function(_viewers.transform_viewer.put_clipboard, tab, layer)
                     textbutton _("reset") action [_viewers.transform_viewer.image_reset, renpy.restart_interaction]
 
@@ -981,7 +983,19 @@ init -1598 python in _viewers:
                     return
                 renpy.notify(_("Please type image name"))
                 return
-        
+
+        # def get_zzoom(self, name, layer):
+        #     state={n: v for dic in [self.state_org[layer], self.state[layer]] for n, v in dic.items()}
+        #     zzoom = state[name]["zzoom"]
+        #     if (name, layer, "zzoom") in all_keyframes:
+        #         zzoom = all_keyframes[name, layer, "zzoom"][0][0]
+        #     return zzoom
+        #
+        # def toggle_zzoom(self, name, layer):
+        #     zzoom = self.get_zzoom(name, layer)
+        #     self.set_keyframe(layer, name, "zzoom", not zzoom, time=0)
+        #     change_time(current_time)
+
         def remove_image(self, layer, name):
             renpy.hide(name, layer)
             del self.state[layer][name]
