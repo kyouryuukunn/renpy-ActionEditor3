@@ -1,4 +1,3 @@
-
 init 1600 python in _viewers:
     #this is used for default transition
     #デフォルトで使用されるトランジションの文字列です。Noneも指定可能です。

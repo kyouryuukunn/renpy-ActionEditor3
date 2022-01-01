@@ -14,11 +14,11 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     key "rollback"    action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")+100+_viewers.camera_viewer.int_range)
     key "rollforward" action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")-100+_viewers.camera_viewer.int_range)
     key "K_SPACE" action play_action
+
     $offsetX, offsetY = _viewers.camera_viewer.get_property("offsetX"), _viewers.camera_viewer.get_property("offsetY")
     $range = _viewers.camera_viewer.int_range
     $move_amount1 = 100
     $move_amount2 = 300
-
     if _viewers.fps_keymap:
         key "s" action Function(_viewers.camera_viewer.generate_changed("offsetY"), offsetY + move_amount1 + range)
         key "w" action Function(_viewers.camera_viewer.generate_changed("offsetY"), offsetY - move_amount1 + range)
@@ -45,6 +45,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     # camera transform properties need some times until being allowed to get property so I update screen.
     if not time:
         timer .2 action renpy.restart_interaction repeat True
+
     $state={k: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for k, v in dic.items()}
     $state_list = list(state)
     $page_list = []
@@ -60,7 +61,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
         on "show" action Show("_rot")
 
     frame:
-        background "#0006"
+        style_group "action_editor"
         if time:
             at _no_show()
         vbox:
@@ -70,7 +71,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                 textbutton _("time: [_viewers.current_time:>.2f] s") action Function(_viewers.edit_time)
                 textbutton _("<") action Function(_viewers.prev_time)
                 textbutton _(">") action Function(_viewers.next_time)
-                bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.current_time, changed=_viewers.change_time) xalign 1. yalign .5
+                bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.current_time, changed=_viewers.change_time) xalign 1. yalign .5 style "action_editor_bar"
             hbox:
                 style_group "action_editor_a"
                 hbox:
@@ -123,18 +124,18 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                                 else:
                                     textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range*2, value=value+_viewers.camera_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.int_range*2, value=value+_viewers.camera_viewer.int_range, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                         else:
                             hbox:
                                 style_group "action_editor"
                                 textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, edit_func=_viewers.camera_viewer.edit_value, change_func=f)]
                                 textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range*2, value=value+_viewers.camera_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range*2, value=value+_viewers.camera_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                 for i, props_set_name in enumerate(_viewers.props_set_names):
                     if i > opened:
                         hbox:
@@ -167,18 +168,18 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                                 else:
                                     textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range, value=value, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range*2, value=value+_viewers.transform_viewer.int_range, page=1, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.int_range*2, value=value+_viewers.transform_viewer.int_range, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                         else:
                             hbox:
                                 style_group "action_editor"
                                 textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), edit_func=_viewers.transform_viewer.edit_value, change_func=f)]
                                 textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
-                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range*2, value=value+_viewers.transform_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5
+                                    bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range*2, value=value+_viewers.transform_viewer.float_range, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                 for i, props_set_name in enumerate(_viewers.props_set_names):
                     if i > opened:
                         hbox:
@@ -201,33 +202,46 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     if not time:
         add _viewers.dragged
 
+screen _rot(): #show rule of thirds
+    for i in range(1, 3):
+        add Solid("#F00", xsize=config.screen_width, ysize=1, ypos=config.screen_height*i//3)
+        add Solid("#F00", xsize=1, ysize=config.screen_height, xpos=config.screen_width*i//3)
+
+transform _no_show():
+    alpha 0
+
 init -1598:
+    style action_editor_frame:
+        background None
     style action_editor_button:
         size_group "action_editor"
-        outlines [ (absolute(1), "#000", absolute(0), absolute(0)) ]
         idle_background None
         insensitive_background None
-    style action_editor_button_text:
-        color "#aaa"
-        selected_color "#fff"
-        insensitive_color "#777"
-        outlines [ (absolute(1), "#000", absolute(0), absolute(0)) ]
-    style action_editor_a_button:
-        take action_editor_button
-        size_group None
-    style action_editor_a_button_text take action_editor_button_text
-
+    style action_editor_text:
+        color "#CCC"
+        outlines [ (absolute(2), "#000", absolute(0), absolute(0)) ]
+    style action_editor_button_text is action_editor_text:
+        hover_underline True
+        selected_color "#FFF"
+        insensitive_color "#888"
     style action_editor_label:
         xminimum 110
     style action_editor_vbox xfill True
+    style action_editor_bar is slider:
+        ysize 15
+
+    style action_editor_a_button:
+        take action_editor_button
+        size_group None
+    style action_editor_a_button_text is action_editor_button_text
+    style action_editor_a_bar is action_editor_bar
 
 screen _input_screen(message="type value", default=""):
     modal True
     key "game_menu" action Return("")
 
     frame:
-        background "#0006"
-        style_group "input_screen"
+        style_group "action_editor_input"
 
         has vbox
 
@@ -236,25 +250,11 @@ screen _input_screen(message="type value", default=""):
         hbox:
             input default default
 
-init -1598:
-    style input_screen_frame xfill True ypos .1 xmargin .05 ymargin .05
-    style input_screen_vbox xfill True spacing 30
-    style input_screen_label xalign .5
-    style input_screen_hbox  xalign .5
-
-transform _no_show(time):
-    alpha 0
-
-screen _rot(): #show rule of thirds
-    for i in range(1, 3):
-        add Solid("#F00", xsize=config.screen_width, ysize=1, ypos=config.screen_height*i//3)
-        add Solid("#F00", xsize=1, ysize=config.screen_height, xpos=config.screen_width*i//3)
-
 screen _action_editor_option():
     modal True
     key "game_menu" action Hide("_action_editor_option")
     frame:
-        background "#0006"
+        style_group "action_editor_modal"
 
         has vbox
         text _("Show/Hide rot")
@@ -263,20 +263,20 @@ screen _action_editor_option():
         textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
         text _("Allow/Disallow skipping animation in clipboard(*This doesn't work when the animation include loops and that tag is already shown)")
         textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
-        text _("Enable/Disable simulating camera blur")
+        text _("Enable/Disable simulating camera blur(This causes crash when perspective is False)")
         textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
         text _("Assign default warper")
-        textbutton _("default warper") action _viewers.select_default_warper
-        text _("Assign default transition(None is available)")
-        textbutton _("default transition") action _viewers.transform_viewer.edit_default_transition
+        textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
+        text _("Assign default transition(example: dissolve, Dissolve(5), None)")
+        textbutton "[persistent._viewer_transition]" action _viewers.transform_viewer.edit_default_transition
+        textbutton _("Return") action Hide("_action_editor_option") xalign .9
 
 screen _warper_selecter(current_warper=""):
     modal True
     key "game_menu" action Return("")
 
     frame:
-        background "#0006"
-        style_group "warper_selecter"
+        style_group "action_editor_subscreen"
 
         has vbox
 
@@ -316,14 +316,12 @@ screen _move_keyframes:
     modal True
     key "game_menu" action Hide("_move_keyframes")
     frame:
-        background "#0006"
+        style_group "action_editor_subscreen"
         has vbox
         textbutton _("time: [_viewers.moved_time:>.2f] s") action Function(_viewers.edit_move_all_keyframe)
-        bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5
+        bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
-# _edit_keyframe((name, layer), "xpos")
-# _edit_keyframe(_camera_x)
 screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
     $check_points = _viewers.all_keyframes[k]
     if isinstance(k, tuple):
@@ -358,7 +356,7 @@ screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
     modal True
     key "game_menu" action Hide("_edit_keyframe")
     frame:
-        background "#0009"
+        style_group "action_editor_subscreen"
         xfill True
         has vbox
         label _("KeyFrames") xalign .5
@@ -374,18 +372,33 @@ screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
                         textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t)]
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, check_points=check_points_list, old=t)
-                    bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5
+                    bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5 style "action_editor_bar"
         hbox:
             textbutton _("loop") action loop_button_action
             textbutton _("close") action Hide("_edit_keyframe") xalign .98
 
+init -1598:
+    style action_editor_modal_frame background "#000D"
+    style action_editor_modal_text is action_editor_text
+    style action_editor_modal_buttton_text is action_editor_button_text
+
+    style action_editor_input_frame xfill True ypos .1 xmargin .05 ymargin .05 background "#000B"
+    style action_editor_input_vbox xfill True spacing 30
+    style action_editor_input_label xalign .5
+    style action_editor_input_hbox  xalign .5
+
+    style action_editor_subscreen_frame is action_editor_modal_frame
+    style action_editor_subscreen_text is action_editor_modal_text
+    style action_editor_subscreen_button_text is action_editor_modal_buttton_text
+
+
 init -1098 python:
     # Added keymap
     config.underlay.append(renpy.Keymap(
-        # self_voicing = Preference("self voicing", "toggle"), #TODO ???
         action_editor = _viewers.action_editor,
         image_viewer = _viewers.open_image_viewer,
         ))
+
 
 init -1598 python in _viewers:
     from math import sin, asin, cos, acos, pi
@@ -931,7 +944,7 @@ init -1598 python in _viewers:
                     renpy.notify(_("Please type value"))
 
         def edit_default_transition(self):
-            v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
+            v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", message="Type transition")
             if v:
                 if v == "None":
                     v = None
@@ -1587,9 +1600,10 @@ init -1598 python in _viewers:
         transform_viewer.init()
         camera_viewer.init()
         dragged.init(True, True)
+        _window = renpy.store._window
+        renpy.store._window = False
         renpy.invoke_in_new_context(renpy.call_screen, "_action_editor")
-        # camera_viewer.layer_reset()
-        # camera_viewer.camera_reset()
+        renpy.store._window = _window
 
     def get_animation_delay():
         animation_time = 0

@@ -8,19 +8,15 @@ screen _image_selecter(default=""):
     key "game_menu" action Return("")
     zorder 20
     frame:
-        background "#0006"
-        xmaximum 400
-        yfill True
+        style_group "image_selecter"
         vbox:
             label _("Type a image name") style "image_selecter_input"
             input value ScreenVariableInputValue("filter_string", default=True, returnable=True) copypaste True style "image_selecter_input" #changed _tag_input
             $filtered_list = _viewers.filter_image_name(filter_string)
             viewport:
                 mousewheel True
-                ymaximum 600
                 scrollbars "vertical"
                 vbox:
-                    style_group "image_selecter"
                     for image_name in filtered_list:
                         textbutton image_name action Return(tuple(image_name.split())) hovered _viewers.ShowImage(tuple(image_name.split())) unhovered Function(renpy.hide, "preview", layer="screens")
             textbutton _("clipboard") action [SensitiveIf(filter_string), Function(_viewers.put_clipboard_text, filter_string)] xalign 1.0 idle_background None insensitive_background None
@@ -35,14 +31,24 @@ screen _image_selecter(default=""):
     key "K_TAB" action Function(_viewers.completion, filter_string, filtered_list)
 
 init:
+    style image_selecter_frame:
+        background "#0006"
+        xmaximum 400
+        yfill True
+    style image_selecter_viewport:
+        ymaximum 600
     style image_selecter_input:
         outlines [ (absolute(1), "#000", absolute(0), absolute(0)) ]
     style image_selecter_button:
         size_group "image_selecter"
         idle_background None
     style image_selecter_button_text:
-        xalign .0
+        color "#CCC"
+        hover_underline True
+        selected_color "#FFF"
+        insensitive_color "#888"
         outlines [ (absolute(1), "#000", absolute(0), absolute(0)) ]
+        xalign .0
 
 init -2000 python in _viewers:
     def open_image_viewer():
