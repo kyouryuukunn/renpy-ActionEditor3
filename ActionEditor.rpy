@@ -203,6 +203,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
         add _viewers.dragged
 
 screen _rot(): #show rule of thirds
+    #線の特定のypos 240-265で表示されない
     for i in range(1, 3):
         add Solid("#F00", xsize=config.screen_width, ysize=1, ypos=config.screen_height*i//3)
         add Solid("#F00", xsize=1, ysize=config.screen_height, xpos=config.screen_width*i//3)
@@ -258,7 +259,7 @@ screen _action_editor_option():
         style_group "action_editor_modal"
 
         has vbox
-        text _("Show/Hide rot")
+        text _("Show/Hide rule of thirds lines")
         textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
         text _("Show/Hide window during animation in clipboard")
         textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
@@ -401,14 +402,17 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, for
         has vbox
         label _("spline_editor") xalign .5
         hbox:
+            null width 50
             text " "
             text "Start"
             text "[pre[0]]"
         if time in _viewers.splines[key]:
             for i, v in enumerate(_viewers.splines[key][time]):
+                textbutton _("+") action [Function(_viewers.add_knot, key, time, pre[0], knot_number=i), renpy.restart_interaction]
                 hbox:
+                    null width 50
                     textbutton _("x") action [Function(_viewers.remove_knot, key, time, i), renpy.restart_interaction] size_group None
-                    text "Knot"+"[i]"
+                    textbutton "Knot{}".format(i+1) action None
                     textbutton "{}".format(v) action [Function(edit_func, renpy.curry(change_func)(time=time, knot_number=i), default=v, force_int=force_int, force_plus=force_plus, time=time)]
                     if force_plus:
                         $_range = range
@@ -419,17 +423,19 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, for
                     bar adjustment ui.adjustment(range=_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)) xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("+") action [Function(_viewers.add_knot, key, time, pre[0]), renpy.restart_interaction]
         hbox:
+            null width 50
             text " "
             text "End"
             text "[post[0]]"
         hbox:
-            textbutton _("close") action Hide("_spline_editor") xalign .98
+            xfill True
+            textbutton _("close") action Hide("_spline_editor") xalign .9
 
 init -1598:
     style action_editor_modal_frame background "#000D"
-    style action_editor_modal_text is action_editor_text
-    style action_editor_modal_buttton is action_editor_button
-    style action_editor_modal_buttton_text is action_editor_button_text
+    style action_editor_modal_text is action_editor_text color "#AAA"
+    style action_editor_modal_button is action_editor_button
+    style action_editor_modal_button_text is action_editor_button_text
 
     style action_editor_input_frame xfill True ypos .1 xmargin .05 ymargin .05 background "#000B"
     style action_editor_input_vbox xfill True spacing 30
@@ -438,12 +444,12 @@ init -1598:
 
     style action_editor_subscreen_frame is action_editor_modal_frame
     style action_editor_subscreen_text is action_editor_modal_text
-    style action_editor_subscreen_button_text is action_editor_modal_buttton_text
+    style action_editor_subscreen_button_text is action_editor_modal_button_text
     style action_editor_subscreen_button:
         size_group "action_editor_subscreen"
 
     style spline_editor_frame is action_editor_modal_frame
-    style spline_editor_text is action_editor_modal_text size_group "spline_editor"
+    style spline_editor_text is action_editor_text size_group "spline_editor"
     style spline_editor_button is action_editor_modal_button size_group "spline_editor"
     style spline_editor_button_text is action_editor_modal_button_text
 
@@ -1666,9 +1672,12 @@ init -1598 python in _viewers:
                 return True
         return False
 
-    def add_knot(key, time, default):
+    def add_knot(key, time, default, knot_number=None):
         if time in splines[key]:
-            splines[key][time].append(default)
+            if knot_number is not None:
+                splines[key][time].insert(knot_number, default)
+            else:
+                splines[key][time].append(default)
         else:
             splines[key][time] = [default]
 
