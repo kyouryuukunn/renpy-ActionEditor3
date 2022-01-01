@@ -50,7 +50,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     $state_list = list(state)
     $page_list = []
     if len(state_list) > _viewers.tab_amount_in_page:
-        for i in xrange(0, len(state_list)//_viewers.tab_amount_in_page):
+        for i in range(0, len(state_list)//_viewers.tab_amount_in_page):
             $page_list.append(state_list[i*_viewers.tab_amount_in_page:(i+1)*_viewers.tab_amount_in_page])
         if len(state_list)%_viewers.tab_amount_in_page != 0:
             $page_list.append(state_list[len(state_list)//_viewers.tab_amount_in_page*_viewers.tab_amount_in_page:])
@@ -471,7 +471,7 @@ init -1598 python in _viewers:
                 sinry = -1.0 if sinry < -1.0 else sinry
                 ry = asin(sinry)
 
-                for i in xrange(2):
+                for i in range(2):
                     sinrx = group.zdy/cos(ry)
                     sinrx = 1.0 if sinrx > 1.0 else sinrx
                     sinrx = -1.0 if sinrx < -1.0 else sinrx
@@ -647,7 +647,7 @@ init -1598 python in _viewers:
                     if time % cs[-1][1] != 0:
                         time = time % cs[-1][1]
 
-                for i in xrange(1, len(cs)):
+                for i in range(1, len(cs)):
                     checkpoint = cs[i][1]
                     pre_checkpoint = cs[i-1][1]
                     if time < checkpoint:
@@ -754,7 +754,7 @@ init -1598 python in _viewers:
                 cs = check_points["child"]
                 if not cs:
                     return 0
-                for i in xrange(-1, -len(cs), -1):
+                for i in range(-1, -len(cs), -1):
                     checkpoint = cs[i][1]
                     pre_checkpoint = cs[i-1][1]
                     if time >= checkpoint:
@@ -960,7 +960,7 @@ init -1598 python in _viewers:
                 if v == "None":
                     v = None
                 cs = all_keyframes[(name, layer, "child")]
-                for i in xrange(-1, -len(cs)-1, -1):
+                for i in range(-1, -len(cs)-1, -1):
                     if time >= cs[i][1]:
                         (n, tran), t, w = cs[i]
                         break
@@ -1055,7 +1055,7 @@ init -1598 python in _viewers:
                 time = renpy.store._viewers.current_time
 
             if prop == "child":
-                for i in xrange(-1, -len(cs)-1, -1):
+                for i in range(-1, -len(cs)-1, -1):
                     if time >= cs[i][1]:
                         return cs[i][0]
 
@@ -1063,7 +1063,7 @@ init -1598 python in _viewers:
                 if time % cs[-1][1] != 0:
                     time = time % cs[-1][1]
 
-            for i in xrange(1, len(cs)):
+            for i in range(1, len(cs)):
                 checkpoint = cs[i][1]
                 pre_checkpoint = cs[i-1][1]
                 if time < checkpoint:
@@ -1767,7 +1767,7 @@ init -1598 python in _viewers:
                                 last_time = 0.0
                                 string += """
         parallel:"""
-                                for i in xrange(0, len(image_keyframes["child"]), 1):
+                                for i in range(0, len(image_keyframes["child"]), 1):
                                     (image, transition), t, w = image_keyframes["child"][i]
                                     widget = None
                                     if i > 0:
@@ -1962,7 +1962,7 @@ init -1598 python in _viewers:
                             last_time = 0.0
                             string += """
         parallel:"""
-                            for i in xrange(0, len(image_keyframes["child"]), 1):
+                            for i in range(0, len(image_keyframes["child"]), 1):
                                 (image, transition), t, w = image_keyframes["child"][i]
                                 widget = None
                                 if i > 0:
