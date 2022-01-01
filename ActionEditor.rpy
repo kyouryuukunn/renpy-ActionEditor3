@@ -118,7 +118,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         if p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, force_int=True, edit_func=_viewers.camera_viewer.edit_value, change_func=f)]
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, force_int=True, edit_func=_viewers.camera_viewer.edit_value, change_func=f, range=_viewers.camera_viewer.int_range, int=True)]
                                 if isinstance(value, int):
                                     textbutton "[value]" action Function(_viewers.camera_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 else:
@@ -130,7 +130,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, edit_func=_viewers.camera_viewer.edit_value, change_func=f)]
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, edit_func=_viewers.camera_viewer.edit_value, change_func=f, range=_viewers.camera_viewer.float_range, int=False)]
                                 textbutton "[value:>.2f]" action Function(_viewers.camera_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=_viewers.camera_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
@@ -162,7 +162,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         elif p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True, edit_func=_viewers.transform_viewer.edit_value, change_func=f)]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True, edit_func=_viewers.transform_viewer.edit_value, change_func=f, range=_viewers.camera_viewer.int_range, int=True)]
                                 if isinstance(value, int):
                                     textbutton "[value]" action Function(_viewers.transform_viewer.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 else:
@@ -174,7 +174,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), edit_func=_viewers.transform_viewer.edit_value, change_func=f)]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), edit_func=_viewers.transform_viewer.edit_value, change_func=f, range=_viewers.camera_viewer.float_range, int=False)]
                                 textbutton "[value:>.2f]" action Function(_viewers.transform_viewer.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.transform_viewer.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=_viewers.transform_viewer.float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
@@ -215,6 +215,7 @@ init -1598:
         background None
     style action_editor_button:
         size_group "action_editor"
+        background None
         idle_background None
         insensitive_background None
     style action_editor_text:
@@ -264,7 +265,7 @@ screen _action_editor_option():
         text _("Allow/Disallow skipping animation in clipboard(*This doesn't work when the animation include loops and that tag is already shown)")
         textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
         text _("Enable/Disable simulating camera blur(This causes crash when perspective is False)")
-        textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, renpy.store._viewers.current_time)]
+        textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
         text _("Assign default warper")
         textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
         text _("Assign default transition(example: dissolve, Dissolve(5), None)")
@@ -322,7 +323,7 @@ screen _move_keyframes:
         bar adjustment ui.adjustment(range=_viewers.time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
-screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
+screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None, range=None, int):
     $check_points = _viewers.all_keyframes[k]
     if isinstance(k, tuple):
         $n, l, p = k
@@ -360,26 +361,74 @@ screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None):
         xfill True
         has vbox
         label _("KeyFrames") xalign .5
-        for v, t, w in check_points:
+        for i, (v, t, w) in enumerate(check_points):
             if t != 0:
                 hbox:
-                    textbutton _("x") action [Function(_viewers.remove_keyframe, remove_time=t, key=k_list), renpy.restart_interaction] background None
+                    textbutton _("x") action [Function(_viewers.remove_keyframe, remove_time=t, key=k_list), renpy.restart_interaction] size_group None
                     if p == "child":
                         textbutton "[v[0]]" action Function(_viewers.transform_viewer.change_child, l, n, time=t, default=v[0]) size_group None
-                        textbutton "with" action None size_group None background None
+                        textbutton "with" action None size_group None
                         textbutton "[v[1]]" action Function(_viewers.transform_viewer.edit_transition, l, n, time=t) size_group None
                     else:
-                        textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t)]
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                    textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, check_points=check_points_list, old=t)
-                    bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, check_points=check_points_list)) xalign 1. yalign .5 style "action_editor_bar"
+                        textbutton _("spline") action [SelectedIf(t in _viewers.splines[k]), Show("_spline_editor", edit_func=edit_func, change_func=change_func, key=k, prop=p, pre=check_points[i-1], post=check_points[i], default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t, range=range, int=int)]
+                        textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t), Function(_viewers.change_time, t)]
+                    textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
+                    bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)) xalign 1. yalign .5 style "action_editor_bar"
         hbox:
             textbutton _("loop") action loop_button_action
             textbutton _("close") action Hide("_edit_keyframe") xalign .98
 
+screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, force_int, force_plus, time, range, int):
+
+    modal True
+    key "game_menu" action Hide("_spline_editor")
+    $cs = _viewers.all_keyframes[key]
+    if not force_plus:
+        default old_v = post[0] + range
+    else:
+        default old_v = post[0]
+    on "show" action [Function(_viewers.change_time, time)]
+    on "hide" action [Function(change_func, old_v), Function(_viewers.change_time, time)]
+    if int:
+        $_page = 0.05
+    else:
+        $_page = 1
+
+    frame:
+        style_group "spline_editor"
+        xfill True
+        has vbox
+        label _("spline_editor") xalign .5
+        hbox:
+            text " "
+            text "Start"
+            text "[pre[0]]"
+        if time in _viewers.splines[key]:
+            for i, v in enumerate(_viewers.splines[key][time]):
+                hbox:
+                    textbutton _("x") action [Function(_viewers.remove_knot, key, time, i), renpy.restart_interaction] size_group None
+                    text "Knot"+"[i]"
+                    textbutton "{}".format(v) action [Function(edit_func, renpy.curry(change_func)(time=time, knot_number=i), default=v, force_int=force_int, force_plus=force_plus, time=time)]
+                    if force_plus:
+                        $_range = range
+                        $_v = v
+                    else:
+                        $_range = range*2
+                        $_v = v + range
+                    bar adjustment ui.adjustment(range=_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)) xalign 1. yalign .5 style "action_editor_bar"
+        textbutton _("+") action [Function(_viewers.add_knot, key, time, pre[0]), renpy.restart_interaction]
+        hbox:
+            text " "
+            text "End"
+            text "[post[0]]"
+        hbox:
+            textbutton _("close") action Hide("_spline_editor") xalign .98
+
 init -1598:
     style action_editor_modal_frame background "#000D"
     style action_editor_modal_text is action_editor_text
+    style action_editor_modal_buttton is action_editor_button
     style action_editor_modal_buttton_text is action_editor_button_text
 
     style action_editor_input_frame xfill True ypos .1 xmargin .05 ymargin .05 background "#000B"
@@ -390,6 +439,13 @@ init -1598:
     style action_editor_subscreen_frame is action_editor_modal_frame
     style action_editor_subscreen_text is action_editor_modal_text
     style action_editor_subscreen_button_text is action_editor_modal_buttton_text
+    style action_editor_subscreen_button:
+        size_group "action_editor_subscreen"
+
+    style spline_editor_frame is action_editor_modal_frame
+    style spline_editor_text is action_editor_modal_text size_group "spline_editor"
+    style spline_editor_button is action_editor_modal_button size_group "spline_editor"
+    style spline_editor_button_text is action_editor_modal_button_text
 
 
 init -1098 python:
@@ -623,12 +679,13 @@ init -1598 python in _viewers:
                                 blur = self.get_default("blur")
                             check_points["blur"] = [(blur, 0, None)]
                     loop = {prop+"_loop": loops[(name, layer, prop)] for prop, d in self.props}
+                    spline = {prop+"_spline": splines[(name, layer, prop)] for prop, d in self.props}
                     if play:
-                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop))], layer=layer)
+                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline))], layer=layer)
                     else:
-                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.current_time))], layer=layer)
+                        renpy.show(name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time))], layer=layer)
 
-        def transform(self, tran, st, at, check_points, loop, subpixel=True, crop_relative=True, time=None):
+        def transform(self, tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None):
             # check_points = { prop: [ (value, time, warper).. ] }
             if subpixel is not None:
                 tran.subpixel = subpixel
@@ -661,9 +718,18 @@ init -1598 python in _viewers:
                             default = self.get_default(p)
                             if goal[0] is not None:
                                 if start[0] is None:
-                                    v = g*(goal[0]-default)+default
+                                    start_v = default
                                 else:
-                                    v = g*(goal[0]-start[0])+start[0]
+                                    start_v = start[0]
+                                knots = []
+                                if checkpoint in spline[p+"_spline"]:
+                                    knots = spline[p+"_spline"][checkpoint]
+                                    if knots:
+                                        knots = [start_v] + knots + [goal[0]]
+                                if knots:
+                                    v = renpy.atl.interpolate_spline(g, knots)
+                                else:
+                                    v = g*(goal[0]-start_v)+start_v
                                 if isinstance(goal[0], int) and p not in force_float:
                                     v = int(v)
                                 for gn, ps in props_groups.items():
@@ -801,7 +867,7 @@ init -1598 python in _viewers:
 
         def generate_changed(self, layer, name, prop):
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
-            def changed(v, time=None):
+            def changed(v, time=None, knot_number=None):
                 if time is None:
                     time = renpy.store._viewers.current_time
                 default = self.get_default(prop)
@@ -821,6 +887,8 @@ init -1598 python in _viewers:
                         v = round(v -self.float_range, 2)
 
                 self.set_keyframe(layer, name, prop, v, time=time)
+                if knot_number is not None:
+                    splines[(name, layer, prop)][time][knot_number] = v
                 change_time(time)
             return changed
 
@@ -1076,15 +1144,31 @@ init -1598 python in _viewers:
                     default_vault = self.get_default(prop)
                     if goal[0] is not None:
                         if start[0] is None:
-                            v = g*(goal[0]-default_vault)+default_vault
+                            start_v = default_vault
                         else:
-                            v = g*(goal[0]-start[0])+start[0]
+                            start_v = start[0]
+                        knots = []
+                        if checkpoint in splines[key]:
+                            knots = splines[key][checkpoint]
+                            if knots:
+                                knots = [start_v] + knots + [goal[0]]
+                        if knots:
+                            v = renpy.atl.interpolate_spline(g, knots)
+                        else:
+                            v = g*(goal[0]-start_v)+start_v
                         if isinstance(goal[0], int) and prop not in force_float:
                             v = int(v)
                         return v
                     break
             else:
                 return cs[-1][0]
+
+        def sort_props(self, dict):
+            result = []
+            for p in sort_ref_list:
+                if p in dict:
+                    result.append((p, dict[p]))
+            return result
 
     transform_viewer = TransformViewer()
 
@@ -1183,14 +1267,15 @@ init -1598 python in _viewers:
                 if p in check_points:
                     del check_points[p]
             loop = {prop+"_loop": loops[prop] for prop, d in self.props}
+            spline = {prop+"_spline": splines[prop] for prop, d in self.props}
             if play:
-                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop)), camera=True)
+                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline)), camera=True)
             else:
-                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, time=renpy.store._viewers.current_time)), camera=True)
+                renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time)), camera=True)
 
         def generate_changed(self, prop):
             value_org = self.state_org[prop]
-            def changed(v, time=None):
+            def changed(v, time=None, knot_number=None):
                 if time is None:
                     time = renpy.store._viewers.current_time
                 default = self.get_default(prop)
@@ -1218,6 +1303,8 @@ init -1598 python in _viewers:
                                 transform_viewer.generate_changed(l, n, "dof")(v, time=time)
                             elif prop == "focusing":
                                 transform_viewer.generate_changed(l, n, "focusing")(v, time=time)
+                if knot_number is not None:
+                    splines[prop][time][knot_number] = v
                 change_time(time)
             return changed
 
@@ -1407,6 +1494,7 @@ init -1598 python in _viewers:
     ##########################################################################
     moved_time = 0
     loops = defaultdict(lambda:False)
+    splines = defaultdict(lambda:{})
     all_keyframes = {}
     sorted_keyframes = []
 
@@ -1422,17 +1510,16 @@ init -1598 python in _viewers:
                         break
         renpy.restart_interaction()
 
-    def edit_move_keyframe(check_points, old):
+    def edit_move_keyframe(keys, old):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=old)
         if v:
             try:
                 v = renpy.python.py_eval(v)
                 if v < 0:
                     return
-                if not isinstance(check_points[0], list):
-                    check_points = [check_points]
-                for cs in check_points:
-                    move_keyframe(v, old, cs)
+                if not isinstance(keys, list):
+                    keys = [keys]
+                move_keyframe(v, old, keys)
             except:
                 renpy.notify(_("Please type value"))
 
@@ -1517,6 +1604,8 @@ init -1598 python in _viewers:
                         if remove_time != 0 or (remove_time == 0 and len(all_keyframes[k]) == 1):
                             remove_list.append((v, t, w))
             for c in remove_list:
+                if c[1] in splines[k]:
+                    del splines[k][c[1]]
                 all_keyframes[k].remove(c)
                 if not all_keyframes[k]:
                     del all_keyframes[k]
@@ -1539,14 +1628,17 @@ init -1598 python in _viewers:
     def move_all_keyframe(new, old):
         global moved_time
         moved_time = round(new, 2)
-        all_cs = [v for v in all_keyframes.values()]
-        move_keyframe(new, old, all_cs)
+        k_list = [k for k in all_keyframes.keys()]
+        move_keyframe(new, old, k_list)
 
-    def move_keyframe(new, old, check_points):
+    def move_keyframe(new, old, keys):
         new = round(new, 2)
-        if not isinstance(check_points[0], list):
-            check_points = [check_points]
-        for cs in check_points:
+        if new == old:
+            return
+        if not isinstance(keys, list):
+            keys = [keys]
+        for k in keys:
+            cs = all_keyframes[k]
             for i, c in enumerate(cs):
                 if c[1] == old:
                     (value, time, warper) = cs.pop(i)
@@ -1558,6 +1650,10 @@ init -1598 python in _viewers:
                         cs.append((value, new, warper))
                     if old == 0 and new != 0:
                         cs.insert(0, (value, 0, renpy.store.persistent._viewer_warper))
+                    if old in splines[k]:
+                        knots = splines[k][old]
+                        splines[k][new] = knots
+                        del splines[k][old]
         sort_keyframes()
         renpy.restart_interaction()
 
@@ -1569,6 +1665,18 @@ init -1598 python in _viewers:
             if c[1] == current_time:
                 return True
         return False
+
+    def add_knot(key, time, default):
+        if time in splines[key]:
+            splines[key][time].append(default)
+        else:
+            splines[key][time] = [default]
+
+    def remove_knot(key, time, i):
+        if time in splines[key]:
+            splines[key][time].pop(i)
+            if not splines[key][time]:
+                del splines[key][time]
 
     def change_time(v):
         global current_time
@@ -1584,6 +1692,7 @@ init -1598 python in _viewers:
         current_time = 0
         moved_time = 0
         loops.clear()
+        splines.clear()
         clear_keyframes()
         if renpy.store.persistent._viewer_transition is None:
             renpy.store.persistent._viewer_transition = default_transition
@@ -1696,7 +1805,7 @@ init -1598 python in _viewers:
                 #アニメーションしないなら出力しなくてよいのでここでは不要
                 if p in camera_keyframes and len(camera_keyframes[p]) == 1:
                     string += "{} {} ".format(p, camera_keyframes[p][0][0])
-            for p, cs in camera_keyframes.items():
+            for p, cs in camera_viewer.sort_props(camera_keyframes):
                 if len(cs) > 1:
                     string += """
         parallel:"""
@@ -1705,6 +1814,9 @@ init -1598 python in _viewers:
                     for i, c in enumerate(cs[1:]):
                         string += """
             {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                        if c[1] in splines[p] and splines[p][c[1]]:
+                            for knot in splines[p][c[1]]:
+                                string += " knot {}".format(knot)
                     if loops[p]:
                         string += """
             repeat"""
@@ -1749,7 +1861,7 @@ init -1598 python in _viewers:
                             string += "{} {} ".format(p, image_keyframes[p][0][0])
                         if name in transform_viewer.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"] and p not in image_keyframes:
                             string += "{} {} ".format(p, transform_viewer.get_property(layer, name, p, False))
-                    for p, cs in image_keyframes.items():
+                    for p, cs in transform_viewer.sort_props(image_keyframes):
                         if p not in special_props:
                             if len(cs) > 1:
                                 string += """
@@ -1759,6 +1871,9 @@ init -1598 python in _viewers:
                                 for i, c in enumerate(cs[1:]):
                                     string += """
             {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                    if c[1] in splines[(name, layer, p)] and splines[(name, layer, p)][c[1]]:
+                                        for knot in splines[(name, layer, p)][c[1]]:
+                                            string += " knot {}".format(knot)
                                 if loops[(name,layer,p)]:
                                     string += """
             repeat"""
@@ -1848,14 +1963,14 @@ init -1598 python in _viewers:
         animation"""
                                     break
                             first = True
-                            for p, cs in camera_keyframes.items():
+                            for p, cs in camera_viewer.sort_props(camera_keyframes):
                                 if len(cs) > 1 and not loops[p]:
                                     if first:
                                         first = False
                                         string += """
         """
                                     string += "{} {} ".format(p, camera_keyframes[p][-1][0])
-                            for p, cs in camera_keyframes.items():
+                            for p, cs in camera_viewer.sort_props(camera_keyframes):
                                 if len(cs) > 1 and loops[p]:
                                     string += """
         parallel:"""
@@ -1863,8 +1978,12 @@ init -1598 python in _viewers:
             {} {}""".format(p, cs[0][0])
                                     for i, c in enumerate(cs[1:]):
                                         string += """
-            {} {} {} {}
-            repeat""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                        if c[1] in splines[p] and splines[p][c[1]]:
+                                            for knot in splines[p][c[1]]:
+                                                string += " knot {}".format(knot)
+                                    string += """
+            repeat"""
                             break
 
                 for layer in transform_viewer.state_org:
@@ -1917,7 +2036,7 @@ init -1598 python in _viewers:
         animation"""
                                 break
                         first = True
-                        for p, cs in image_keyframes.items():
+                        for p, cs in transform_viewer.sort_props(image_keyframes):
                             if p not in special_props:
                                 if len(cs) > 1 and not loops[(name, layer, p)]:
                                     if first:
@@ -1945,7 +2064,7 @@ init -1598 python in _viewers:
                                 else:
                                     string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
 
-                        for p, cs in image_keyframes.items():
+                        for p, cs in transform_viewer.sort_props(image_keyframes):
                             if p not in special_props:
                                 if len(cs) > 1 and loops[(name, layer, p)]:
                                     string += """
@@ -1955,6 +2074,9 @@ init -1598 python in _viewers:
                                     for i, c in enumerate(cs[1:]):
                                         string += """
             {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                        if c[1] in splines[(name, layer, p)] and splines[(name, layer, p)][c[1]]:
+                                            for knot in splines[(name, layer, p)][c[1]]:
+                                                string += " knot {}".format(knot)
                                     string += """
             repeat"""
 

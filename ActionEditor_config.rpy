@@ -144,3 +144,25 @@ init -1600 python in _viewers:
     ("contrast", 1.), 
     ("invert", 0.), 
     )
+
+    sort_ref_list = [
+    "child", 
+    "xpos", 
+    "xanchor", 
+    "xoffset", 
+    "ypos", 
+    "yanchor", 
+    "yoffset", 
+    "zpos", 
+    "matrixtransform", 
+    "matrixanchor", 
+    "rotate", 
+    "xzoom", 
+    "yzoom", 
+    "zoom", 
+    "crop", 
+    "alpha", 
+    "additive", 
+    "blur", 
+    "matrixcolor", 
+    ]
