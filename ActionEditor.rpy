@@ -640,6 +640,8 @@ init -1598 python in _viewers:
                     org = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[name][prop]
                     if org is None:
                         org = self.get_default(prop)
+                    if prop == "child" and name in self.state[layer]:
+                        org = (None, None)
                     all_keyframes[(name, layer, prop)] = [(org, 0, renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
             sort_keyframes()
             
@@ -1055,24 +1057,37 @@ init -1598 python in _viewers:
 
         def add_image(self, layer):
             name = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter")
+            state = {k: v2 for dic in [self.state_org[layer], self.state[layer]] for k, v2 in dic.items()}
+
             if not isinstance(name, tuple):
                 name = tuple(name.split())
             for n in renpy.display.image.images:
                 if set(n) == set(name):
-                    for n_org in self.state_org[layer]:
+                    for n_org in state:
                         tag = n_org.split()[0]
                         if tag == n[0]:
-                            renpy.notify(_("%s is already shown" % tag))
-                            return
-                    string = " ".join(n)
-                    self.state[layer][string] = {}
-                    renpy.show(string, layer=layer, at_list=[])
+                            for i in range(2, 999):
+                                for n_org2 in state:
+                                    if n[0]+str(i) == n_org2.split()[0]:
+                                        break
+                                else:
+                                    name = n[0]+str(i)+" "+" ".join(n[1:])
+                                    break
+                            else:
+                                renpy.notify(_("too many same tag images is used"))
+                                return
+                            break
+                    else:
+                        name = " ".join(n)
+                    image_name = " ".join(n)
+                    self.state[layer][name] = {}
+                    renpy.show(image_name, layer=layer, at_list=[], tag=name.split()[0])
                     for p, d in self.props:
                         if p == "child":
-                            self.state[layer][string][p] = (string, None)
-                            self.set_keyframe(layer, string, p, (string, renpy.store.persistent._viewer_transition))
+                            self.state[layer][name][p] = (image_name, None)
+                            self.set_keyframe(layer, name, p, (image_name, renpy.store.persistent._viewer_transition))
                         else:
-                            self.state[layer][string][p] = self.get_property(layer, string, p, False)
+                            self.state[layer][name][p] = self.get_property(layer, name, p, False)
                     change_time(current_time)
                     return
             else:
