@@ -95,7 +95,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                 textbutton _("<") action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
                 textbutton _("3Dstage") action [SelectedIf(tab == "3Dstage"), Show("_action_editor", tab="3Dstage")]
                 for n in page_list[page]:
-                    textbutton "{}".format(n.split()[0]) action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
+                    textbutton "{}".format(n) action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
                 textbutton _("+") action Function(_viewers.transform_viewer.add_image, layer)
                 textbutton _(">") action [SensitiveIf(len(page_list) != page+1), Show("_action_editor", tab=tab, layer=layer, page=page+1), renpy.restart_interaction]
 
@@ -114,7 +114,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                         if p in _viewers.props_groups["focusing"]:
                             for l in renpy.config.layers:
                                 $state={n: v for dic in [_viewers.transform_viewer.state_org[l], _viewers.transform_viewer.state[l]] for n, v in dic.items()}
-                                $reset_action += [Function(_viewers.transform_viewer.reset, (name, l, p)) for name in state]
+                                $reset_action += [Function(_viewers.transform_viewer.reset, (tag, l, p)) for tag in state]
                         if p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
@@ -503,23 +503,23 @@ init -1598 python in _viewers:
 
                     name = " ".join(image.name)
                     image_name = " ".join(image_name_tuple)
-                    self.state_org[layer][name] = {}
+                    self.state_org[layer][tag] = {}
 
                     pos = renpy.get_placement(d)
                     state = getattr(d, "state", None)
                     for p in ["xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"]:
-                        self.state_org[layer][name][p] = getattr(pos, p, None)
+                        self.state_org[layer][tag][p] = getattr(pos, p, None)
                     for p, default in self.props:
-                        if p not in self.state_org[layer][name]:
+                        if p not in self.state_org[layer][tag]:
                             if p == "child":
-                                self.state_org[layer][name][p] = (image_name, None)
+                                self.state_org[layer][tag][p] = (image_name, None)
                             else:
-                                self.state_org[layer][name][p] = getattr(state, p, None)
+                                self.state_org[layer][tag][p] = getattr(state, p, None)
                     for gn, ps in props_groups.items():
                         p2 = self.get_group_property(gn, getattr(d, gn, None))
                         if p2 is not None:
                             for p, v in zip(ps, p2):
-                                self.state_org[layer][name][p] = v
+                                self.state_org[layer][tag][p] = v
 
         def get_group_property(self, group_name, group):
             if group is None:
@@ -596,33 +596,33 @@ init -1598 python in _viewers:
             if not isinstance(key_list, list):
                 key_list = [key_list]
             for key in key_list:
-                name, layer, prop = key
+                tag, layer, prop = key
                 state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
                 kwargs = {}
                 for p, d in self.props:
-                    value = self.get_property(layer, name, p, False)
+                    value = self.get_property(layer, tag, p, False)
                     if value is not None:
                         kwargs[p] = value
                     # elif p != "rotate":
                     #     kwargs[p] = d
                     if p == prop:
-                        if state[name][prop] is not None:
-                            v = state[name][prop]
+                        if state[tag][prop] is not None:
+                            v = state[tag][prop]
                         else:
                             v = d
                 kwargs[prop] = v
                 #もともとNoneでNoneとデフォルトで結果が違うPropertyはリセット時にずれるが、デフォルの値で入力すると考えてキーフレーム設定した方が自然
-                self.set_keyframe(layer, name, prop, v)
+                self.set_keyframe(layer, tag, prop, v)
             change_time(current_time)
 
         def image_reset(self):
-            key_list = [(name, layer, prop) for layer in renpy.config.layers for name, props in {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}.items() for prop in props]
+            key_list = [(tag, layer, prop) for layer in renpy.config.layers for tag, props in {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}.items() for prop in props]
             self.reset(key_list)
 
-        def set_keyframe(self, layer, name, prop, value, recursion=False, time=None):
+        def set_keyframe(self, layer, tag, prop, value, recursion=False, time=None):
             if time is None:
                 time = renpy.store._viewers.current_time
-            keyframes = all_keyframes.get((name, layer, prop), [])
+            keyframes = all_keyframes.get((tag, layer, prop), [])
             if keyframes:
                 for i, (v, t, w) in enumerate(keyframes):
                     if time < t:
@@ -635,14 +635,14 @@ init -1598 python in _viewers:
                     keyframes.append((value, time, renpy.store.persistent._viewer_warper))
             else:
                 if time == 0:
-                    all_keyframes[(name, layer, prop)] = [(value, time, renpy.store.persistent._viewer_warper)]
+                    all_keyframes[(tag, layer, prop)] = [(value, time, renpy.store.persistent._viewer_warper)]
                 else:
-                    org = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[name][prop]
+                    org = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}[tag][prop]
                     if org is None:
                         org = self.get_default(prop)
-                    if prop == "child" and name in self.state[layer]:
+                    if prop == "child" and tag in self.state[layer]:
                         org = (None, None)
-                    all_keyframes[(name, layer, prop)] = [(org, 0, renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
+                    all_keyframes[(tag, layer, prop)] = [(org, 0, renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
             sort_keyframes()
             
             for gn, ps in props_groups.items():
@@ -650,16 +650,16 @@ init -1598 python in _viewers:
                 if prop in ps_set and gn != "focusing" and recursion == False:
                     ps_set.remove(prop)
                     for p in ps_set:
-                        self.set_keyframe(layer, name, p, self.get_property(layer, name, p), True, time=time)
+                        self.set_keyframe(layer, tag, p, self.get_property(layer, tag, p), True, time=time)
 
         def play(self, play):
             for layer in renpy.config.layers:
                 state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
-                for name in state:
+                for tag in state:
                     check_points = {}
                     for prop, d in self.props:
-                        if (name, layer, prop) in all_keyframes:
-                            check_points[prop] = all_keyframes[(name, layer, prop)]
+                        if (tag, layer, prop) in all_keyframes:
+                            check_points[prop] = all_keyframes[(tag, layer, prop)]
                     # if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
                     #     continue
                     #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
@@ -667,8 +667,8 @@ init -1598 python in _viewers:
                         group_flag = False
                         for prop in ps:
                             if not prop in check_points:
-                                if state[name].get(prop, None) is not None:
-                                    v = state[name][prop]
+                                if state[tag].get(prop, None) is not None:
+                                    v = state[tag][prop]
                                 else:
                                     v = self.get_default(prop)
                                 check_points[prop] = [(v, 0, None)]
@@ -688,17 +688,17 @@ init -1598 python in _viewers:
                             if p in check_points:
                                 del check_points[p]
                         if "blur" not in check_points:
-                            blur = state[name].get("blur", None)
+                            blur = state[tag].get("blur", None)
                             if blur is None:
                                 blur = self.get_default("blur")
                             check_points["blur"] = [(blur, 0, None)]
-                    loop = {prop+"_loop": loops[(name, layer, prop)] for prop, d in self.props}
-                    spline = {prop+"_spline": splines[(name, layer, prop)] for prop, d in self.props}
-                    image_name = state[name]["child"][0]
+                    loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in self.props}
+                    spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in self.props}
+                    image_name = state[tag]["child"][0]
                     if play:
-                        renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline))], layer=layer, tag=name.split()[0])
+                        renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline))], layer=layer, tag=tag)
                     else:
-                        renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time))], layer=layer, tag=name.split()[0])
+                        renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time))], layer=layer, tag=tag)
 
         def transform(self, tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None):
             # check_points = { prop: [ (value, time, warper).. ] }
@@ -880,14 +880,14 @@ init -1598 python in _viewers:
 
             return 0
 
-        def generate_changed(self, layer, name, prop):
+        def generate_changed(self, layer, tag, prop):
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
             def changed(v, time=None, knot_number=None):
                 if time is None:
                     time = renpy.store._viewers.current_time
                 default = self.get_default(prop)
-                if prop not in force_float and (prop in force_int_range or ( (state[name][prop] is None and isinstance(default, int)) or isinstance(state[name][prop], int) )):
-                    if isinstance(self.get_property(layer, name, prop), float) and prop in force_int_range:
+                if prop not in force_float and (prop in force_int_range or ( (state[tag][prop] is None and isinstance(default, int)) or isinstance(state[tag][prop], int) )):
+                    if isinstance(self.get_property(layer, tag, prop), float) and prop in force_int_range:
                         if prop in force_plus:
                             v = float(v)
                         else:
@@ -901,14 +901,13 @@ init -1598 python in _viewers:
                     else:
                         v = round(v -self.float_range, 2)
 
-                self.set_keyframe(layer, name, prop, v, time=time)
+                self.set_keyframe(layer, tag, prop, v, time=time)
                 if knot_number is not None:
-                    splines[(name, layer, prop)][time][knot_number] = v
+                    splines[(tag, layer, prop)][time][knot_number] = v
                 change_time(time)
             return changed
 
-        def get_property(self, layer, name, prop, default=True):
-            tag = name.split()[0]
+        def get_property(self, layer, tag, prop, default=True):
             sle = renpy.game.context().scene_lists
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
 
@@ -917,20 +916,20 @@ init -1598 python in _viewers:
                 #get_group_property can't return correct vault if a MatrixRotate argument is other than 0~90deg.
                 for gn, ps in props_groups.items():
                     if prop in ps:
-                        if (name, layer, prop) in all_keyframes:
-                            return self.get_value((name, layer, prop))
-                        elif prop in state[name] and state[name][prop] is not None:
-                            return state[name][prop]
+                        if (tag, layer, prop) in all_keyframes:
+                            return self.get_value((tag, layer, prop))
+                        elif prop in state[tag] and state[tag][prop] is not None:
+                            return state[tag][prop]
                         elif default:
                             return self.get_default(prop)
                         else:
                             return None
                 else:
                     if prop == "child":
-                        if (name, layer, prop) in all_keyframes:
-                            return self.get_value((name, layer, prop))
+                        if (tag, layer, prop) in all_keyframes:
+                            return self.get_value((tag, layer, prop))
                         else:
-                            return state[name][prop][0], None
+                            return state[tag][prop][0], None
                     pos = renpy.get_placement(d)
                     value = getattr(pos, prop, None)
                     if value is None:
@@ -942,22 +941,22 @@ init -1598 python in _viewers:
                     return value
             return None
 
-        def put_clipboard(self, name, layer):
+        def put_clipboard(self, tag, layer):
             group_cache = defaultdict(lambda:{})
             group_flag = {}
             state = {k: v for dic in [self.state_org[layer], self.state[layer]] for k, v in dic.items()}
 
             for gn, ps in props_groups.items():
                 group_flag[gn] = False
-            child = state[name]["child"][0]
+            child = state[tag]["child"][0]
             string = """
     show %s""" % child
-            if name.split()[0] != child.split()[0]:
-                    string += " as %s" % name.split()[0]
+            if tag != child.split()[0]:
+                    string += " as %s" % tag
             if layer != "master":
                     string += " onlayer %s" % layer
             for p, d in self.props:
-                value = self.get_property(layer, name, p)
+                value = self.get_property(layer, tag, p)
                 for gn, ps in props_groups.items():
                     if p in ps:
                         if value != d:
@@ -984,8 +983,8 @@ init -1598 python in _viewers:
                         break
                 else:
                     if p not in special_props:
-                        value = self.get_property(layer, name, p, False)
-                        if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing) or (name in self.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
+                        value = self.get_property(layer, tag, p, False)
+                        if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing) or (tag in self.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                             if string.find(":") < 0:
                                 string += ":\n        "
                             string += "%s %s " % (p, value)
@@ -1038,19 +1037,19 @@ init -1598 python in _viewers:
                 return
             renpy.notify(_("Please Input Transition"))
 
-        def edit_transition(self, layer, name, time=None):
+        def edit_transition(self, layer, tag, time=None):
             if time is None:
                 time = renpy.store._viewers.current_time
             v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
             if v:
                 if v == "None":
                     v = None
-                cs = all_keyframes[(name, layer, "child")]
+                cs = all_keyframes[(tag, layer, "child")]
                 for i in range(-1, -len(cs)-1, -1):
                     if time >= cs[i][1]:
                         (n, tran), t, w = cs[i]
                         break
-                self.set_keyframe(layer, name, "child", (n, v), time=time)
+                self.set_keyframe(layer, tag, "child", (n, v), time=time)
                 change_time(time)
                 return
             renpy.notify(_("Please Input Transition"))
@@ -1063,12 +1062,11 @@ init -1598 python in _viewers:
                 name = tuple(name.split())
             for n in renpy.display.image.images:
                 if set(n) == set(name):
-                    for n_org in state:
-                        tag = n_org.split()[0]
+                    for tag in state:
                         if tag == n[0]:
                             for i in range(2, 999):
-                                for n_org2 in state:
-                                    if n[0]+str(i) == n_org2.split()[0]:
+                                for tag2 in state:
+                                    if n[0]+str(i) == tag2:
                                         break
                                 else:
                                     name = n[0]+str(i)+" "+" ".join(n[1:])
@@ -1080,24 +1078,25 @@ init -1598 python in _viewers:
                     else:
                         name = " ".join(n)
                     image_name = " ".join(n)
-                    self.state[layer][name] = {}
-                    renpy.show(image_name, layer=layer, at_list=[], tag=name.split()[0])
+                    added_tag = name.split()[0]
+                    self.state[layer][added_tag] = {}
+                    renpy.show(image_name, layer=layer, at_list=[], tag=added_tag)
                     for p, d in self.props:
                         if p == "child":
-                            self.state[layer][name][p] = (image_name, None)
-                            self.set_keyframe(layer, name, p, (image_name, renpy.store.persistent._viewer_transition))
+                            self.state[layer][added_tag][p] = (image_name, None)
+                            self.set_keyframe(layer, added_tag, p, (image_name, renpy.store.persistent._viewer_transition))
                         else:
-                            self.state[layer][name][p] = self.get_property(layer, name, p, False)
+                            self.state[layer][added_tag][p] = self.get_property(layer, added_tag, p, False)
                     change_time(current_time)
                     return
             else:
                 renpy.notify(_("Please type image name"))
                 return
 
-        def change_child(self, layer, name, time=None, default=None):
+        def change_child(self, layer, tag, time=None, default=None):
             org = default
             if org is None:
-                default = name
+                default = tag
             new_image = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
             if not isinstance(new_image, tuple): #press button
                 new_image = tuple(new_image.split())
@@ -1106,35 +1105,35 @@ init -1598 python in _viewers:
                     if org is not None and set(new_image) == set(org.split()):
                         return
                     string = " ".join(n)
-                    self.set_keyframe(layer, name, "child", (string, renpy.store.persistent._viewer_transition), time=time)
+                    self.set_keyframe(layer, tag, "child", (string, renpy.store.persistent._viewer_transition), time=time)
                     return
             else:
                 if new_image and new_image[0] == "None" and org is not None:
-                    self.set_keyframe(layer, name, "child", (None, renpy.store.persistent._viewer_transition), time=time)
+                    self.set_keyframe(layer, tag, "child", (None, renpy.store.persistent._viewer_transition), time=time)
                     return
                 renpy.notify(_("Please type image name"))
                 return
 
-        # def get_zzoom(self, name, layer):
+        # def get_zzoom(self, tag, layer):
         #     state={n: v for dic in [self.state_org[layer], self.state[layer]] for n, v in dic.items()}
-        #     zzoom = state[name]["zzoom"]
-        #     if (name, layer, "zzoom") in all_keyframes:
-        #         zzoom = all_keyframes[name, layer, "zzoom"][0][0]
+        #     zzoom = state[tag]["zzoom"]
+        #     if (tag, layer, "zzoom") in all_keyframes:
+        #         zzoom = all_keyframes[tag, layer, "zzoom"][0][0]
         #     return zzoom
         #
-        # def toggle_zzoom(self, name, layer):
-        #     zzoom = self.get_zzoom(name, layer)
-        #     self.set_keyframe(layer, name, "zzoom", not zzoom, time=0)
+        # def toggle_zzoom(self, tag, layer):
+        #     zzoom = self.get_zzoom(tag, layer)
+        #     self.set_keyframe(layer, tag, "zzoom", not zzoom, time=0)
         #     change_time(current_time)
 
-        def remove_image(self, layer, name):
-            renpy.hide(name, layer)
-            del self.state[layer][name]
-            self.remove_keyframes(name, layer)
+        def remove_image(self, layer, tag):
+            renpy.hide(tag, layer)
+            del self.state[layer][tag]
+            self.remove_keyframes(tag, layer)
             sort_keyframes()
 
-        def remove_keyframes(self, layer, name):
-            for k in [k for k in all_keyframes if isinstance(k, tuple) and k[0] == name and k[1] == layer]:
+        def remove_keyframes(self, layer, tag):
+            for k in [k for k in all_keyframes if isinstance(k, tuple) and k[0] == tag and k[1] == layer]:
                 del all_keyframes[k]
 
         def get_default(self, prop):
@@ -1840,8 +1839,8 @@ init -1598 python in _viewers:
 
         for layer in transform_viewer.state_org:
             state = {k: v for dic in [transform_viewer.state_org[layer], transform_viewer.state[layer]] for k, v in dic.items()}
-            for name, value_org in state.items():
-                image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == name and k[1] == layer}
+            for tag, value_org in state.items():
+                image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                 image_keyframes = set_group_keyframes(image_keyframes)
                 if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                     del image_keyframes["blur"]
@@ -1855,8 +1854,8 @@ init -1598 python in _viewers:
                     else:
                         if p not in special_props:
                             image_properties.append(p)
-                if image_keyframes or renpy.store.persistent._viewer_focusing or name in transform_viewer.state[layer]:
-                    image_name = state[name]["child"][0]
+                if image_keyframes or renpy.store.persistent._viewer_focusing or tag in transform_viewer.state[layer]:
+                    image_name = state[tag]["child"][0]
                     if "child" in image_keyframes:
                         last_child = image_keyframes["child"][-1][0][0]
                         if last_child is not None:
@@ -1865,11 +1864,11 @@ init -1598 python in _viewers:
                                 image_name = last_child
                     string += """
     show {}""".format(image_name)
-                    if image_name.split()[0] != name.split()[0]:
-                        string += " as {}".format(name.split()[0])
+                    if image_name.split()[0] != tag:
+                        string += " as {}".format(tag)
                     if layer != "master":
                         string += " onlayer {}".format(layer)
-                    if name in transform_viewer.state[layer]:
+                    if tag in transform_viewer.state[layer]:
                         string += " at default"
                     string += """:
         subpixel True """
@@ -1878,8 +1877,8 @@ init -1598 python in _viewers:
                     for p in image_properties:
                         if p in image_keyframes and len(image_keyframes[p]) == 1:
                             string += "{} {} ".format(p, image_keyframes[p][0][0])
-                        if name in transform_viewer.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"] and p not in image_keyframes:
-                            string += "{} {} ".format(p, transform_viewer.get_property(layer, name, p, False))
+                        if tag in transform_viewer.state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"] and p not in image_keyframes:
+                            string += "{} {} ".format(p, transform_viewer.get_property(layer, tag, p, False))
                     for p, cs in transform_viewer.sort_props(image_keyframes):
                         if p not in special_props:
                             if len(cs) > 1:
@@ -1890,10 +1889,10 @@ init -1598 python in _viewers:
                                 for i, c in enumerate(cs[1:]):
                                     string += """
             {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
-                                    if c[1] in splines[(name, layer, p)] and splines[(name, layer, p)][c[1]]:
-                                        for knot in splines[(name, layer, p)][c[1]]:
+                                    if c[1] in splines[(tag, layer, p)] and splines[(tag, layer, p)][c[1]]:
+                                        for knot in splines[(tag, layer, p)][c[1]]:
                                             string += " knot {}".format(knot)
-                                if loops[(name,layer,p)]:
+                                if loops[(tag,layer,p)]:
                                     string += """
             repeat"""
                         else:
@@ -1941,7 +1940,7 @@ init -1598 python in _viewers:
                                             delay = getattr(transition, "args")[0]
                                         t += delay
                                     last_time = t
-                                if loops[(name,layer,p)]:
+                                if loops[(tag,layer,p)]:
                                     string += """
             repeat"""
                     if renpy.store.persistent._viewer_focusing:
@@ -2007,8 +2006,8 @@ init -1598 python in _viewers:
 
                 for layer in transform_viewer.state_org:
                     state = {k: v for dic in [transform_viewer.state_org[layer], transform_viewer.state[layer]] for k, v in dic.items()}
-                    for name, value_org in state.items():
-                        image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == name and k[1] == layer}
+                    for tag, value_org in state.items():
+                        image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                         image_keyframes = set_group_keyframes(image_keyframes)
                         if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                             del image_keyframes["blur"]
@@ -2031,35 +2030,35 @@ init -1598 python in _viewers:
                         else:
                             continue
 
-                        image_name = state[name]["child"][0]
+                        image_name = state[tag]["child"][0]
                         if "child" in image_keyframes:
                             last_child = image_keyframes["child"][-1][0][0]
                             if last_child is not None:
                                 last_tag = last_child.split()[0]
-                                if last_tag == name.split()[0]:
+                                if last_tag == tag:
                                     image_name = last_child
                         string += """
     show {}""".format(image_name)
-                        if image_name.split()[0] != name.split()[0]:
-                            string += " as {}".format(name.split()[0])
+                        if image_name.split()[0] != tag:
+                            string += " as {}".format(tag)
                         if layer != "master":
                             string += " onlayer {}".format(layer)
 
                         for p, cs in image_keyframes.items():
-                            if len(cs) > 1 and (p != "child" or loops[(name, layer, "child")]):
+                            if len(cs) > 1 and (p != "child" or loops[(tag, layer, "child")]):
                                 break
                         else:
                             continue
                         string += ":"
                         for p, cs in image_keyframes.items():
-                            if len(cs) > 1 and loops[(name, layer, p)]:
+                            if len(cs) > 1 and loops[(tag, layer, p)]:
                                 string += """
         animation"""
                                 break
                         first = True
                         for p, cs in transform_viewer.sort_props(image_keyframes):
                             if p not in special_props:
-                                if len(cs) > 1 and not loops[(name, layer, p)]:
+                                if len(cs) > 1 and not loops[(tag, layer, p)]:
                                     if first:
                                         first = False
                                         string += """
@@ -2087,7 +2086,7 @@ init -1598 python in _viewers:
 
                         for p, cs in transform_viewer.sort_props(image_keyframes):
                             if p not in special_props:
-                                if len(cs) > 1 and loops[(name, layer, p)]:
+                                if len(cs) > 1 and loops[(tag, layer, p)]:
                                     string += """
         parallel:"""
                                     string += """
@@ -2095,13 +2094,13 @@ init -1598 python in _viewers:
                                     for i, c in enumerate(cs[1:]):
                                         string += """
             {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
-                                        if c[1] in splines[(name, layer, p)] and splines[(name, layer, p)][c[1]]:
-                                            for knot in splines[(name, layer, p)][c[1]]:
+                                        if c[1] in splines[(tag, layer, p)] and splines[(tag, layer, p)][c[1]]:
+                                            for knot in splines[(tag, layer, p)][c[1]]:
                                                 string += " knot {}".format(knot)
                                     string += """
             repeat"""
 
-                        if "child" in image_keyframes and loops[(name,layer,"child")]:
+                        if "child" in image_keyframes and loops[(tag,layer,"child")]:
                             last_time = 0.0
                             string += """
         parallel:"""
