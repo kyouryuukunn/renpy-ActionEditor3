@@ -230,7 +230,7 @@ init -1598:
         xminimum 110
     style action_editor_vbox xfill True
     style action_editor_bar is slider:
-        ysize 15
+        ysize 20
 
     style action_editor_a_button:
         take action_editor_button
@@ -377,8 +377,8 @@ screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None, rang
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=_viewers.time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)) xalign 1. yalign .5 style "action_editor_bar"
         hbox:
-            textbutton _("loop") action loop_button_action
-            textbutton _("close") action Hide("_edit_keyframe") xalign .98
+            textbutton _("loop") action loop_button_action size_group None
+            textbutton _("close") action Hide("_edit_keyframe") xalign .98 size_group None
 
 screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, force_int, force_plus, time, range, int):
 
@@ -445,7 +445,7 @@ init -1598:
     style action_editor_subscreen_frame is action_editor_modal_frame
     style action_editor_subscreen_text is action_editor_modal_text
     style action_editor_subscreen_button_text is action_editor_modal_button_text
-    style action_editor_subscreen_button:
+    style action_editor_subscreen_button is action_editor_modal_button:
         size_group "action_editor_subscreen"
 
     style spline_editor_frame is action_editor_modal_frame
