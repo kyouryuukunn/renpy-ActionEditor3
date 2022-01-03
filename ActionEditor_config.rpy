@@ -105,7 +105,7 @@ init -1600 python in _viewers:
     ("saturate", 1.), 
     ("contrast", 1.), 
     ("invert", 0.), 
-    # ("zzoom", False)
+    ("zzoom", False)
     )
 
     #perspetve competes crop

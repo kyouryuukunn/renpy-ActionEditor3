@@ -193,11 +193,11 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                     textbutton _("clipboard") action Function(_viewers.camera_viewer.put_clipboard)
                     textbutton _("reset") action [_viewers.camera_viewer.camera_reset, renpy.restart_interaction]
                 else:
-                    textbutton _("remove") action [SensitiveIf(tab in _viewers.transform_viewer.state[layer]), Show("_action_editor", tab="3Dstage", layer=layer, opened=opened, page=page), Function(_viewers.transform_viewer.remove_image, layer, tab)]
-                    # $state={n: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for n, v in dic.items()}
-                    # textbutton _("zzoom") action [SelectedIf(_viewers.transform_viewer.get_zzoom(tab, layer)), Function(_viewers.transform_viewer.toggle_zzoom, tab, layer)]
-                    textbutton _("clipboard") action Function(_viewers.transform_viewer.put_clipboard, tab, layer)
-                    textbutton _("reset") action [_viewers.transform_viewer.image_reset, renpy.restart_interaction]
+                    textbutton _("remove") action [SensitiveIf(tab in _viewers.transform_viewer.state[layer]), Show("_action_editor", tab="3Dstage", layer=layer, opened=opened, page=page), Function(_viewers.transform_viewer.remove_image, layer, tab)] size_group None
+                    $state={n: v for dic in [_viewers.transform_viewer.state_org[layer], _viewers.transform_viewer.state[layer]] for n, v in dic.items()}
+                    textbutton _("zzoom") action [SelectedIf(_viewers.transform_viewer.get_zzoom(tab, layer)), Function(_viewers.transform_viewer.toggle_zzoom, tab, layer)] size_group None
+                    textbutton _("clipboard") action Function(_viewers.transform_viewer.put_clipboard, tab, layer) size_group None
+                    textbutton _("reset") action [_viewers.transform_viewer.image_reset, renpy.restart_interaction] size_group None
 
     if not time:
         add _viewers.dragged
@@ -1114,17 +1114,17 @@ init -1598 python in _viewers:
                 renpy.notify(_("Please type image name"))
                 return
 
-        # def get_zzoom(self, tag, layer):
-        #     state={n: v for dic in [self.state_org[layer], self.state[layer]] for n, v in dic.items()}
-        #     zzoom = state[tag]["zzoom"]
-        #     if (tag, layer, "zzoom") in all_keyframes:
-        #         zzoom = all_keyframes[tag, layer, "zzoom"][0][0]
-        #     return zzoom
-        #
-        # def toggle_zzoom(self, tag, layer):
-        #     zzoom = self.get_zzoom(tag, layer)
-        #     self.set_keyframe(layer, tag, "zzoom", not zzoom, time=0)
-        #     change_time(current_time)
+        def get_zzoom(self, tag, layer):
+            state={n: v for dic in [self.state_org[layer], self.state[layer]] for n, v in dic.items()}
+            zzoom = state[tag]["zzoom"]
+            if (tag, layer, "zzoom") in all_keyframes:
+                zzoom = all_keyframes[tag, layer, "zzoom"][0][0]
+            return zzoom
+
+        def toggle_zzoom(self, tag, layer):
+            zzoom = self.get_zzoom(tag, layer)
+            self.set_keyframe(layer, tag, "zzoom", not zzoom, time=0)
+            change_time(current_time)
 
         def remove_image(self, layer, tag):
             renpy.hide(tag, layer)
