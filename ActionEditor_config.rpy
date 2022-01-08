@@ -146,7 +146,6 @@ init -1600 python in _viewers:
     )
 
     sort_ref_list = [
-    "child", 
     "xpos", 
     "xanchor", 
     "xoffset", 
