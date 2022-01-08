@@ -10,7 +10,6 @@
 # tab="images"/"3Dstage", layer="master",  
 screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
     $play_action = [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.camera_viewer.play, play=True), Function(_viewers.transform_viewer.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
-    key "game_menu" action Return()
     key "rollback"    action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")+100+_viewers.camera_viewer.int_range)
     key "rollforward" action Function(_viewers.camera_viewer.generate_changed("offsetZ"), _viewers.camera_viewer.get_property("offsetZ")-100+_viewers.camera_viewer.int_range)
     key "K_SPACE" action play_action
@@ -40,6 +39,10 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
 
     if time:
         timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
+        key "game_menu" action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
+        key "hide_windows" action NullAction()
+    else:
+        key "game_menu" action Return()
     #camera transformはget_properyで所得できるようになるまで時間差があるので定期更新する
     # かなり動作が重くなる
     # camera transform properties need some times until being allowed to get property so I update screen.
