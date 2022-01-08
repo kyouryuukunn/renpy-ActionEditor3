@@ -216,7 +216,7 @@ transform _no_show():
 
 init -1598:
     style action_editor_frame:
-        background None
+        background "#0003"
     style action_editor_button:
         size_group "action_editor"
         background None
