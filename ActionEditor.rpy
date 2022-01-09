@@ -3,6 +3,7 @@
 #再現条件不明
 #hideが動作しないときがある
 #ホイールが片側動作しない, warper選択画面でのスクロールもできなかった
+#childのみならばparallelなくてよい
 
 #既知の問題
 #colormatrix, transformmatrixは十分再現できない
@@ -1195,69 +1196,6 @@ init -1598 python in _viewers:
             else:
                 return cs[-1][0]
 
-        def sort_props(self, keyframes, layer=None, tag=None):
-            sorted = []
-            for p in sort_ref_list:
-                if p in keyframes:
-                    sorted.append((p, keyframes[p]))
-            return sorted
-
-        def put_prop_togetter(self, keyframes, layer=None, tag=None):
-            sorted = []
-            for p in sort_ref_list:
-                if p in keyframes:
-                    sorted.append((p, keyframes[p]))
-            result = []
-            already_added = []
-            for i, (p, cs) in enumerate(sorted):
-                same_time_set = []
-                if p in already_added or len(cs) == 1:
-                    continue
-                else:
-                    same_time_set = [(p, cs)]
-                    already_added.append(p)
-                    if layer is not None and tag is not None:
-                        key = (tag, layer, p)
-                    else:
-                        key = p
-                for (p2, cs2) in sorted[i+1:]:
-                    if p2 not in already_added and len(cs) == len(cs2):
-                        if layer is not None and tag is not None:
-                            key2 = (tag, layer, p2)
-                        else:
-                            key2 = p2
-                        if loops[key] != loops[key2]:
-                            continue
-                        for c1, c2 in zip(cs, cs2):
-                            if c1[1] != c2[1] or c1[2] != c2[2]:
-                                break
-                        else:
-                                same_time_set.append((p2, cs2))
-                                already_added.append(p2)
-                result.append(same_time_set)
-            # for g in result:
-            #     for xy, (x, y) in [("pos", ("xpos", "ypos")), ("anchor", ("xanchor", "yanchor")), ("offset", ("xoffset", "yoffset"))]:
-            #         if x in [p for p, cs in g] and y in [p for p, cs in g]:
-            #             if layer is not None and tag is not None:
-            #                 xkey = (tag, layer, x)
-            #                 ykey = (tag, layer, y)
-            #             else:
-            #                 xkey = x
-            #                 ykey = y
-            #             if splines[xkey] or splines[ykey]:
-            #                 continue
-            #             for xi in range(len(g)):
-            #                 if g[xi][0] == x:
-            #                     xcs = g[xi][1]
-            #                     break
-            #             for yi in range(len(g)):
-            #                 if g[yi][0] == x:
-            #                     ycs = g[yi][1]
-            #                     break
-            #             g[xi] = (xy, [((xc[0], yc[0]), xc[1], xc[2]) for xc, yc zip(xcs, ycs)])
-            #             g.pop(yi)
-            return result
-
     transform_viewer = TransformViewer()
 
     ##########################################################################
@@ -1847,6 +1785,90 @@ init -1598 python in _viewers:
             blur_amount = abs(blur_amount)
         return blur_amount
 
+    def sort_props(keyframes):
+        sorted = []
+        for p in sort_ref_list:
+            if p in keyframes:
+                sorted.append((p, keyframes[p]))
+        return sorted
+
+    def put_prop_togetter(keyframes, layer=None, tag=None):
+        sorted = []
+        for p in sort_ref_list:
+            if p in keyframes:
+                sorted.append((p, keyframes[p]))
+        result = []
+        already_added = []
+        for i, (p, cs) in enumerate(sorted):
+            same_time_set = []
+            if p in already_added or len(cs) == 1:
+                continue
+            else:
+                same_time_set = [(p, cs)]
+                already_added.append(p)
+                if layer is not None and tag is not None:
+                    key = (tag, layer, p)
+                else:
+                    key = p
+            for (p2, cs2) in sorted[i+1:]:
+                if p2 not in already_added and len(cs) == len(cs2):
+                    if layer is not None and tag is not None:
+                        key2 = (tag, layer, p2)
+                    else:
+                        key2 = p2
+                    if loops[key] != loops[key2]:
+                        continue
+                    for c1, c2 in zip(cs, cs2):
+                        if c1[1] != c2[1] or c1[2] != c2[2]:
+                            break
+                    else:
+                            same_time_set.append((p2, cs2))
+                            already_added.append(p2)
+            result.append(same_time_set)
+            for ks in result:
+                ks = x_and_y_to_xy(ks, layer=layer, tag=tag, check_spline=True)
+        return result
+
+    def x_and_y_to_xy(keyframe_list, layer=None, tag=None, check_spline=False, check_loop=False):
+        for xy, (x, y) in xygroup.items():
+            if x in [p for p, cs in keyframe_list] and y in [p for p, cs in keyframe_list]:
+                if layer is not None and tag is not None:
+                    xkey = (tag, layer, x)
+                    ykey = (tag, layer, y)
+                else:
+                    xkey = x
+                    ykey = y
+                if check_spline and (splines[xkey] or splines[ykey]):
+                # don't put together when propaerty has spline
+                    continue
+                if check_loop and (loops[xkey] != loops[ykey]):
+                    continue
+                for xi in range(len(keyframe_list)):
+                    if keyframe_list[xi][0] == x:
+                        xcs = keyframe_list[xi][1]
+                        break
+                for yi in range(len(keyframe_list)):
+                    if keyframe_list[yi][0] == y:
+                        ycs = keyframe_list[yi][1]
+                        break
+                xcs2 = xcs[:]
+                ycs2 = ycs[:]
+                if len(xcs) > len(ycs):
+                    for i in range(len(xcs)-len(ycs)):
+                        ycs2.append(ycs[-1])
+                if len(ycs) > len(xcs):
+                    for i in range(len(ycs)-len(xcs)):
+                        xcs2.append(xcs[-1])
+                keyframe_list[xi] = (xy, [((xc[0], yc[0]), xc[1], xc[2]) for xc, yc in zip(xcs2, ycs2)])
+                keyframe_list.pop(yi)
+        return keyframe_list
+
+    def xy_to_x(prop):
+        if prop in xygroup:
+            return xygroup[prop][0]
+        else:
+            return prop
+
     def put_clipboard():
         string = ""
         camera_keyframes = {k:v for k, v in all_keyframes.items() if not isinstance(k, tuple)}
@@ -1873,21 +1895,20 @@ init -1598 python in _viewers:
         subpixel True """
             if "crop" in camera_keyframes:
                 string += "{} {} ".format("crop_relative", True)
-            for p in camera_properties:
-                #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
-                #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
-                #rotateは設定されればキーフレームに入り、されてなければ問題ない
-                #アニメーションしないなら出力しなくてよいのでここでは不要
-                if p in camera_keyframes and len(camera_keyframes[p]) == 1:
-                    string += "{} {} ".format(p, camera_keyframes[p][0][0])
-            sorted = camera_viewer.put_prop_togetter(camera_keyframes)
+            #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
+            #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
+            #rotateは設定されればキーフレームに入り、されてなければ問題ない
+            #アニメーションしないなら出力しなくてよいのでここでは不要
+            for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
+                    string += "{} {} ".format(p, cs[0][0])
+            sorted = put_prop_togetter(camera_keyframes)
             if len(sorted):
-                if len(sorted) > 1 or loops[sorted[0][0][0]]:
+                if len(sorted) > 1 or loops[xy_to_x(sorted[0][0][0])]:
                     add_tab = "    "
                 else:
                     add_tab = ""
                 for same_time_set in sorted:
-                    if len(sorted) > 1 or loops[sorted[0][0][0]]:
+                    if len(sorted) > 1 or loops[xy_to_x(sorted[0][0][0])]:
                         string += """
         parallel:
             """
@@ -1902,10 +1923,10 @@ init -1598 python in _viewers:
         {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
                         for p2, cs2 in same_time_set:
                             string += "{} {} ".format(p2, cs2[i+1][0])
-                            if cs2[i+1][1] in splines[p2] and splines[p2][cs2[i+1][1]]:
-                                for knot in splines[p2][cs2[i+1][1]]:
+                            if cs2[i+1][1] in splines[xy_to_x(p2)] and splines[xy_to_x(p2)][cs2[i+1][1]]:
+                                for knot in splines[xy_to_x(p2)][cs2[i+1][1]]:
                                     string += " knot {} ".format(knot)
-                    if loops[p]:
+                    if loops[xy_to_x(p)]:
                         string += """
             repeat"""
 
@@ -1946,13 +1967,17 @@ init -1598 python in _viewers:
         subpixel True """
                     if "crop" in image_keyframes:
                         string += "{} {} ".format("crop_relative", True)
-                    for p in image_properties:
-                        if p in image_keyframes and len(image_keyframes[p]) == 1:
-                            string += "{} {} ".format(p, image_keyframes[p][0][0])
+                    for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes and len(image_keyframes[p]) == 1], layer, tag):
+                            string += "{} {} ".format(p, cs[0][0])
+                    sorted = put_prop_togetter(image_keyframes, layer, tag)
                     if "child" in image_keyframes:
-                        last_time = 0.0
-                        string += """
+                        if len(sorted) >= 1 or loops[(tag, layer, "child")] or renpy.store.persistent._viewer_focusing:
+                            add_tab = "    "
+                            string += """
         parallel:"""
+                        else:
+                            add_tab = ""
+                        last_time = 0.0
                         for i in range(0, len(image_keyframes["child"]), 1):
                             (image, transition), t, w = image_keyframes["child"][i]
                             widget = None
@@ -1974,16 +1999,16 @@ init -1598 python in _viewers:
                                 null = "Null({}, {})".format(w, h)
                             if (t - last_time) > 0:
                                 string += """
-            {}""".format(t-last_time)
+        {}{}""".format(add_tab, t-last_time)
                             if i == 0 and (image is not None and transition is not None):
                                 string += """
-            {}""".format(null)
+        {}{}""".format(add_tab, null)
                             if image is None:
                                 string += """
-            {}""".format(null)
+        {}{}""".format(add_tab, null)
                             else:
                                 string += """
-            '{}'""".format(image)
+        {}'{}'""".format(add_tab, image)
                             if transition is not None:
                                 string += " with {}".format(transition)
 
@@ -1996,14 +2021,13 @@ init -1598 python in _viewers:
                         if loops[(tag,layer,p)]:
                             string += """
             repeat"""
-                    sorted = transform_viewer.put_prop_togetter(image_keyframes, layer, tag)
                     if len(sorted):
-                        if len(sorted) > 1 or loops[sorted[0][0][0]] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
+                        if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
                             add_tab = "    "
                         else:
                             add_tab = ""
                         for same_time_set in sorted:
-                            if len(sorted) > 1 or loops[sorted[0][0][0]] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
+                            if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
                                 string += """
         parallel:"""
                             string += """
@@ -2016,10 +2040,10 @@ init -1598 python in _viewers:
         {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
                                 for p2, cs2 in same_time_set:
                                     string += "{} {} ".format(p2, cs2[i+1][0])
-                                    if cs2[i+1][1] in splines[(tag, layer, p2)] and splines[(tag, layer, p2)][cs2[i+1][1]]:
-                                        for knot in splines[(tag, layer, p2)][cs2[i+1][1]]:
+                                    if cs2[i+1][1] in splines[(tag, layer, xy_to_x(p2))] and splines[(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
+                                        for knot in splines[(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
                                             string += " knot {} ".format(knot)
-                            if loops[(tag,layer,p)]:
+                            if loops[(tag,layer,xy_to_x(p))]:
                                 string += """
             repeat"""
                     if renpy.store.persistent._viewer_focusing:
@@ -2046,7 +2070,7 @@ init -1598 python in _viewers:
 
         if renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0:
             string += """
-    pause {}""".format(get_animation_delay())
+    with Pause({})""".format(get_animation_delay())
             if renpy.store.persistent._viewer_allow_skip:
 
                 if camera_keyframes:
@@ -2060,14 +2084,14 @@ init -1598 python in _viewers:
         animation"""
                                     break
                             first = True
-                            for p, cs in camera_viewer.sort_props(camera_keyframes):
-                                if len(cs) > 1 and not loops[p]:
+                            for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
+                                if len(cs) > 1 and not loops[xy_to_x(p)]:
                                     if first:
                                         first = False
                                         string += """
         """
-                                    string += "{} {} ".format(p, camera_keyframes[p][-1][0])
-                            for p, cs in camera_viewer.sort_props(camera_keyframes):
+                                    string += "{} {} ".format(p, cs[-1][0])
+                            for p, cs in sort_props(camera_keyframes):
                                 if len(cs) > 1 and loops[p]:
                                     string += """
         parallel:"""
@@ -2135,14 +2159,14 @@ init -1598 python in _viewers:
         animation"""
                                 break
                         first = True
-                        for p, cs in transform_viewer.sort_props(image_keyframes):
+                        for p, cs in x_and_y_to_xy(sort_props(image_keyframes), layer, tag, check_loop=True):
                             if p not in special_props:
-                                if len(cs) > 1 and not loops[(tag, layer, p)]:
+                                if len(cs) > 1 and not loops[(tag, layer, xy_to_x(p))]:
                                     if first:
                                         first = False
                                         string += """
         """
-                                    string += "{} {} ".format(p, image_keyframes[p][-1][0])
+                                    string += "{} {} ".format(p, cs[-1][0])
 
                         if renpy.store.persistent._viewer_focusing:
                             focusing_cs = {"focusing":[(camera_viewer.get_default("focusing"), 0, None)], "dof":[(camera_viewer.get_default("dof"), 0, None)]}
@@ -2163,7 +2187,7 @@ init -1598 python in _viewers:
                                 else:
                                     string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
 
-                        for p, cs in transform_viewer.sort_props(image_keyframes):
+                        for p, cs in sort_props(image_keyframes):
                             if p not in special_props:
                                 if len(cs) > 1 and loops[(tag, layer, p)]:
                                     string += """
