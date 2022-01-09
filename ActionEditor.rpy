@@ -281,7 +281,8 @@ screen _action_editor_option():
         textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
         text _("Show/Hide window during animation in clipboard")
         textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
-        text _("Allow/Disallow skipping animation in clipboard(*This doesn't work when the animation include loops and that tag is already shown)")
+        text _("Allow/Disallow skipping animation in clipboard")
+        text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
         textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
         text _("Enable/Disable simulating camera blur(This causes crash when perspective is False)")
         textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
@@ -289,11 +290,11 @@ screen _action_editor_option():
         textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
         text _("Assign default transition(example: dissolve, Dissolve(5), None)")
         textbutton "[persistent._viewer_transition]" action _viewers.transform_viewer.edit_default_transition
-        text _("the int range of property bar")
+        text _("the int range of property bar(type int)")
         textbutton "[persistent._int_range]" action Function(_viewers.edit_range_value, persistent, "_int_range", True)
-        text _("the float range of property bar")
+        text _("the float range of property bar(type float)")
         textbutton "[persistent._float_range]" action Function(_viewers.edit_range_value, persistent, "_float_range", False)
-        text _("the time range of property bar")
+        text _("the time range of property bar(type float)")
         textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
 
         textbutton _("Return") action Hide("_action_editor_option") xalign .9
