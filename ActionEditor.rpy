@@ -117,7 +117,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
-                for p, d in _viewers.camera_viewer.props:
+                for p, d in _viewers.camera_props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or persistent._viewer_focusing):
                         $value = _viewers.camera_viewer.get_property(p)
                         $ f = _viewers.camera_viewer.generate_changed(p)
@@ -159,7 +159,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             style_group "action_editor"
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
-                for p, d in _viewers.transform_viewer.props:
+                for p, d in _viewers.transform_props:
                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((persistent._viewer_focusing and p != "blur") or (not persistent._viewer_focusing))):
                         $value = _viewers.transform_viewer.get_property(layer, tab, p)
                         $ f = _viewers.transform_viewer.generate_changed(layer, tab, p)
@@ -488,10 +488,6 @@ init -1598 python in _viewers:
 
     # TransformViewer
     class TransformViewer(object):
-        def __init__(self):
-
-            # ((property, default)...), default is used when property can't be got.
-            self.props = transform_props
 
         def init(self):
             if not renpy.config.developer:
@@ -526,7 +522,7 @@ init -1598 python in _viewers:
                     state = getattr(d, "state", None)
                     for p in ["xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"]:
                         self.image_state_org[layer][tag][p] = getattr(pos, p, None)
-                    for p, default in self.props:
+                    for p, default in transform_props:
                         if p not in self.image_state_org[layer][tag]:
                             if p == "child":
                                 self.image_state_org[layer][tag][p] = (image_name, None)
@@ -616,7 +612,7 @@ init -1598 python in _viewers:
                 tag, layer, prop = key
                 state = {k: v for dic in [self.image_state_org[layer], self.image_state[layer]] for k, v in dic.items()}
                 kwargs = {}
-                for p, d in self.props:
+                for p, d in transform_props:
                     value = self.get_property(layer, tag, p, False)
                     if value is not None:
                         kwargs[p] = value
@@ -674,7 +670,7 @@ init -1598 python in _viewers:
                 state = {k: v for dic in [self.image_state_org[layer], self.image_state[layer]] for k, v in dic.items()}
                 for tag in state:
                     check_points = {}
-                    for prop, d in self.props:
+                    for prop, d in transform_props:
                         if (tag, layer, prop) in all_keyframes:
                             check_points[prop] = all_keyframes[(tag, layer, prop)]
                     # if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
@@ -709,8 +705,8 @@ init -1598 python in _viewers:
                             if blur is None:
                                 blur = self.get_default("blur")
                             check_points["blur"] = [(blur, 0, None)]
-                    loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in self.props}
-                    spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in self.props}
+                    loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
+                    spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
                     image_name = state[tag]["child"][0]
                     if play:
                         renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline))], layer=layer, tag=tag)
@@ -983,7 +979,7 @@ init -1598 python in _viewers:
                     string += " as %s" % tag
             if layer != "master":
                     string += " onlayer %s" % layer
-            for p, d in self.props:
+            for p, d in transform_props:
                 value = self.get_property(layer, tag, p)
                 for gn, ps in props_groups.items():
                     if p in ps:
@@ -1109,7 +1105,7 @@ init -1598 python in _viewers:
                     added_tag = name.split()[0]
                     self.image_state[layer][added_tag] = {}
                     renpy.show(image_name, layer=layer, at_list=[], tag=added_tag)
-                    for p, d in self.props:
+                    for p, d in transform_props:
                         if p == "child":
                             self.image_state[layer][added_tag][p] = (image_name, None)
                             self.set_keyframe(layer, added_tag, p, (image_name, renpy.store.persistent._viewer_transition))
@@ -1165,7 +1161,7 @@ init -1598 python in _viewers:
                 del all_keyframes[k]
 
         def get_default(self, prop):
-            for p, d in self.props:
+            for p, d in transform_props:
                 if p == prop:
                     return d
 
@@ -1226,15 +1222,11 @@ init -1598 python in _viewers:
     # CameraViewer
     class CameraViewer(TransformViewer):
 
-        def __init__(self):
-            super(CameraViewer, self).__init__()
-            self.props = camera_props
-
         def init(self):
             if not renpy.config.developer:
                 return
             self.camera_state_org = {}
-            for p, d in self.props:
+            for p, d in camera_props:
                 self.camera_state_org[p] = self.get_property(p, False)
             disp = renpy.game.context().scene_lists.camera_transform["master"]
             for gn, ps in props_groups.items():
@@ -1247,7 +1239,7 @@ init -1598 python in _viewers:
             if not isinstance(prop_list, list):
                 prop_list = [prop_list]
             for prop in prop_list:
-                for p, d in self.props:
+                for p, d in camera_props:
                     if p == prop:
                         if self.camera_state_org[prop] is not None:
                             v = self.camera_state_org[prop]
@@ -1257,7 +1249,7 @@ init -1598 python in _viewers:
             change_time(current_time)
 
         def camera_reset(self):
-            self.reset([p for p, d in self.props])
+            self.reset([p for p, d in camera_props])
 
         def set_keyframe(self, prop, value, recursion=False, time=None):
             if time is None:
@@ -1292,7 +1284,7 @@ init -1598 python in _viewers:
 
         def play(self, play):
             check_points = {}
-            for prop, d in self.props:
+            for prop, d in camera_props:
                 if prop in all_keyframes:
                     check_points[prop] = all_keyframes[prop]
             if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
@@ -1316,8 +1308,8 @@ init -1598 python in _viewers:
             for p in props_groups["focusing"]:
                 if p in check_points:
                     del check_points[p]
-            loop = {prop+"_loop": loops[prop] for prop, d in self.props}
-            spline = {prop+"_spline": splines[prop] for prop, d in self.props}
+            loop = {prop+"_loop": loops[prop] for prop, d in camera_props}
+            spline = {prop+"_spline": splines[prop] for prop, d in camera_props}
             if play:
                 renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(self.transform)(check_points=check_points, loop=loop, spline=spline)), camera=True)
             else:
@@ -1397,7 +1389,7 @@ init -1598 python in _viewers:
                 group_flag[gn] = False
             string = """
     camera"""
-            for p, d in self.props:
+            for p, d in camera_props:
                 value = self.get_property(p)
                 for gn, ps in props_groups.items():
                     if p in ps:
@@ -1930,7 +1922,7 @@ init -1598 python in _viewers:
         camera_keyframes = {k:v for k, v in all_keyframes.items() if not isinstance(k, tuple)}
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
-        for p, d in camera_viewer.props:
+        for p, d in camera_props:
             for gn, ps in props_groups.items():
                 if p in ps:
                     if gn not in camera_properties:
@@ -1994,7 +1986,7 @@ init -1598 python in _viewers:
                 if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                     del image_keyframes["blur"]
                 image_properties = []
-                for p, d in transform_viewer.props:
+                for p, d in transform_props:
                     for gn, ps in props_groups.items():
                         if p in ps:
                             if gn not in image_properties:
@@ -2171,7 +2163,7 @@ init -1598 python in _viewers:
                         if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
                             del image_keyframes["blur"]
                         image_properties = []
-                        for p, d in transform_viewer.props:
+                        for p, d in transform_props:
                             for gn, ps in props_groups.items():
                                 if p in ps:
                                     if gn not in image_properties:
