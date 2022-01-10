@@ -476,7 +476,7 @@ init -1598:
 init -1098 python:
     # Added keymap
     config.underlay.append(renpy.Keymap(
-        action_editor = _viewers.open_action_editor,
+        action_editor = renpy.curry(renpy.invoke_in_new_context)(_viewers.open_action_editor),
         image_viewer = _viewers.open_image_viewer,
         ))
 
@@ -556,23 +556,16 @@ init -1598 python in _viewers:
 
             if self.dragging:
                 if self.x != x or self.y != y:
-                    self.cx = 2*self.x_range*( float(x)/renpy.config.screen_width - 0.5)
-                    self.cy = 2*self.y_range*( float(y)/renpy.config.screen_height - 0.5)
+                    self.cx = 2*self.x_range*float(x)/renpy.config.screen_width
+                    self.cy = 2*self.y_range*float(y)/renpy.config.screen_height
                     if self.int_x:
                         self.cx = int(self.cx)
                     if self.int_y:
                         self.cy = int(self.cy)
-                    if self.cx != get_property("offsetX"):
-                        set_keyframe("offsetX", self.cx)
-                    if self.cy != get_property("offsetY"):
-                        set_keyframe("offsetY", self.cy)
-                    cz = get_property("offsetZ")
-                    rx = get_property("rotateX")
-                    ry = get_property("rotateY")
-                    rz = get_property("rotateZ")
-                    renpy.exports.show_layer_at(renpy.store.Transform(matrixtransform=renpy.store.Matrix.offset(self.cx, self.cy, cz)*renpy.store.Matrix.rotate(rx, ry, rz)), camera=True)
+                    if self.cx != get_property("offsetX") or self.cy != get_property("offsetY"):
+                        generate_changed("offsetX")(self.cx)
+                        generate_changed("offsetY")(self.cy)
                     self.x, self.y = x, y
-                    renpy.restart_interaction()
                     renpy.redraw(self, 0)
 
             # Pass the event to our child.
@@ -602,15 +595,24 @@ init -1598 python in _viewers:
             return self.transition.render(width, height, self.st, self.at)
 
 
-    def image_init():
-        global image_state, image_state_org
+    def action_editor_init():
+        global image_state, image_state_org, camera_state_org
         if not renpy.config.developer:
             return
         sle = renpy.game.context().scene_lists
         # layer->tag->property->value
         image_state_org = {}
         image_state = {}
-        # back up for reset()
+        camera_state_org = {}
+        for p, d in camera_props:
+            camera_state_org[p] = get_property(p, False)
+        disp = sle.camera_transform["master"]
+        for gn, ps in props_groups.items():
+            p2 = get_group_property(gn, getattr(disp, gn, None))
+            if p2 is not None:
+                for p, v in zip(ps, p2):
+                    camera_state_org[p] = v
+
         for layer in renpy.config.layers:
             image_state_org[layer] = {}
             image_state[layer] = {}
@@ -650,20 +652,7 @@ init -1598 python in _viewers:
                     if p2 is not None:
                         for p, v in zip(ps, p2):
                             image_state_org[layer][tag][p] = v
-
-    def camera_init():
-        global camera_state_org
-        if not renpy.config.developer:
-            return
-        camera_state_org = {}
-        for p, d in camera_props:
-            camera_state_org[p] = get_property(p, False)
-        disp = renpy.game.context().scene_lists.camera_transform["master"]
-        for gn, ps in props_groups.items():
-            p2 = get_group_property(gn, getattr(disp, gn, None))
-            if p2 is not None:
-                for p, v in zip(ps, p2):
-                    camera_state_org[p] = v
+        renpy.scene()
 
     def get_group_property(group_name, group):
         def decimal(a):
@@ -858,6 +847,11 @@ init -1598 python in _viewers:
                 for prop, d in transform_props:
                     if (tag, layer, prop) in all_keyframes:
                         check_points[prop] = all_keyframes[(tag, layer, prop)]
+                    else:
+                        if prop == "rotate":
+                            check_points[prop] = [(None, 0, None)]
+                        else:
+                            check_points[prop] = [(get_property((tag, layer, prop), True), 0, None)]
                 # if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
                 #     continue
                 #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
@@ -903,6 +897,11 @@ init -1598 python in _viewers:
         for prop, d in camera_props:
             if prop in all_keyframes:
                 check_points[prop] = all_keyframes[prop]
+            else:
+                if prop == "rotate":
+                    check_points[prop] = [(None, 0, None)]
+                else:
+                    check_points[prop] = [(get_property(prop, True), 0, None)]
         if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
             return
         #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
@@ -941,6 +940,7 @@ init -1598 python in _viewers:
             time = st
         # tran.transform_anchor = True
         group_cache = defaultdict(lambda:{})
+        sle = renpy.game.context().scene_lists
 
         for p, cs in check_points.items():
             if not cs:
@@ -1007,8 +1007,8 @@ init -1598 python in _viewers:
                                             if tran.matrixtransform:
                                                 image_zpos += tran.matrixtransform.zdw
                                             camera_zpos = 0
-                                            if "master" in renpy.game.context().scene_lists.camera_transform:
-                                                props = renpy.game.context().scene_lists.camera_transform["master"]
+                                            if "master" in sle.camera_transform:
+                                                props = sle.camera_transform["master"]
                                                 if props.zpos:
                                                     camera_zpos = props.zpos
                                                 if props.matrixtransform:
@@ -1049,8 +1049,8 @@ init -1598 python in _viewers:
                                 if tran.matrixtransform:
                                     image_zpos += tran.matrixtransform.zdw
                                 camera_zpos = 0
-                                if "master" in renpy.game.context().scene_lists.camera_transform:
-                                    props = renpy.game.context().scene_lists.camera_transform["master"]
+                                if "master" in sle.camera_transform:
+                                    props = sle.camera_transform["master"]
                                     if props.zpos:
                                         camera_zpos = props.zpos
                                     if props.matrixtransform:
@@ -1653,12 +1653,12 @@ show %s""" % child
             renpy.store.persistent._float_range = float_range
         if renpy.store.persistent._time_range is None:
             renpy.store.persistent._time_range = time_range
-        image_init()
-        camera_init()
+        action_editor_init()
         dragged.init(True, True)
         _window = renpy.store._window
         renpy.store._window = False
-        renpy.invoke_in_new_context(renpy.call_screen, "_action_editor")
+        change_time(0)
+        renpy.call_screen("_action_editor")
         renpy.store._window = _window
 
     def get_animation_delay():
