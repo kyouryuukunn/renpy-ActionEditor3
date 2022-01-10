@@ -930,7 +930,7 @@ init -1598 python in _viewers:
         else:
             renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time, camera=True)), camera=True)
 
-    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False):
+    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, in_editor=True):
         # check_points = { prop: [ (value, time, warper).. ] }
         if subpixel is not None:
             tran.subpixel = subpixel
@@ -1007,12 +1007,15 @@ init -1598 python in _viewers:
                                             if tran.matrixtransform:
                                                 image_zpos += tran.matrixtransform.zdw
                                             camera_zpos = 0
-                                            if "master" in sle.camera_transform:
-                                                props = sle.camera_transform["master"]
-                                                if props.zpos:
-                                                    camera_zpos = props.zpos
-                                                if props.matrixtransform:
-                                                    camera_zpos -= props.matrixtransform.zdw
+                                            if in_editor:
+                                                    camera_zpos = get_property("zpos", True) - get_property("offsetZ")
+                                            else:
+                                                if "master" in sle.camera_transform:
+                                                    props = sle.camera_transform["master"]
+                                                    if props.zpos:
+                                                        camera_zpos = props.zpos
+                                                    if props.matrixtransform:
+                                                        camera_zpos -= props.matrixtransform.zdw
                                             result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                                             setattr(tran, "blur", result)
                                     break
@@ -1049,12 +1052,15 @@ init -1598 python in _viewers:
                                 if tran.matrixtransform:
                                     image_zpos += tran.matrixtransform.zdw
                                 camera_zpos = 0
-                                if "master" in sle.camera_transform:
-                                    props = sle.camera_transform["master"]
-                                    if props.zpos:
-                                        camera_zpos = props.zpos
-                                    if props.matrixtransform:
-                                        camera_zpos -= props.matrixtransform.zdw
+                                if in_editor:
+                                        camera_zpos = get_property("zpos", True) - get_property("offsetZ")
+                                else:
+                                    if "master" in sle.camera_transform:
+                                        props = sle.camera_transform["master"]
+                                        if props.zpos:
+                                            camera_zpos = props.zpos
+                                        if props.matrixtransform:
+                                            camera_zpos -= props.matrixtransform.zdw
                                 result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                                 setattr(tran, "blur", result)
                         break
@@ -2213,4 +2219,4 @@ init python:
             loop["focusing_loop"] = False
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
-        return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None)
+        return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
