@@ -22,8 +22,6 @@
 #既知の問題
 #起動時にカメラの状態を反映しない、値は読めている
 #matrixtransformで描写範囲外にでてしまう
-#rotateの再現
-#zoomの影響を再現
 #set_childしたものがアニメーションしない
 #colormatrix, transformmatrixは十分再現できない
 
@@ -910,7 +908,8 @@ init -1598 python in _viewers:
             if prop in all_keyframes:
                 camera_check_points[prop] = all_keyframes[prop]
             else:
-                camera_check_points[prop] = [(get_property(prop, True), 0, None)]
+                if perspective is not None or prop != "rotate":
+                    camera_check_points[prop] = [(get_property(prop, True), 0, None)]
         if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
             return
         #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
@@ -1197,10 +1196,7 @@ init -1598 python in _viewers:
                         break
                 else:
                     if p != "child":
-                        try:
-                            setattr(tran, p, cs[-1][0])
-                        except:
-                            raise Exception(p)
+                        setattr(tran, p, cs[-1][0])
 
         if "child" in check_points:
             cs = check_points["child"]
@@ -1410,13 +1406,21 @@ init -1598 python in _viewers:
 
     def get_value(key, time=None, default=False):
         if isinstance(key, tuple):
-            prop = key[2]
-            if default and key not in all_keyframes:
-                return get_default(prop)
+            tag, layer, prop = key
+            if key not in all_keyframes:
+                v = {k: v for dic in [image_state_org[layer], image_state[layer]] for k, v in dic.items()}[tag][prop]
+                if v is not None:
+                    return v
+                elif default:
+                    return get_default(prop)
         else:
             prop = key
-            if default and key not in all_keyframes:
-                return get_default(prop, True)
+            if key not in all_keyframes:
+                v = camera_state_org[prop]
+                if v is not None:
+                    return v
+                elif default:
+                    return get_default(prop, True)
         cs = all_keyframes[key]
 
         if time is None:
