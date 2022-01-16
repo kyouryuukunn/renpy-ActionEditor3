@@ -20,37 +20,65 @@
 #Ren'Py 8に対応
 
 #既知の問題
+#起動時にカメラの状態を反映しない、値は読めている
+#matrixtransformで描写範囲外にでてしまう
+#rotateの再現
+#zoomの影響を再現
+#set_childしたものがアニメーションしない
 #colormatrix, transformmatrixは十分再現できない
 
-# tab="images"/"3Dstage", layer="master",  
-screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
-    $play_action = [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.camera_play, play=True), Function(_viewers.image_play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
-    key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._int_range)
-    key "rollforward" action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")-100+persistent._int_range)
+#perspective True
+#x, ypos, rotateの反転がある
+#rotateで軸方向が変わる 
+#常に中心で回転する, rotateで位置ずれなし
+#cropが動作しない
+#zoomで元の画面左上中心にスケーリングし、pos, anchorのintでの移動でのみ移動する
+
+#perspective None
+#x, ypos, rotateの反転がない
+#rotateで軸方向が変わらない
+#rotateで位置がずれる
+#cropが動作する
+#zoomでanchor中心に変化する
+
+#perspective False
+#posが動作しない
+
+#show layer masterとcameraの違い
+#sceneでクリアされるか
+#プロパティーが引き継がれるか
+
+# tab="images"/"camera", layer="master",  
+screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
+    $play_action = [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
+    if _viewers.perspective:
+        key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._int_range)
+        key "rollforward" action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")-100+persistent._int_range)
     key "K_SPACE" action play_action
 
     $offsetX, offsetY = _viewers.get_property("offsetX"), _viewers.get_property("offsetY")
     $range = persistent._int_range
     $move_amount1 = 100
     $move_amount2 = 300
-    if _viewers.fps_keymap:
-        key "s" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount1 + range)
-        key "w" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount1 + range)
-        key "a" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount1 + range)
-        key "d" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount1 + range)
-        key "S" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount2 + range)
-        key "W" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount2 + range)
-        key "A" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount2 + range)
-        key "D" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount2 + range)
-    else:
-        key "j" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount1 + range)
-        key "k" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount1 + range)
-        key "h" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount1 + range)
-        key "l" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount1 + range)
-        key "J" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount2 + range)
-        key "K" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount2 + range)
-        key "H" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount2 + range)
-        key "L" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount2 + range)
+    if _viewers.perspective:
+        if _viewers.fps_keymap:
+            key "s" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount1 + range)
+            key "w" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount1 + range)
+            key "a" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount1 + range)
+            key "d" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount1 + range)
+            key "S" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount2 + range)
+            key "W" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount2 + range)
+            key "A" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount2 + range)
+            key "D" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount2 + range)
+        else:
+            key "j" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount1 + range)
+            key "k" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount1 + range)
+            key "h" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount1 + range)
+            key "l" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount1 + range)
+            key "J" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount2 + range)
+            key "K" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount2 + range)
+            key "H" action Function(_viewers.generate_changed("offsetX"), offsetX - move_amount2 + range)
+            key "L" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount2 + range)
 
     if time:
         timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
@@ -74,6 +102,8 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
             $page_list.append(state_list[len(state_list)//_viewers.tab_amount_in_page*_viewers.tab_amount_in_page:])
     else:
         $page_list.append(state_list)
+    if _viewers.perspective == False and tab == "camera":
+        $tab = state.keys()[0]
 
     if persistent._viewer_rot:
         on "show" action Show("_rot")
@@ -104,13 +134,13 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                 style_group "action_editor_a"
                 xfill False
                 textbutton _("<") action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
-                textbutton _("3Dstage") action [SelectedIf(tab == "3Dstage"), Show("_action_editor", tab="3Dstage")]
+                textbutton _("camera") action [SensitiveIf(_viewers.perspective != False), SelectedIf(tab == "camera"), Show("_action_editor", tab="camera")]
                 for n in page_list[page]:
                     textbutton "{}".format(n) action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
                 textbutton _("+") action Function(_viewers.add_image, layer)
                 textbutton _(">") action [SensitiveIf(len(page_list) != page+1), Show("_action_editor", tab=tab, layer=layer, page=page+1), renpy.restart_interaction]
 
-            if tab == "3Dstage":
+            if tab == "camera":
                 for i, props_set_name in enumerate(_viewers.props_set_names):
                     if i < opened:
                         hbox:
@@ -118,7 +148,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.camera_props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or persistent._viewer_focusing):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or (persistent._viewer_focusing and _viewers.perspective)):
                         $value = _viewers.get_property(p)
                         $ f = _viewers.generate_changed(p)
                         $reset_action = [Function(_viewers.reset, p)]
@@ -160,7 +190,7 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.transform_props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and ((persistent._viewer_focusing and p != "blur") or (not persistent._viewer_focusing))):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and (((persistent._viewer_focusing and _viewers.perspective) and p != "blur") or (not persistent._viewer_focusing or not _viewers.perspective))):
                         $value = _viewers.get_property((tab, layer, p))
                         $ f = _viewers.generate_changed((tab, layer, p))
                         if p == "child":
@@ -200,11 +230,11 @@ screen _action_editor(tab="3Dstage", layer="master", opened=0, time=0, page=0):
                 style_group "action_editor"
                 xfill False
                 xalign 1.
-                if tab == "3Dstage":
+                if tab == "camera":
                     textbutton _("clipboard") action Function(_viewers.put_camera_clipboard)
                     textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction]
                 else:
-                    textbutton _("remove") action [SensitiveIf(tab in _viewers.image_state[layer]), Show("_action_editor", tab="3Dstage", layer=layer, opened=opened, page=page), Function(_viewers.remove_image, layer, tab)] size_group None
+                    textbutton _("remove") action [SensitiveIf(tab in _viewers.image_state[layer]), Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), Function(_viewers.remove_image, layer, tab)] size_group None
                     $state={n: v for dic in [_viewers.image_state_org[layer], _viewers.image_state[layer]] for n, v in dic.items()}
                     textbutton _("zzoom") action [SelectedIf(_viewers.get_zzoom(tab, layer)), Function(_viewers.toggle_zzoom, tab, layer)] size_group None
                     textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
@@ -277,8 +307,8 @@ screen _action_editor_option():
         text _("Allow/Disallow skipping animation in clipboard")
         text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
         textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
-        text _("Enable/Disable simulating camera blur(This causes crash when perspective is False)")
-        textbutton _("focusing") action [SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
+        text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
+        textbutton _("focusing") action [SensitiveIf(_viewers.perspective), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
         text _("Assign default warper")
         textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
         text _("Assign default transition(example: dissolve, Dissolve(5), None)")
@@ -482,7 +512,7 @@ init -1098 python:
 
 
 init -1598 python in _viewers:
-    from math import sin, asin, cos, acos, pi
+    from math import sin, asin, cos, acos, atan, pi, sqrt
     from collections import defaultdict
 
     moved_time = 0
@@ -595,8 +625,22 @@ init -1598 python in _viewers:
             return self.transition.render(width, height, self.st, self.at)
 
 
+    class RenderToDisplayable(renpy.Displayable):
+    # create the image which is doing transition at the given time.
+    # TransitionDisplayble(dissolve(old_widget, new_widget), 0, 0)
+
+        def __init__(self, render, **properties):
+            super(RenderToDisplayable, self).__init__(**properties)
+
+            self.render = render
+        
+        def render(self, width, height, st, at):
+            #st, at is 0 allways?
+            return self.render
+
+
     def action_editor_init():
-        global image_state, image_state_org, camera_state_org
+        global image_state, image_state_org, camera_state_org, perspective
         if not renpy.config.developer:
             return
         sle = renpy.game.context().scene_lists
@@ -604,14 +648,15 @@ init -1598 python in _viewers:
         image_state_org = {}
         image_state = {}
         camera_state_org = {}
+        props = sle.camera_transform["master"]
         for p, d in camera_props:
-            camera_state_org[p] = get_property(p, False)
-        disp = sle.camera_transform["master"]
+            camera_state_org[p] = getattr(props, p, None)
         for gn, ps in props_groups.items():
-            p2 = get_group_property(gn, getattr(disp, gn, None))
+            p2 = get_group_property(gn, getattr(props, gn, None))
             if p2 is not None:
                 for p, v in zip(ps, p2):
                     camera_state_org[p] = v
+        perspective = getattr(props, "perspective", None)
 
         for layer in renpy.config.layers:
             image_state_org[layer] = {}
@@ -634,7 +679,10 @@ init -1598 python in _viewers:
                     continue
 
                 name = " ".join(image.name)
-                image_name = " ".join(image_name_tuple)
+                try:
+                    image_name = " ".join(image_name_tuple)
+                except:
+                    raise Exception(image_name_tuple)
                 image_state_org[layer][tag] = {}
 
                 pos = renpy.get_placement(d)
@@ -653,6 +701,16 @@ init -1598 python in _viewers:
                         for p, v in zip(ps, p2):
                             image_state_org[layer][tag][p] = v
         renpy.scene()
+        kwargs = {}
+        for p, d in camera_props:
+            for gn, ps in props_groups.items():
+                if p in ps:
+                    break
+            else:
+                if p != "rotate":
+                    kwargs[p]=d
+        renpy.exports.show_layer_at(renpy.store.Transform(**kwargs), camera=True)
+
 
     def get_group_property(group_name, group):
         def decimal(a):
@@ -764,7 +822,7 @@ init -1598 python in _viewers:
             state = camera_state_org
         def changed(v, time=None, knot_number=None):
             if time is None:
-                time = renpy.store._viewers.current_time
+                time = current_time
             default = get_default(prop, not isinstance(key, tuple))
             if prop not in force_float and (prop in force_int_range or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_property(key), float) and prop in force_int_range:
@@ -804,7 +862,7 @@ init -1598 python in _viewers:
             prop = key
             state = camera_state_org
         if time is None:
-            time = renpy.store._viewers.current_time
+            time = current_time
         keyframes = all_keyframes.get(key, [])
         if keyframes:
             for i, (v, t, w) in enumerate(keyframes):
@@ -839,96 +897,108 @@ init -1598 python in _viewers:
                         key2 = p
                     set_keyframe(key2, get_property(key2), True, time=time)
 
-    def image_play(play):
-        for layer in renpy.config.layers:
-            state = {k: v for dic in [image_state_org[layer], image_state[layer]] for k, v in dic.items()}
-            for tag in state:
-                check_points = {}
-                for prop, d in transform_props:
-                    if (tag, layer, prop) in all_keyframes:
-                        check_points[prop] = all_keyframes[(tag, layer, prop)]
-                    else:
-                        if prop == "rotate":
-                            check_points[prop] = [(None, 0, None)]
-                        else:
-                            check_points[prop] = [(get_property((tag, layer, prop), True), 0, None)]
-                # if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
-                #     continue
-                #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
-                for gn, ps in props_groups.items():
-                    group_flag = False
-                    for prop in ps:
-                        if not prop in check_points:
-                            if state[tag].get(prop, None) is not None:
-                                v = state[tag][prop]
-                            else:
-                                v = get_default(prop, False)
-                            check_points[prop] = [(v, 0, None)]
-                        else:
-                            group_flag = True
-                    if not group_flag:
-                        for prop in ps:
-                            del check_points[prop]
-                if renpy.store.persistent._viewer_focusing:
-                    if "blur" in check_points:
-                        del check_points["blur"]
-                    if "focusing" not in check_points:
-                        check_points["focusing"] = [(get_default("focusing", False), 0, None)]
-                        check_points["dof"] = [(get_default("dof", False), 0, None)]
-                else:
-                    for p in ["focusing", "dof"]:
-                        if p in check_points:
-                            del check_points[p]
-                    if "blur" not in check_points:
-                        blur = state[tag].get("blur", None)
-                        if blur is None:
-                            blur = get_default("blur", False)
-                        check_points["blur"] = [(blur, 0, None)]
-                loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
-                spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
-                image_name = state[tag]["child"][0]
-                if play:
-                    renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(transform)(check_points=check_points, loop=loop, spline=spline))], layer=layer, tag=tag)
-                else:
-                    renpy.show(image_name, [renpy.store.Transform(function=renpy.curry(transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time))], layer=layer, tag=tag)
-
-    def camera_play(play):
-        check_points = {}
+    def play(play):
+        camera_check_points = {}
         for prop, d in camera_props:
             if prop in all_keyframes:
-                check_points[prop] = all_keyframes[prop]
+                camera_check_points[prop] = all_keyframes[prop]
             else:
-                if prop == "rotate":
-                    check_points[prop] = [(None, 0, None)]
-                else:
-                    check_points[prop] = [(get_property(prop, True), 0, None)]
-        if not check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
+                camera_check_points[prop] = [(get_property(prop, True), 0, None)]
+        if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
             return
         #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
         for gn, ps in props_groups.items():
             if gn != "focusing":
                 group_flag = False
                 for prop in ps:
-                    if not prop in check_points:
+                    if not prop in camera_check_points:
                         if camera_state_org.get(prop, None) is not None:
                             v = camera_state_org[prop]
                         else:
                             v = get_default(prop, True)
-                        check_points[prop] = [(v, 0, None)]
+                        camera_check_points[prop] = [(v, 0, None)]
                     else:
                         group_flag =  True
                 if not group_flag:
                     for prop in ps:
-                        del check_points[prop]
+                        del camera_check_points[prop]
         for p in props_groups["focusing"]:
-            if p in check_points:
-                del check_points[p]
+            if p in camera_check_points:
+                del camera_check_points[p]
         loop = {prop+"_loop": loops[prop] for prop, d in camera_props}
         spline = {prop+"_spline": splines[prop] for prop, d in camera_props}
+
+        image_check_points = {}
+        for layer in renpy.config.layers:
+            state = {k: v for dic in [image_state_org[layer], image_state[layer]] for k, v in dic.items()}
+            image_check_points[layer] = {}
+            for tag in state:
+                image_check_points[layer][tag] = {}
+                for prop, d in transform_props:
+                    if (tag, layer, prop) in all_keyframes:
+                        image_check_points[layer][tag][prop] = all_keyframes[(tag, layer, prop)]
+                    else:
+                        if prop != "rotate":
+                            image_check_points[layer][tag][prop] = [(get_property((tag, layer, prop), True), 0, None)]
+                # if not image_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
+                #     continue
+                #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
+                for gn, ps in props_groups.items():
+                    group_flag = False
+                    for prop in ps:
+                        if not prop in image_check_points[layer][tag]:
+                            if state[tag].get(prop, None) is not None:
+                                v = state[tag][prop]
+                            else:
+                                v = get_default(prop, False)
+                            image_check_points[layer][tag][prop] = [(v, 0, None)]
+                        else:
+                            group_flag = True
+                    if not group_flag:
+                        for prop in ps:
+                            del image_check_points[layer][tag][prop]
+                if renpy.store.persistent._viewer_focusing and perspective:
+                    if "blur" in image_check_points[layer][tag]:
+                        del image_check_points[layer][tag]["blur"]
+                    if "focusing" not in image_check_points[layer][tag]:
+                        image_check_points[layer][tag]["focusing"] = [(get_default("focusing", False), 0, None)]
+                        image_check_points[layer][tag]["dof"] = [(get_default("dof", False), 0, None)]
+                else:
+                    for p in ["focusing", "dof"]:
+                        if p in image_check_points[layer][tag]:
+                            del image_check_points[layer][tag][p]
+                    if "blur" not in image_check_points[layer][tag]:
+                        blur = state[tag].get("blur", None)
+                        if blur is None:
+                            blur = get_default("blur", False)
+                        image_check_points[layer][tag]["blur"] = [(blur, 0, None)]
         if play:
-            renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(transform)(check_points=check_points, loop=loop, spline=spline, camera=True)), camera=True)
+            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, loop=loop, spline=spline)))
         else:
-            renpy.exports.show_layer_at(renpy.store.Transform(function=renpy.curry(transform)(check_points=check_points, loop=loop, spline=spline, time=renpy.store._viewers.current_time, camera=True)), camera=True)
+            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, loop=loop, spline=spline, time=current_time)))
+
+    def viewer_transform(tran, st, at, camera_check_points, image_check_points, loop, spline=None, subpixel=True, time=None):
+        # tran.transform_anchor = True
+        # tran.rotae_pad = True
+        # tran.align = (.5, .5)
+        # tran.align = (.5, .5)
+        box = renpy.display.layout.MultiBox(layout='fixed')
+        box.add(renpy.store.Transform(function=renpy.curry(camera_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time)))
+        tran.set_child(box)
+        return 0
+
+    def camera_transform(tran, st, at, camera_check_points, image_check_points, loop, spline=None, subpixel=True, time=None):
+        # tran.rotate_pad = True
+        # tran.transform_anchor = True
+        box = renpy.display.layout.MultiBox(layout='fixed')
+        transform(tran, st, at, check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True)
+        for layer in image_check_points:
+            for tag in image_check_points[layer]:
+                loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
+                spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
+                box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=loop, spline=spline, subpixel=subpixel, time=time))(renpy.easy.displayable(image_check_points[layer][tag]["child"][0][0][0])))
+        tran.set_child(box)
+        return 0
 
     def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, in_editor=True):
         # check_points = { prop: [ (value, time, warper).. ] }
@@ -942,10 +1012,64 @@ init -1598 python in _viewers:
         group_cache = defaultdict(lambda:{})
         sle = renpy.game.context().scene_lists
 
+        if camera and perspective:
+            #anchor has non effect for rotate in camera
+            #center of zoom is true anchor pos + matrixoffset
+            kwargs = {}
+            float_flag = {}
+            width = abs(renpy.config.screen_width*get_value("xzoom", time, True)*get_value("zoom", time, True))
+            height = abs(renpy.config.screen_height*get_value("yzoom", time, True)*get_value("zoom", time, True))
+            for i in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
+                kwargs[i] = -get_value(i, time, True)
+                float_flag[i] = 0
+            for i in ["xpos", "xanchor"]:
+                if isinstance(kwargs[i], float):
+                    float_flag[i] = 1
+                    kwargs[i] = int(kwargs[i]*width)
+            for i in ["ypos", "yanchor"]:
+                if isinstance(kwargs[i], float):
+                    float_flag[i] = 1
+                    kwargs[i] = int(kwargs[i]*height)
+            #for rotate
+            mx = get_value("matrixanchorX", time, True)
+            if isinstance(mx, float):
+                mx = mx*width
+            my = get_value("matrixanchorY", time, True)
+            if isinstance(my, float):
+                my = my*height
+            mx0 = width/2.0
+            my0 = height/2.0
+            theta = pi*kwargs["rotate"]/180.0
+            if my0-my == 0:
+                theta0 = pi/2
+            else:
+                theta0 = atan((mx0-mx)/(my0-my))
+            r = sqrt((mx-mx0)*(mx-mx0)+(my-my0)*(my-my0))
+            if (my > my0) or (my == my0) and (mx > mx0):
+                reverse_flagx = -1
+                reverse_flagy = -1
+            else:
+                reverse_flagx = 1
+                reverse_flagy = 1
+            x = -r*sin(theta0-theta)*reverse_flagx+mx0-mx
+            y = -r*cos(theta0-theta)*reverse_flagy+my0-my
+            #for zoom
+            anchoroffsetx = float_flag["xpos"]*kwargs["xpos"]-float_flag["xanchor"]*kwargs["xanchor"]
+            anchoroffsety = float_flag["ypos"]*kwargs["ypos"]-float_flag["yanchor"]*kwargs["yanchor"]
+            setattr(tran, "xanchor", anchoroffsetx)
+            setattr(tran, "xpos", anchoroffsetx)
+            setattr(tran, "ypos", anchoroffsety)
+            setattr(tran, "yanchor", anchoroffsety)
+            camera_rotateoffset = renpy.store.Matrix.offset(x, y, 0)*renpy.store.Matrix.rotate(0, 0, kwargs["rotate"])*renpy.store.Matrix.offset(kwargs["xpos"]-kwargs["xanchor"]+kwargs["xoffset"], kwargs["ypos"]-kwargs["yanchor"]+kwargs["yoffset"], kwargs["zpos"])
+        else:
+            camera_rotateoffset = renpy.store.Matrix.rotate(0, 0, 0)
+
         for p, cs in check_points.items():
             if not cs:
                 break
-                
+            if camera and perspective and p in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
+                continue
+
             if loop[p+"_loop"] and cs[-1][1]:
                 if time % cs[-1][1] != 0:
                     time = time % cs[-1][1]
@@ -985,7 +1109,7 @@ init -1598 python in _viewers:
                                         if gn == "matrixtransform":
                                             rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                             ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                            result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
+                                            result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)*camera_rotateoffset
                                             setattr(tran, gn, result)
                                         elif gn == "matrixanchor":
                                             mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
@@ -1030,7 +1154,7 @@ init -1598 python in _viewers:
                             if gn == "matrixtransform":
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
+                                result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)*camera_rotateoffset
                                 setattr(tran, gn, result)
                             elif gn == "matrixanchor":
                                 mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
@@ -1066,7 +1190,10 @@ init -1598 python in _viewers:
                         break
                 else:
                     if p != "child":
-                        setattr(tran, p, cs[-1][0])
+                        try:
+                            setattr(tran, p, cs[-1][0])
+                        except:
+                            raise Exception(p)
 
         if "child" in check_points:
             cs = check_points["child"]
@@ -1168,7 +1295,7 @@ init -1598 python in _viewers:
 
     def edit_transition(tag, layer, time=None):
         if time is None:
-            time = renpy.store._viewers.current_time
+            time = current_time
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
         if v:
             if v == "None":
@@ -1274,15 +1401,19 @@ init -1598 python in _viewers:
             if p == prop:
                 return d
 
-    def get_value(key, time=None):
+    def get_value(key, time=None, default=False):
         if isinstance(key, tuple):
             prop = key[2]
+            if default and key not in all_keyframes:
+                return get_default(prop)
         else:
             prop = key
+            if default and key not in all_keyframes:
+                return get_default(prop, True)
         cs = all_keyframes[key]
 
         if time is None:
-            time = renpy.store._viewers.current_time
+            time = current_time
 
         if prop == "child":
             for i in range(-1, -len(cs)-1, -1):
@@ -1416,11 +1547,11 @@ show %s""" % child
             else:
                 if p not in special_props:
                     value = get_property((tag, layer, p), False)
-                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing) or (tag in image_state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
+                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing or not perspective) or (tag in image_state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                         if string.find(":") < 0:
                             string += ":\n        "
                         string += "%s %s " % (p, value)
-        if renpy.store.persistent._viewer_focusing:
+        if renpy.store.persistent._viewer_focusing and perspective:
             focus = get_default("focusing")
             if "focusing" in group_cache["focusing"]:
                 focus = group_cache["focusing"]["focusing"]
@@ -1628,8 +1759,7 @@ show %s""" % child
     def change_time(v):
         global current_time
         current_time = round(v, 2)
-        image_play(False)
-        camera_play(False)
+        play(False)
         renpy.restart_interaction()
 
     def open_action_editor():
@@ -1875,7 +2005,7 @@ show %s""" % child
             for tag, value_org in state.items():
                 image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                 image_keyframes = set_group_keyframes(image_keyframes)
-                if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
+                if (renpy.store.persistent._viewer_focusing and perspective) and "blur" in image_keyframes:
                     del image_keyframes["blur"]
                 image_properties = []
                 for p, d in transform_props:
@@ -1887,7 +2017,7 @@ show %s""" % child
                     else:
                         if p not in special_props:
                             image_properties.append(p)
-                if image_keyframes or renpy.store.persistent._viewer_focusing or tag in image_state[layer]:
+                if image_keyframes or (renpy.store.persistent._viewer_focusing and perspective) or tag in image_state[layer]:
                     image_name = state[tag]["child"][0]
                     if "child" in image_keyframes:
                         last_child = image_keyframes["child"][-1][0][0]
@@ -1911,7 +2041,7 @@ show %s""" % child
                             string += "{} {} ".format(p, cs[0][0])
                     sorted = put_prop_togetter(image_keyframes, layer, tag)
                     if "child" in image_keyframes:
-                        if len(sorted) >= 1 or loops[(tag, layer, "child")] or renpy.store.persistent._viewer_focusing:
+                        if len(sorted) >= 1 or loops[(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and perspective):
                             add_tab = "    "
                             string += """
         parallel:"""
@@ -1962,12 +2092,12 @@ show %s""" % child
                             string += """
             repeat"""
                     if len(sorted):
-                        if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
+                        if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and perspective):
                             add_tab = "    "
                         else:
                             add_tab = ""
                         for same_time_set in sorted:
-                            if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or renpy.store.persistent._viewer_focusing:
+                            if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and perspective):
                                 string += """
         parallel:"""
                             string += """
@@ -1986,7 +2116,7 @@ show %s""" % child
                             if loops[(tag,layer,xy_to_x(p))]:
                                 string += """
             repeat"""
-                    if renpy.store.persistent._viewer_focusing:
+                    if (renpy.store.persistent._viewer_focusing and perspective):
                         focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
                         for p, cs in image_keyframes.items():
                             if len(cs) > 1 or "child" in image_keyframes:
@@ -2052,7 +2182,7 @@ show %s""" % child
                     for tag, value_org in state.items():
                         image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                         image_keyframes = set_group_keyframes(image_keyframes)
-                        if renpy.store.persistent._viewer_focusing and "blur" in image_keyframes:
+                        if (renpy.store.persistent._viewer_focusing and perspective) and "blur" in image_keyframes:
                             del image_keyframes["blur"]
                         image_properties = []
                         for p, d in transform_props:
@@ -2108,7 +2238,7 @@ show %s""" % child
         """
                                     string += "{} {} ".format(p, cs[-1][0])
 
-                        if renpy.store.persistent._viewer_focusing:
+                        if (renpy.store.persistent._viewer_focusing and perspective):
                             focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
                             if "focusing" in all_keyframes:
                                 focusing_cs["focusing"] = all_keyframes["focusing"]
