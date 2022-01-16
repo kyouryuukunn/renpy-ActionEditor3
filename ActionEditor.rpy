@@ -240,7 +240,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
                     textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
-    if not time:
+    if not time and persistent._show_camera_icon:
         add _viewers.dragged
 
 screen _rot(): #show rule of thirds
@@ -298,27 +298,34 @@ screen _action_editor_option():
     key "game_menu" action Hide("_action_editor_option")
     frame:
         style_group "action_editor_modal"
-
         has vbox
-        text _("Show/Hide rule of thirds lines")
-        textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
-        text _("Show/Hide window during animation in clipboard")
-        textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
-        text _("Allow/Disallow skipping animation in clipboard")
-        text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
-        textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
-        text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
-        textbutton _("focusing") action [SensitiveIf(_viewers.perspective), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
-        text _("Assign default warper")
-        textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
-        text _("Assign default transition(example: dissolve, Dissolve(5), None)")
-        textbutton "[persistent._viewer_transition]" action _viewers.edit_default_transition
-        text _("the int range of property bar(type int)")
-        textbutton "[persistent._int_range]" action Function(_viewers.edit_range_value, persistent, "_int_range", True)
-        text _("the float range of property bar(type float)")
-        textbutton "[persistent._float_range]" action Function(_viewers.edit_range_value, persistent, "_float_range", False)
-        text _("the time range of property bar(type float)")
-        textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
+        viewport:
+            ymaximum 0.7
+            mousewheel True
+            scrollbars "vertical"
+
+            has vbox
+            text _("Show/Hide rule of thirds lines")
+            textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
+            text _("Show/Hide camera icon")
+            textbutton _("camera icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
+            text _("Show/Hide window during animation in clipboard")
+            textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
+            text _("Allow/Disallow skipping animation in clipboard")
+            text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
+            textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
+            text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
+            textbutton _("focusing") action [SensitiveIf(_viewers.perspective), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
+            text _("Assign default warper")
+            textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
+            text _("Assign default transition(example: dissolve, Dissolve(5), None)")
+            textbutton "[persistent._viewer_transition]" action _viewers.edit_default_transition
+            text _("the int range of property bar(type int)")
+            textbutton "[persistent._int_range]" action Function(_viewers.edit_range_value, persistent, "_int_range", True)
+            text _("the float range of property bar(type float)")
+            textbutton "[persistent._float_range]" action Function(_viewers.edit_range_value, persistent, "_float_range", False)
+            text _("the time range of property bar(type float)")
+            textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
 
         textbutton _("Return") action Hide("_action_editor_option") xalign .9
 
@@ -1789,6 +1796,8 @@ show %s""" % child
             renpy.store.persistent._float_range = float_range
         if renpy.store.persistent._time_range is None:
             renpy.store.persistent._time_range = time_range
+        if renpy.store.persistent._show_camera_icon is None:
+            renpy.store.persistent._show_camera_icon = default_show_camera_icon
         action_editor_init()
         dragged.init(True, True)
         _window = renpy.store._window

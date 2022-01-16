@@ -17,6 +17,9 @@ init -1600 python in _viewers:
     default_rot = False
     # If True, simulate defpth of field and focusing is enable by default.
     # Trueならカメラブラーを再現するフォーカシングをデフォルトで有効にします。
+    default_show_camera_icon = True
+    # If True, show camera icon which is dragged to move camera by default
+    # Trueならドラッグでカメラを移動できるアイコンをデフォルトで表示します。
     focusing = False
     # If True, set camera keymap FPS(wasd), otherwise vim(hjkl)
     #Trueなら、カメラはWASD, wasdで、Falseならhjkl, HJKLで移動します。
@@ -165,3 +168,5 @@ init -1600 python in _viewers:
     "blur", 
     "matrixcolor", 
     ]
+
+    xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
