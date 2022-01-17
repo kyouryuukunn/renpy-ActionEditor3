@@ -24,6 +24,7 @@
 #matrixtransformで描写範囲外にでてしまう
 #set_childしたものがアニメーションしない
 #colormatrix, transformmatrixは十分再現できない
+#int, floatのタイプ分けを厳密にする
 
 #perspective True
 #x, ypos, rotateの反転がある
@@ -999,10 +1000,11 @@ init -1598 python in _viewers:
         box = renpy.display.layout.MultiBox(layout='fixed')
         transform(tran, st, at, check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True)
         for layer in image_check_points:
-            for tag in image_check_points[layer]:
-                loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
-                spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
-                box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=loop, spline=spline, subpixel=subpixel, time=time))(renpy.easy.displayable(image_check_points[layer][tag]["child"][0][0][0])))
+            for tag, zorder in zorder_list[layer]:
+                if tag in image_check_points[layer]:
+                    loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
+                    spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
+                    box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=loop, spline=spline, subpixel=subpixel, time=time))(renpy.easy.displayable(image_check_points[layer][tag]["child"][0][0][0])))
         tran.set_child(box)
         return 0
 
@@ -1340,6 +1342,7 @@ init -1598 python in _viewers:
                 added_tag = name.split()[0]
                 image_state[layer][added_tag] = {}
                 renpy.show(image_name, layer=layer, at_list=[], tag=added_tag)
+                zorder_list[layer].append((tag, 0))
                 for p, d in transform_props:
                     if p == "child":
                         image_state[layer][added_tag][p] = (image_name, None)
@@ -1802,6 +1805,8 @@ show %s""" % child
             renpy.store.persistent._time_range = time_range
         if renpy.store.persistent._show_camera_icon is None:
             renpy.store.persistent._show_camera_icon = default_show_camera_icon
+        for l in renpy.config.layers:
+            zorder_list[l] = renpy.get_zorder_list(l)
         action_editor_init()
         dragged.init(True, True)
         _window = renpy.store._window
