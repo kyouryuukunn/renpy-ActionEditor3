@@ -999,6 +999,7 @@ init -1598 python in _viewers:
         # tran.transform_anchor = True
         box = renpy.display.layout.MultiBox(layout='fixed')
         transform(tran, st, at, check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True)
+        renpy.store.test = image_check_points
         for layer in image_check_points:
             for tag, zorder in zorder_list[layer]:
                 if tag in image_check_points[layer]:
@@ -1341,8 +1342,7 @@ init -1598 python in _viewers:
                 image_name = " ".join(n)
                 added_tag = name.split()[0]
                 image_state[layer][added_tag] = {}
-                renpy.show(image_name, layer=layer, at_list=[], tag=added_tag)
-                zorder_list[layer].append((tag, 0))
+                zorder_list[layer].append((added_tag, 0))
                 for p, d in transform_props:
                     if p == "child":
                         image_state[layer][added_tag][p] = (image_name, None)
@@ -1777,7 +1777,7 @@ show %s""" % child
         renpy.restart_interaction()
 
     def open_action_editor():
-        global current_time
+        global current_time, zorder_list
         if not renpy.config.developer:
             return
         current_time = 0
@@ -1805,6 +1805,7 @@ show %s""" % child
             renpy.store.persistent._time_range = time_range
         if renpy.store.persistent._show_camera_icon is None:
             renpy.store.persistent._show_camera_icon = default_show_camera_icon
+        zorder_list = {}
         for l in renpy.config.layers:
             zorder_list[l] = renpy.get_zorder_list(l)
         action_editor_init()
