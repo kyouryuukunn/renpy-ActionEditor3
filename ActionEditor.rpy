@@ -50,7 +50,7 @@
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $play_action = [SensitiveIf(_viewers.sorted_keyframes), SelectedIf(False), Function(_viewers.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
-    if _viewers.perspective:
+    if _viewers.get_value("perspective", 0, True):
         key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._int_range)
         key "rollforward" action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")-100+persistent._int_range)
     key "K_SPACE" action play_action
@@ -59,7 +59,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $range = persistent._int_range
     $move_amount1 = 100
     $move_amount2 = 300
-    if _viewers.perspective:
+    if _viewers.get_value("perspective", 0, True):
         if _viewers.fps_keymap:
             key "s" action Function(_viewers.generate_changed("offsetY"), offsetY + move_amount1 + range)
             key "w" action Function(_viewers.generate_changed("offsetY"), offsetY - move_amount1 + range)
@@ -101,7 +101,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             $page_list.append(state_list[len(state_list)//_viewers.tab_amount_in_page*_viewers.tab_amount_in_page:])
     else:
         $page_list.append(state_list)
-    if _viewers.perspective == False and tab == "camera":
+    if _viewers.get_value("perspective", 0, True) == False and tab == "camera":
         $tab = state.keys()[0]
 
     if persistent._viewer_rot:
@@ -133,7 +133,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 style_group "action_editor_a"
                 xfill False
                 textbutton _("<") action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
-                textbutton _("camera") action [SensitiveIf(_viewers.perspective != False), SelectedIf(tab == "camera"), Show("_action_editor", tab="camera")]
+                textbutton _("camera") action [SensitiveIf(_viewers.get_value("perspective", 0, True) != False), SelectedIf(tab == "camera"), Show("_action_editor", tab="camera")]
                 for n in page_list[page]:
                     textbutton "{}".format(n) action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
                 textbutton _("+") action Function(_viewers.add_image, layer)
@@ -147,7 +147,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.camera_props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or (persistent._viewer_focusing and _viewers.perspective)):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or (persistent._viewer_focusing and _viewers.get_value("perspective", 0, True))):
                         $value = _viewers.get_property(p)
                         $ f = _viewers.generate_changed(p)
                         $reset_action = [Function(_viewers.reset, p)]
@@ -189,7 +189,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
                 textbutton "- " + _viewers.props_set_names[opened] action [SelectedIf(True), NullAction()] style_group "action_editor"
                 for p, d in _viewers.transform_props:
-                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and (((persistent._viewer_focusing and _viewers.perspective) and p != "blur") or (not persistent._viewer_focusing or not _viewers.perspective))):
+                    if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and (((persistent._viewer_focusing and _viewers.get_value("perspective", 0, True)) and p != "blur") or (not persistent._viewer_focusing or not _viewers.get_value("perspective", 0, True)))):
                         $value = _viewers.get_property((tab, layer, p))
                         $ f = _viewers.generate_changed((tab, layer, p))
                         if p == "child":
@@ -230,12 +230,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 xfill False
                 xalign 1.
                 if tab == "camera":
-                    textbutton _("clipboard") action Function(_viewers.put_camera_clipboard)
-                    textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction]
+                    textbutton _("perspective") action [SelectedIf(_viewers.get_value("perspective", 0, True)), Function(_viewers.toggle_perspective)] size_group None
+                    textbutton _("clipboard") action Function(_viewers.put_camera_clipboard) size_group None
+                    textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction] size_group None
                 else:
                     textbutton _("remove") action [SensitiveIf(tab in _viewers.image_state[layer]), Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), Function(_viewers.remove_image, layer, tab)] size_group None
                     $state={n: v for dic in [_viewers.image_state_org[layer], _viewers.image_state[layer]] for n, v in dic.items()}
-                    textbutton _("zzoom") action [SelectedIf(_viewers.get_zzoom(tab, layer)), Function(_viewers.toggle_zzoom, tab, layer)] size_group None
+                    textbutton _("zzoom") action [SelectedIf(_viewers.get_value((tab, layer, "zzoom"), 0, True)), Function(_viewers.toggle_zzoom, tab, layer)] size_group None
                     textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
                     textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
@@ -314,7 +315,7 @@ screen _action_editor_option():
             text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
             textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
             text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
-            textbutton _("focusing") action [SensitiveIf(_viewers.perspective), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
+            textbutton _("focusing") action [SensitiveIf(_viewers.get_value("perspective", 0, True)), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
             text _("Assign default warper")
             textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
             text _("Assign default transition(example: dissolve, Dissolve(5), None)")
@@ -646,7 +647,7 @@ init -1598 python in _viewers:
 
 
     def action_editor_init():
-        global image_state, image_state_org, camera_state_org, perspective
+        global image_state, image_state_org, camera_state_org
         if not renpy.config.developer:
             return
         sle = renpy.game.context().scene_lists
@@ -662,7 +663,6 @@ init -1598 python in _viewers:
             if p2 is not None:
                 for p, v in zip(ps, p2):
                     camera_state_org[p] = v
-        perspective = getattr(props, "perspective", None)
 
         for layer in renpy.config.layers:
             image_state_org[layer] = {}
@@ -909,7 +909,7 @@ init -1598 python in _viewers:
             if prop in all_keyframes:
                 camera_check_points[prop] = all_keyframes[prop]
             else:
-                if perspective is not None or prop != "rotate":
+                if get_value("perspective", 0, True) is not None or prop != "rotate":
                     camera_check_points[prop] = [(get_property(prop, True), 0, None)]
         if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
             return
@@ -964,7 +964,7 @@ init -1598 python in _viewers:
                     if not group_flag:
                         for prop in ps:
                             del image_check_points[layer][tag][prop]
-                if renpy.store.persistent._viewer_focusing and perspective:
+                if renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True):
                     if "blur" in image_check_points[layer][tag]:
                         del image_check_points[layer][tag]["blur"]
                     if "focusing" not in image_check_points[layer][tag]:
@@ -1021,7 +1021,7 @@ init -1598 python in _viewers:
         group_cache = defaultdict(lambda:{})
         sle = renpy.game.context().scene_lists
 
-        if camera and perspective:
+        if camera and get_value("perspective", 0, True):
             #anchor has non effect for rotate in camera
             #center of zoom is true anchor pos + matrixoffset
             kwargs = {}
@@ -1076,7 +1076,7 @@ init -1598 python in _viewers:
         for p, cs in check_points.items():
             if not cs:
                 break
-            if camera and perspective and p in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
+            if camera and get_value("perspective", 0, True) and p in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
                 continue
 
             if loop[p+"_loop"] and cs[-1][1]:
@@ -1384,8 +1384,17 @@ init -1598 python in _viewers:
         return zzoom
 
     def toggle_zzoom(tag, layer):
-        zzoom = get_zzoom(tag, layer)
+        zzoom = get_value((tag, layer, "zzoom"), 0, True)
         set_keyframe((tag, layer, "zzoom"), not zzoom, time=0)
+        change_time(current_time)
+
+    def toggle_perspective():
+        perspective = get_value("perspective", 0, True)
+        if perspective:
+            perspective = None
+        elif perspective is None:
+            perspective = True
+        set_keyframe("perspective", perspective, time=0)
         change_time(current_time)
 
     def remove_image(layer, tag):
@@ -1561,11 +1570,11 @@ show %s""" % child
             else:
                 if p not in special_props:
                     value = get_property((tag, layer, p), False)
-                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing or not perspective) or (tag in image_state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
+                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing or not get_value("perspective", 0, True)) or (tag in image_state[layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                         if string.find(":") < 0:
                             string += ":\n        "
                         string += "%s %s " % (p, value)
-        if renpy.store.persistent._viewer_focusing and perspective:
+        if renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True):
             focus = get_default("focusing")
             if "focusing" in group_cache["focusing"]:
                 focus = group_cache["focusing"]["focusing"]
@@ -2024,7 +2033,7 @@ show %s""" % child
             for tag, value_org in state.items():
                 image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                 image_keyframes = set_group_keyframes(image_keyframes)
-                if (renpy.store.persistent._viewer_focusing and perspective) and "blur" in image_keyframes:
+                if (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)) and "blur" in image_keyframes:
                     del image_keyframes["blur"]
                 image_properties = []
                 for p, d in transform_props:
@@ -2036,7 +2045,7 @@ show %s""" % child
                     else:
                         if p not in special_props:
                             image_properties.append(p)
-                if image_keyframes or (renpy.store.persistent._viewer_focusing and perspective) or tag in image_state[layer]:
+                if image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)) or tag in image_state[layer]:
                     image_name = state[tag]["child"][0]
                     if "child" in image_keyframes:
                         last_child = image_keyframes["child"][-1][0][0]
@@ -2060,7 +2069,7 @@ show %s""" % child
                             string += "{} {} ".format(p, cs[0][0])
                     sorted = put_prop_togetter(image_keyframes, layer, tag)
                     if "child" in image_keyframes:
-                        if len(sorted) >= 1 or loops[(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and perspective):
+                        if len(sorted) >= 1 or loops[(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)):
                             add_tab = "    "
                             string += """
         parallel:"""
@@ -2111,12 +2120,12 @@ show %s""" % child
                             string += """
             repeat"""
                     if len(sorted):
-                        if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and perspective):
+                        if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)):
                             add_tab = "    "
                         else:
                             add_tab = ""
                         for same_time_set in sorted:
-                            if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and perspective):
+                            if len(sorted) > 1 or loops[(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)):
                                 string += """
         parallel:"""
                             string += """
@@ -2135,7 +2144,7 @@ show %s""" % child
                             if loops[(tag,layer,xy_to_x(p))]:
                                 string += """
             repeat"""
-                    if (renpy.store.persistent._viewer_focusing and perspective):
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)):
                         focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
                         for p, cs in image_keyframes.items():
                             if len(cs) > 1 or "child" in image_keyframes:
@@ -2201,7 +2210,7 @@ show %s""" % child
                     for tag, value_org in state.items():
                         image_keyframes = {k[2]:v for k, v in all_keyframes.items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                         image_keyframes = set_group_keyframes(image_keyframes)
-                        if (renpy.store.persistent._viewer_focusing and perspective) and "blur" in image_keyframes:
+                        if (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)) and "blur" in image_keyframes:
                             del image_keyframes["blur"]
                         image_properties = []
                         for p, d in transform_props:
@@ -2257,7 +2266,7 @@ show %s""" % child
         """
                                     string += "{} {} ".format(p, cs[-1][0])
 
-                        if (renpy.store.persistent._viewer_focusing and perspective):
+                        if (renpy.store.persistent._viewer_focusing and get_value("perspective", 0, True)):
                             focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
                             if "focusing" in all_keyframes:
                                 focusing_cs["focusing"] = all_keyframes["focusing"]

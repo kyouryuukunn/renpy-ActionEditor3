@@ -146,6 +146,7 @@ init -1600 python in _viewers:
     ("saturate", 1.), 
     ("contrast", 1.), 
     ("invert", 0.), 
+    ("perspective", None)
     )
 
     sort_ref_list = [
