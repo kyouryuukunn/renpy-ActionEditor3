@@ -9,6 +9,7 @@
 #再生中に右クリックで再生停止可能に
 #クリップボードデータを出来るだけ短いフォーマットに変更
 #zzoomを追加
+#perspectiveを追加
 #optionページを追加
 
 #変更
@@ -999,7 +1000,6 @@ init -1598 python in _viewers:
         # tran.transform_anchor = True
         box = renpy.display.layout.MultiBox(layout='fixed')
         transform(tran, st, at, check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True)
-        renpy.store.test = image_check_points
         for layer in image_check_points:
             for tag, zorder in zorder_list[layer]:
                 if tag in image_check_points[layer]:
@@ -1376,16 +1376,13 @@ init -1598 python in _viewers:
             renpy.notify(_("Please type image name"))
             return
 
-    def get_zzoom(tag, layer):
-        state={n: v for dic in [image_state_org[layer], image_state[layer]] for n, v in dic.items()}
-        zzoom = state[tag]["zzoom"]
-        if (tag, layer, "zzoom") in all_keyframes:
-            zzoom = all_keyframes[tag, layer, "zzoom"][0][0]
-        return zzoom
-
     def toggle_zzoom(tag, layer):
         zzoom = get_value((tag, layer, "zzoom"), 0, True)
-        set_keyframe((tag, layer, "zzoom"), not zzoom, time=0)
+        zzoom_org={n: v for dic in [image_state_org[layer], image_state[layer]] for n, v in dic.items()}[tag]["zzoom"]
+        if zzoom == zzoom_org or (not zzoom and not zzoom_org):
+            set_keyframe((tag, layer, "zzoom"), not zzoom, time=0)
+        else:
+            remove_keyframe(0, (tag, layer, "zzoom"))
         change_time(current_time)
 
     def toggle_perspective():
@@ -1394,7 +1391,11 @@ init -1598 python in _viewers:
             perspective = None
         elif perspective is None:
             perspective = True
-        set_keyframe("perspective", perspective, time=0)
+        perspective_org=camera_state_org["perspective"]
+        if perspective == perspective_org:
+            remove_keyframe(0, "perspective")
+        else:
+            set_keyframe("perspective", perspective, time=0)
         change_time(current_time)
 
     def remove_image(layer, tag):
