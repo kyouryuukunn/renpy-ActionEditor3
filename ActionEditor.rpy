@@ -910,11 +910,8 @@ init -1598 python in _viewers:
             if prop in all_keyframes:
                 camera_check_points[prop] = all_keyframes[prop]
             else:
-                #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
-                if (get_value("perspective", 0, True) and prop not in props_groups["crop"]) or (not get_value("perspective", 0, True) and prop != "rotate"):
+                if prop not in not_used_by_default or camera_state_org[prop] is not None:
                     camera_check_points[prop] = [(get_property(prop, True), 0, None)]
-        if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
-            return
         #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
         for gn, ps in props_groups.items():
             if gn != "focusing":
@@ -947,11 +944,8 @@ init -1598 python in _viewers:
                     if (tag, layer, prop) in all_keyframes:
                         image_check_points[layer][tag][prop] = all_keyframes[(tag, layer, prop)]
                     else:
-                        #crop crops the out of the size of image when matrixtransform and rotate change the pos of image when perspective is not True
-                        if prop != "rotate" and prop not in props_groups["crop"]:
+                        if prop not in not_used_by_default or state[tag][prop] is not None:
                             image_check_points[layer][tag][prop] = [(get_property((tag, layer, prop), True), 0, None)]
-                # if not image_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
-                #     continue
                 #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
                 for gn, ps in props_groups.items():
                     group_flag = False
@@ -988,18 +982,12 @@ init -1598 python in _viewers:
             renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, loop=loop, spline=spline, time=current_time)))
 
     def viewer_transform(tran, st, at, camera_check_points, image_check_points, loop, spline=None, subpixel=True, time=None):
-        # tran.transform_anchor = True
-        # tran.rotae_pad = True
-        # tran.align = (.5, .5)
-        # tran.align = (.5, .5)
         box = renpy.display.layout.MultiBox(layout='fixed')
         box.add(renpy.store.Transform(function=renpy.curry(camera_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time)))
         tran.set_child(box)
         return 0
 
     def camera_transform(tran, st, at, camera_check_points, image_check_points, loop, spline=None, subpixel=True, time=None):
-        # tran.rotate_pad = True
-        # tran.transform_anchor = True
         box = renpy.display.layout.MultiBox(layout='fixed')
         transform(tran, st, at, check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True)
         for layer in image_check_points:

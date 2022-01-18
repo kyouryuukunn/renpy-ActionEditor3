@@ -72,6 +72,8 @@ init -1600 python in _viewers:
     force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright"]
     force_int_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing"]
     force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing"]
+    #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
+    not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
 
     transform_props = (
     ("child", (None, None)), 
