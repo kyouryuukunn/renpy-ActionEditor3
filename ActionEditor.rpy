@@ -910,7 +910,7 @@ init -1598 python in _viewers:
             if prop in all_keyframes:
                 camera_check_points[prop] = all_keyframes[prop]
             else:
-                if get_value("perspective", 0, True) is not None or prop != "rotate":
+                if (get_value("perspective", 0, True) and prop not in props_groups["crop"]) or (not get_value("perspective", 0, True) and prop != "rotate"):
                     camera_check_points[prop] = [(get_property(prop, True), 0, None)]
         if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
             return
