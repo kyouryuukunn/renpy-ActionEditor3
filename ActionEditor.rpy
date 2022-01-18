@@ -11,6 +11,7 @@
 #zzoomを追加
 #perspectiveを追加
 #optionページを追加
+#perspectiveがNoneのときはcropを操作できるように
 
 #変更
 #レイアウトを調整
@@ -21,7 +22,6 @@
 #Ren'Py 8に対応
 
 #既知の問題
-#起動時にカメラの状態を反映しない、値は読めている
 #matrixtransformで描写範囲外にでてしまう
 #set_childしたものがアニメーションしない
 #colormatrix, transformmatrixは十分再現できない
@@ -910,6 +910,7 @@ init -1598 python in _viewers:
             if prop in all_keyframes:
                 camera_check_points[prop] = all_keyframes[prop]
             else:
+                #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
                 if (get_value("perspective", 0, True) and prop not in props_groups["crop"]) or (not get_value("perspective", 0, True) and prop != "rotate"):
                     camera_check_points[prop] = [(get_property(prop, True), 0, None)]
         if not camera_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
@@ -946,7 +947,8 @@ init -1598 python in _viewers:
                     if (tag, layer, prop) in all_keyframes:
                         image_check_points[layer][tag][prop] = all_keyframes[(tag, layer, prop)]
                     else:
-                        if prop != "rotate":
+                        #crop crops the out of the size of image when matrixtransform and rotate change the pos of image when perspective is not True
+                        if prop != "rotate" and prop not in props_groups["crop"]:
                             image_check_points[layer][tag][prop] = [(get_property((tag, layer, prop), True), 0, None)]
                 # if not image_check_points: # ビューワー上でのアニメーション(フラッシュ等)の誤動作を抑制
                 #     continue
@@ -1005,7 +1007,7 @@ init -1598 python in _viewers:
                 if tag in image_check_points[layer]:
                     loop = {prop+"_loop": loops[(tag, layer, prop)] for prop, d in transform_props}
                     spline = {prop+"_spline": splines[(tag, layer, prop)] for prop, d in transform_props}
-                    box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=loop, spline=spline, subpixel=subpixel, time=time))(renpy.easy.displayable(image_check_points[layer][tag]["child"][0][0][0])))
+                    box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=loop, spline=spline, subpixel=subpixel, time=time)))
         tran.set_child(box)
         return 0
 
@@ -1228,26 +1230,26 @@ init -1598 python in _viewers:
                     if goal[0][1] is not None and goal[0][1] != "None":
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                         during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
-                        tran.set_child(during_transition_displayable)
+                        child = during_transition_displayable
                     else:
-                        tran.set_child(new_widget)
+                        child = new_widget
+                    tran.set_child(child)
                     break
             else:
                 start = ((None, None), 0, None)
                 goal = cs[0]
                 if goal[0][0] is None:
-                    tran.set_child(renpy.store.Null())
+                    child = renpy.store.Null()
                 else:
                     new_widget = renpy.easy.displayable(goal[0][0])
                     w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                     old_widget = renpy.store.Null(w, h)
                     if goal[0][1] is not None and goal[0][1] != "None":
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
-                        during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-goal[1], 0)
-                        tran.set_child(during_transition_displayable)
+                        child = DuringTransitionDisplayble(transition(old_widget, new_widget), time-goal[1], 0)
                     else:
-                        tran.set_child(new_widget)
-
+                        child = new_widget
+                tran.set_child(child)
         return 0
 
     def get_property(key, default=True):
