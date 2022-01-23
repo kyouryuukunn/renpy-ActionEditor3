@@ -159,11 +159,11 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         if p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, force_int=True, edit_func=_viewers.edit_value, change_func=f, range=persistent._int_range, int=True)]
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, use_int_range=True, edit_func=_viewers.edit_value, change_func=f)]
                                 if isinstance(value, int):
-                                    textbutton "[value]" action Function(_viewers.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
+                                    textbutton "[value]" action Function(_viewers.edit_value, f, use_int_range=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 else:
-                                    textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
+                                    textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, use_int_range=True, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._int_range, value=value, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
@@ -171,8 +171,8 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", k=p, edit_func=_viewers.edit_value, change_func=f, range=persistent._float_range, int=False)]
-                                textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
+                                textbutton "[p]" action [SensitiveIf(p in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, edit_func=_viewers.edit_value, change_func=f)]
+                                textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus) alternate reset_action
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
@@ -196,18 +196,18 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         if p == "child":
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True)]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", key=(tab, layer, p))]
                                 textbutton "[value[0]]" action [SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
                                 textbutton "with" action None size_group None
                                 textbutton "[value[1]]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), Function(_viewers.edit_transition, tab, layer)] size_group None
                         elif p not in _viewers.force_float and (p in _viewers.force_int_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), force_int=True, edit_func=_viewers.edit_value, change_func=f, range=persistent._int_range, int=True)]
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", key=(tab, layer, p), use_int_range=True, edit_func=_viewers.edit_value, change_func=f)]
                                 if isinstance(value, int):
-                                    textbutton "[value]" action Function(_viewers.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
+                                    textbutton "[value]" action Function(_viewers.edit_value, f, use_int_range=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
                                 else:
-                                    textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, force_int=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
+                                    textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, use_int_range=True, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._int_range, value=value, page=1, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
@@ -215,8 +215,8 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         else:
                             hbox:
                                 style_group "action_editor"
-                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", k=(tab, layer, p), edit_func=_viewers.edit_value, change_func=f, range=persistent._float_range, int=False)]
-                                textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, force_int=False, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
+                                textbutton "[p]" action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes), SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", key=(tab, layer, p), edit_func=_viewers.edit_value, change_func=f)]
+                                textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus) alternate Function(_viewers.reset, (tab, layer, p))
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._float_range, value=value, page=.05, changed=f) xalign 1. yalign .5 style "action_editor_bar"
                                 else:
@@ -381,30 +381,30 @@ screen _move_keyframes:
         bar adjustment ui.adjustment(range=persistent._time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)) xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
-screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None, range=None, int):
-    $check_points = _viewers.all_keyframes[k]
-    if isinstance(k, tuple):
-        $n, l, p = k
-        $k_list = k
+screen _edit_keyframe(key, edit_func=None, change_func=None, use_int_range=False):
+    $check_points = _viewers.all_keyframes[key]
+    if isinstance(key, tuple):
+        $n, l, p = key
+        $k_list = key
         $check_points_list = check_points
-        $loop_button_action = [ToggleDict(_viewers.loops, k)]
+        $loop_button_action = [ToggleDict(_viewers.loops, key)]
         for gn, ps in _viewers.props_groups.items():
             if p in ps:
                 $k_list = [(n, l, p) for p in _viewers.props_groups[gn]]
                 $check_points_list = [_viewers.all_keyframes[k2] for k2 in k_list]
                 $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list+[(n, l, gn)]]
     else:
-        $k_list = k
-        $p = k
+        $k_list = key
+        $p = key
         $check_points_list = check_points
-        $loop_button_action = [ToggleDict(_viewers.loops, k)]
+        $loop_button_action = [ToggleDict(_viewers.loops, key)]
         for gn, ps in _viewers.props_groups.items():
-            if k in ps:
+            if key in ps:
                 if gn == "focusing":
-                    $k_list = [k]
+                    $k_list = [key]
                     for layer in renpy.config.layers:
                         $state={n: v for dic in [_viewers.image_state_org[layer], _viewers.image_state[layer]] for n, v in dic.items()}
-                        $k_list += [(n, layer, k) for n in state]
+                        $k_list += [(n, layer, key) for n in state]
                     $check_points_list = [_viewers.all_keyframes[k2] for k2 in k_list]
                     $loop_button_action = [ToggleDict(_viewers.loops, k2) for k2 in k_list]
                 else:
@@ -429,29 +429,31 @@ screen _edit_keyframe(k, force_int=False, edit_func=None, change_func=None, rang
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        textbutton _("spline") action [SelectedIf(t in _viewers.splines[k]), Show("_spline_editor", edit_func=edit_func, change_func=change_func, key=k, prop=p, pre=check_points[i-1], post=check_points[i], default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t, range=range, int=int)]
-                        textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, force_int=force_int, force_plus=p in _viewers.force_plus, time=t), Function(_viewers.change_time, t)]
+                        textbutton _("spline") action [SelectedIf(t in _viewers.splines[key]), Show("_spline_editor", edit_func=edit_func, change_func=change_func, key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, use_int_range=use_int_range, force_plus=p in _viewers.force_plus, time=t)]
+                        textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, use_int_range=use_int_range, force_plus=p in _viewers.force_plus, time=t), Function(_viewers.change_time, t)]
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)) xalign 1. yalign .5 style "action_editor_bar"
         hbox:
             textbutton _("loop") action loop_button_action size_group None
             textbutton _("close") action Hide("_edit_keyframe") xalign .98 size_group None
 
-screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, force_int, force_plus, time, range, int):
+screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, use_int_range, force_plus, time):
 
     modal True
     key "game_menu" action Hide("_spline_editor")
     $cs = _viewers.all_keyframes[key]
+    if use_int_range:
+        $range = persistent._int_range
+        $_page = 0.05
+    else:
+        $range = persistent._float_range
+        $_page = 1
     if not force_plus:
         default old_v = post[0] + range
     else:
         default old_v = post[0]
     on "show" action [Function(_viewers.change_time, time)]
     on "hide" action [Function(change_func, old_v), Function(_viewers.change_time, time)]
-    if int:
-        $_page = 0.05
-    else:
-        $_page = 1
 
     frame:
         style_group "spline_editor"
@@ -470,7 +472,7 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, for
                     null width 50
                     textbutton _("x") action [Function(_viewers.remove_knot, key, time, i), renpy.restart_interaction] size_group None
                     textbutton "Knot{}".format(i+1) action None
-                    textbutton "{}".format(v) action [Function(edit_func, renpy.curry(change_func)(time=time, knot_number=i), default=v, force_int=force_int, force_plus=force_plus, time=time)]
+                    textbutton "{}".format(v) action [Function(edit_func, renpy.curry(change_func)(time=time, knot_number=i), default=v, use_int_range=use_int_range, force_plus=force_plus, time=time)]
                     if force_plus:
                         $_range = range
                         $_v = v
@@ -1259,17 +1261,17 @@ init -1598 python in _viewers:
         else:
             return None
 
-    def edit_value(function, force_int=False, default="", force_plus=False, time=None):
+    def edit_value(function, use_int_range=False, default="", force_plus=False, time=None):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
         if v:
             try:
                 if force_plus:
-                    if force_int:
+                    if use_int_range:
                         v = renpy.python.py_eval(v)
                     else:
                         v = float(renpy.python.py_eval(v))
                 else:
-                    if force_int:
+                    if use_int_range:
                         v = renpy.python.py_eval(v) + renpy.store.persistent._int_range
                     else:
                         v = renpy.python.py_eval(v) + renpy.store.persistent._float_range
@@ -2369,3 +2371,4 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
+
