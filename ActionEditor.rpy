@@ -233,13 +233,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 if tab == "camera":
                     textbutton _("perspective") action [SelectedIf(_viewers.get_value("perspective", 0, True)), Function(_viewers.toggle_perspective)] size_group None
                     textbutton _("clipboard") action Function(_viewers.put_camera_clipboard) size_group None
-                    textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction] size_group None
+                    # textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction] size_group None
                 else:
                     textbutton _("remove") action [SensitiveIf(tab in _viewers.image_state[layer]), Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), Function(_viewers.remove_image, layer, tab)] size_group None
                     $state={n: v for dic in [_viewers.image_state_org[layer], _viewers.image_state[layer]] for n, v in dic.items()}
                     textbutton _("zzoom") action [SelectedIf(_viewers.get_value((tab, layer, "zzoom"), 0, True)), Function(_viewers.toggle_zzoom, tab, layer)] size_group None
                     textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
-                    textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
+                    # textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
     if not time and persistent._show_camera_icon:
         add _viewers.dragged
