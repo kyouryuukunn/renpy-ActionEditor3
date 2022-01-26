@@ -35,10 +35,10 @@ init -1600 python in _viewers:
     _camera_blur_warper = "linear" 
     # the range of values of properties for int type
     #エディターのバーに表示する整数の範囲です。
-    int_range = 1500
+    wide_range = 1500
     # the range of values of properties for float type
     #エディターのバーに表示する浮動小数の範囲です。
-    float_range = 7.0
+    narrow_range = 7.0
     # the range of time
     #エディターのバーに表示する時間の範囲です。
     time_range = 7.0
@@ -70,7 +70,7 @@ init -1600 python in _viewers:
     special_props = ["child"]
 
     force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright"]
-    force_int_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing"]
+    force_wide_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing"]
     force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing"]
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
