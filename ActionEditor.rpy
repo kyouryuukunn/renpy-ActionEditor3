@@ -22,9 +22,8 @@
 #Ren'Py 8に対応
 
 #既知の問題
-#scene切り替え時 perspectiveの引き継ぎするか?
-#colormatrix, transformmatrixは十分再現できない
 #perspectiveで数値を指定されていたらどうする?
+#colormatrix, transformmatrixは十分再現できない
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -1045,64 +1044,10 @@ init -1598 python in _viewers:
             tran.crop_relative = crop_relative
         if time is None:
             time = st
-        # tran.transform_anchor = True
         group_cache = defaultdict(lambda:{})
         sle = renpy.game.context().scene_lists
         if in_editor and camera:
             tran.perspective = get_value("perspective", scene_checkpoints[scene_num][1], True, scene_num=scene_num)
-
-        # if in_editor and camera and get_value("perspective", scene_checkpoints[scene_num][1], True, scene_num=scene_num):
-        #     #anchor has non effect for rotate in camera
-        #     #center of zoom is true anchor pos + matrixoffset
-        #     kwargs = {}
-        #     float_flag = {}
-        #     width = abs(renpy.config.screen_width*get_value("xzoom", time, True, scene_num=scene_num)*get_value("zoom", time, True, scene_num=scene_num))
-        #     height = abs(renpy.config.screen_height*get_value("yzoom", time, True, scene_num=scene_num)*get_value("zoom", time, True, scene_num=scene_num))
-        #     for i in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
-        #         kwargs[i] = -get_value(i, time, True, scene_num=scene_num)
-        #         float_flag[i] = 0
-        #     for i in ["xpos", "xanchor"]:
-        #         if isinstance(kwargs[i], float):
-        #             float_flag[i] = 1
-        #             kwargs[i] = int(kwargs[i]*width)
-        #     for i in ["ypos", "yanchor"]:
-        #         if isinstance(kwargs[i], float):
-        #             float_flag[i] = 1
-        #             kwargs[i] = int(kwargs[i]*height)
-        #     #for rotate
-        #     mx = get_value("matrixanchorX", time, True, scene_num=scene_num)
-        #     if isinstance(mx, float):
-        #         mx = mx*width
-        #     my = get_value("matrixanchorY", time, True, scene_num=scene_num)
-        #     if isinstance(my, float):
-        #         my = my*height
-        #     mx0 = width/2.0
-        #     my0 = height/2.0
-        #     theta = pi*kwargs["rotate"]/180.0
-        #     if my0-my == 0:
-        #         theta0 = pi/2
-        #     else:
-        #         theta0 = atan((mx0-mx)/(my0-my))
-        #     r = sqrt((mx-mx0)*(mx-mx0)+(my-my0)*(my-my0))
-        #     if (my > my0) or (my == my0) and (mx > mx0):
-        #         reverse_flagx = -1
-        #         reverse_flagy = -1
-        #     else:
-        #         reverse_flagx = 1
-        #         reverse_flagy = 1
-        #     x = -r*sin(theta0-theta)*reverse_flagx+mx0-mx
-        #     y = -r*cos(theta0-theta)*reverse_flagy+my0-my
-        #     #for zoom
-        #     anchoroffsetx = float_flag["xpos"]*kwargs["xpos"]-float_flag["xanchor"]*kwargs["xanchor"]
-        #     anchoroffsety = float_flag["ypos"]*kwargs["ypos"]-float_flag["yanchor"]*kwargs["yanchor"]
-        #     setattr(tran, "xanchor", anchoroffsetx)
-        #     setattr(tran, "xpos", anchoroffsetx)
-        #     setattr(tran, "ypos", anchoroffsety)
-        #     setattr(tran, "yanchor", anchoroffsety)
-        #     camera_rotateoffset = renpy.store.Matrix.offset(x, y, 0)*renpy.store.Matrix.rotate(0, 0, kwargs["rotate"])*renpy.store.Matrix.offset(kwargs["xpos"]-kwargs["xanchor"]+kwargs["xoffset"], kwargs["ypos"]-kwargs["yanchor"]+kwargs["yoffset"], kwargs["zpos"])
-        # else:
-        #     camera_rotateoffset = renpy.store.Matrix.rotate(0, 0, 0)
-        camera_rotateoffset = renpy.store.Matrix.rotate(0, 0, 0)
 
         for p, cs in check_points.items():
             if not cs:
@@ -1150,7 +1095,7 @@ init -1598 python in _viewers:
                                         if gn == "matrixtransform":
                                             rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                             ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                            result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)*camera_rotateoffset
+                                            result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
                                             setattr(tran, gn, result)
                                         elif gn == "matrixanchor":
                                             mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
@@ -1199,7 +1144,7 @@ init -1598 python in _viewers:
                             if gn == "matrixtransform":
                                 rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
                                 ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)*camera_rotateoffset
+                                result = renpy.store.Matrix.offset(ox, oy, oz)*renpy.store.Matrix.rotate(rx, ry, rz)
                                 setattr(tran, gn, result)
                             elif gn == "matrixanchor":
                                 mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
