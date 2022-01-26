@@ -1736,6 +1736,63 @@ show %s""" % child
             del splines[-1]
         renpy.show_screen("_action_editor")
 
+    def move_scene(new, scene_num, update=False):
+        scene_num_scene_keyframes = scene_keyframes.pop(scene_num)
+        scene_num_image_state = image_state.pop(scene_num)
+        scene_num_image_state_org = image_state_org.pop(scene_num)
+        scene_num_camera_state_org = camera_state_org.pop(scene_num)
+        scene_num_zorder_list = zorder_list.pop(scene_num)
+        scene_num_all_keyframes = all_keyframes.pop(scene_num)
+        scene_num_sorted_keyframes = sorted_keyframes.pop(scene_num)
+        scene_num_loops = loops.pop(scene_num)
+        scene_num_splines = splines.pop(scene_num)
+        for i, s in enumerate(scene_keyframes):
+            if s[1] > new:
+                scene_num_scene_keyframes.insert(i, scene_num_scene_keyframes)
+                scene_num_image_state.insert(i, scene_num_image_state)
+                scene_num_image_state_org.insert(i, scene_num_image_state_org)
+                scene_num_camera_state_org.insert(i, scene_num_camera_state_org)
+                scene_num_zorder_list.insert(i, scene_num_zorder_list)
+                scene_num_all_keyframes.insert(i, scene_num_all_keyframes)
+                scene_num_sorted_keyframes.insert(i, scene_num_sorted_keyframes)
+                scene_num_loops.insert(i, scene_num_loops)
+                scene_num_splines.insert(i, scene_num_splines)
+                new_scene_num = i
+            elif s[1] == new:
+                scene_keyframes.insert(scene_num, scene_num_scene_keyframes)
+                image_state.insert(scene_num, scene_num_image_state)
+                image_state_org.insert(scene_num, scene_num_image_state_org)
+                camera_state_org.insert(scene_num, scene_num_camera_state_org)
+                zorder_list.insert(scene_num, scene_num_zorder_list)
+                all_keyframes.insert(scene_num, scene_num_all_keyframes)
+                sorted_keyframes.insert(scene_num, scene_num_sorted_keyframes)
+                loops.insert(scene_num, scene_num_loops)
+                splines.insert(scene_num, scene_num_splines)
+                return
+        else:
+            scene_keyframes.append(scene_num_scene_keyframes)
+            image_state.append(scene_num_image_state)
+            image_state_org.append(scene_num_image_state_org)
+            camera_state_org.append(scene_num_camera_state_org)
+            zorder_list.append(scene_num_zorder_list)
+            all_keyframes.append(scene_num_all_keyframes)
+            sorted_keyframes.append(scene_num_sorted_keyframes)
+            loops.append(scene_num_loops)
+            splines.append(scene_num_splines)
+            new_scene_num = len(scene_keyframes)-1
+
+        if new_scene_num != 0:
+            ref_scene_num = 0
+        else:
+            ref_scene_num = new_scene_num - 1
+        for p, d in camera_props:
+            camera_state_org[new_scene_num][prop] = get_value(prop, scene_keyframes[new_scene_num][1], False, ref_scene_num)
+        
+        if update:
+            renpy.show_screen("_action_editor")
+            change_time(current_time)
+        return
+
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
