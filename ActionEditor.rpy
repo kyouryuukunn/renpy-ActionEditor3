@@ -1434,6 +1434,8 @@ init -1598 python in _viewers:
                     return v
                 elif default:
                     return get_default(prop)
+                else:
+                    return None
         else:
             prop = key
             if key not in all_keyframes[scene_num]:
@@ -1442,6 +1444,8 @@ init -1598 python in _viewers:
                     return v
                 elif default:
                     return get_default(prop, True)
+                else:
+                    return None
         cs = all_keyframes[scene_num][key]
 
         if time is None:
@@ -1709,10 +1713,7 @@ show %s""" % child
         all_keyframes.append({})
         sorted_keyframes.append([])
         for p, d in camera_props:
-            if p not in not_used_by_default:
-                camera_state_org[current_scene][p] = d
-            else:
-                camera_state_org[current_scene][p] = None
+            camera_state_org[current_scene][p] = get_value(p, scene_keyframes[current_scene][1], False, current_scene-1)
         for l in renpy.config.layers:
             image_state[current_scene][l] = {}
             image_state_org[current_scene][l] = {}
@@ -1738,8 +1739,6 @@ show %s""" % child
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
-        if current_time < scene_keyframes[current_scene][1]:
-            current_time = scene_keyframes[current_scene][1]
         renpy.show_screen("_action_editor")
         change_time(current_time)
 
