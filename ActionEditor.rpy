@@ -382,14 +382,7 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
         for gn, ps in _viewers.props_groups.items():
             if key in ps:
-                if gn == "focusing":
-                    $k_list = [key]
-                    for layer in renpy.config.layers:
-                        $state={n: v for dic in [_viewers.image_state_org[_viewers.current_scene][layer], _viewers.image_state[_viewers.current_scene][layer]] for n, v in dic.items()}
-                        $k_list += [(n, layer, key) for n in state]
-                    $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
-                    $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list]
-                else:
+                if gn != "focusing":
                     $k_list = _viewers.props_groups[gn]
                     $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
                     $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[gn]]
@@ -886,15 +879,6 @@ init -1598 python in _viewers:
             set_keyframe(key, v, time=time)
             if knot_number is not None:
                 splines[current_scene][key][time][knot_number] = v
-            if not isinstance(key, tuple):
-                if prop in props_groups["focusing"]:
-                    for l in image_state_org[current_scene]:
-                        state2={k: v2 for dic in [image_state_org[current_scene][l], image_state[current_scene][l]] for k, v2 in dic.items()}
-                        for n, v2 in state2.items():
-                            if prop == "dof":
-                                generate_changed((n, l, "dof"))(v, time=time)
-                            elif prop == "focusing":
-                                generate_changed((n, l, "focusing"))(v, time=time)
             change_time(time)
         return changed
 
@@ -983,9 +967,6 @@ init -1598 python in _viewers:
                         if not group_flag:
                             for prop in ps:
                                 del check_points[prop]
-                for p in props_groups["focusing"]:
-                    if p in check_points:
-                        del check_points[p]
                 loop.append({prop+"_loop": loops[s][prop] for prop, d in camera_props})
                 spline.append({prop+"_spline": splines[s][prop] for prop, d in camera_props})
                 camera_check_points.append(check_points)
@@ -1001,6 +982,8 @@ init -1598 python in _viewers:
                     for prop, d in transform_props:
                         if (tag, layer, prop) in all_keyframes[s]:
                             check_points[layer][tag][prop] = all_keyframes[s][(tag, layer, prop)]
+                        elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
+                            check_points[layer][tag][prop] = camera_check_points[s][prop]
                         else:
                             if prop not in not_used_by_default or state[tag][prop] is not None:
                                 check_points[layer][tag][prop] = [(get_property((tag, layer, prop), True, scene_num=s), t, None)]
@@ -1035,6 +1018,11 @@ init -1598 python in _viewers:
                                 blur = get_default("blur", False)
                             check_points[layer][tag]["blur"] = [(blur, t, None)]
             image_check_points.append(check_points)
+
+            for css in camera_check_points:
+                for p in props_groups["focusing"]:
+                    if p in css:
+                        del css[p]
         if play:
             renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
         else:
@@ -1073,6 +1061,9 @@ init -1598 python in _viewers:
                 if tag in image_check_points[layer]:
                     image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop, d in transform_props}
                     image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop, d in transform_props}
+                    for p in props_groups["focusing"]:
+                        image_loop[p+"_loop"] = loops[scene_num][p]
+                        image_spline[p+"_spline"] = splines[scene_num][p]
                     image_box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=image_loop, spline=image_spline, subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
         camera_box = renpy.display.layout.MultiBox(layout='fixed')
         #camera position doesn't have effect whithout box
@@ -1280,16 +1271,15 @@ init -1598 python in _viewers:
         return 0
 
     def get_property(key, default=True, scene_num=None):
-        fla=0
         if scene_num is None:
             scene_num = current_scene
-            fla=1
         if isinstance(key, tuple):
             tag, layer, prop = key
-            try:
-                state = {k: v for dic in [image_state_org[scene_num][layer], image_state[scene_num][layer]] for k, v in dic.items()}[tag]
-            except:
-                raise Exception((tag, scene_num, fla))
+            if prop in props_groups["focusing"]:
+                key = prop
+        if isinstance(key, tuple):
+            tag, layer, prop = key
+            state = {k: v for dic in [image_state_org[scene_num][layer], image_state[scene_num][layer]] for k, v in dic.items()}[tag]
         else:
             prop = key
             state = camera_state_org[scene_num]
@@ -1470,6 +1460,10 @@ init -1598 python in _viewers:
     def get_value(key, time=None, default=False, scene_num=None):
         if scene_num is None:
             scene_num = current_scene
+        if isinstance(key, tuple):
+            tag, layer, prop = key
+            if prop in props_groups["focusing"]:
+                key = prop
         if isinstance(key, tuple):
             tag, layer, prop = key
             if key not in all_keyframes[scene_num]:
@@ -2355,7 +2349,7 @@ show %s""" % child
                                     delay = getattr(transition, "args")[0]
                                 t += delay
                             last_time = t
-                        if loops[current_scene][(tag,layer,p)]:
+                        if loops[current_scene][(tag,layer,"child")]:
                             string += """
             repeat"""
                     if len(sorted):
