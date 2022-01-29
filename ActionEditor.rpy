@@ -27,7 +27,7 @@
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
-    $play_action = [SensitiveIf(_viewers.sorted_keyframes[_viewers.current_scene]), SelectedIf(False), Function(_viewers.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
+    $play_action = [SensitiveIf(_viewers.sorted_keyframes[_viewers.current_scene] or len(_viewers.scene_keyframes) > 1), SelectedIf(False), Function(_viewers.play, play=True), Hide("_action_editor"), Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
     if _viewers.get_value("perspective", _viewers.scene_keyframes[_viewers.current_scene][1], True):
         key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._wide_range)
         key "rollforward" action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")-100+persistent._wide_range)
@@ -58,7 +58,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             key "L" action Function(_viewers.generate_changed("offsetX"), offsetX + move_amount2 + range)
 
     if time:
-        timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
+        timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time), renpy.restart_interaction]
         key "game_menu" action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), Function(_viewers.change_time, _viewers.current_time)]
         key "hide_windows" action NullAction()
     else:
@@ -108,7 +108,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 textbutton _("x") action Return()
             hbox:
                 style_group "action_editor_a"
-                textbutton _("scene") action NullAction()
+                textbutton _("scene") action [SensitiveIf(len(_viewers.scene_keyframes) > 1), Show("_scene_editor")]
                 for i, ks in enumerate(_viewers.all_keyframes):
                     textbutton "[i]" action [SelectedIf(_viewers.current_scene == i), Function(_viewers.change_scene, i)]
                 textbutton _("+") action _viewers.add_scene
@@ -472,6 +472,31 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, use
             xfill True
             textbutton _("close") action Hide("_spline_editor") xalign .9
 
+screen _scene_editor():
+
+    modal True
+    key "game_menu" action Hide("_scene_editor")
+    # on "hide" action Show("_action_editor")
+
+    frame:
+        style_group "scene_editor"
+        xfill True
+        has vbox
+        label _("scene_editor") xalign .5
+        text "    Scene0"
+        for i, (tran, t, w) in enumerate(_viewers.scene_keyframes):
+            if i > 0:
+                hbox:
+                    textbutton _("x") action Function(_viewers.remove_scene, i)
+                    textbutton "Scene[i]" action None
+                    textbutton "with" action None
+                    textbutton "[tran]" action Function(_viewers.edit_scene_transition, i)
+                    textbutton "[t:>.2f] s" action Function(_viewers.edit_move_scene, i)
+                    bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_scene)(scene_num=i)) xalign 1. yalign .5 style "action_editor_bar"
+        hbox:
+            xfill True
+            textbutton _("close") action Hide("_scene_editor") xalign .9
+
 init -1598:
     style action_editor_modal_frame background "#000D"
     style action_editor_modal_text is action_editor_text color "#AAA"
@@ -493,6 +518,11 @@ init -1598:
     style spline_editor_text is action_editor_text size_group "spline_editor"
     style spline_editor_button is action_editor_modal_button size_group "spline_editor"
     style spline_editor_button_text is action_editor_modal_button_text
+
+    style scene_editor_frame is action_editor_modal_frame
+    style scene_editor_text is action_editor_text size_group None
+    style scene_editor_button is action_editor_modal_button size_group None
+    style scene_editor_button_text is action_editor_modal_button_text
 
 
 init -1098 python:
@@ -902,7 +932,7 @@ init -1598 python in _viewers:
         
         for gn, ps in props_groups.items():
             ps_set = set(ps)
-            if prop in ps_set and gn != "focusing" and recursion == False:
+            if prop in ps_set and gn != "focusing" and not recursion:
                 ps_set.remove(prop)
                 for p in ps_set:
                     if isinstance(key, tuple):
@@ -910,6 +940,13 @@ init -1598 python in _viewers:
                     else:
                         key2 = p
                     set_keyframe(key2, get_property(key2), True, time=time)
+        if not recursion:
+            for s in range(current_scene+1, len(scene_keyframes)):
+                for i in range(s, -1, -1):
+                    if camera_keyframes_exist(i):
+                        break
+                for p, d in camera_props:
+                    camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
 
     def play(play):
         camera_check_points = []
@@ -917,34 +954,41 @@ init -1598 python in _viewers:
         spline = []
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
+            camera_is_used = False
             for prop, d in camera_props:
                 if prop in all_keyframes[s]:
                     check_points[prop] = all_keyframes[s][prop]
+                    camera_is_used = True
                 else:
                     if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
                         check_points[prop] = [(get_property(prop, True, scene_num=s), t, None)]
-            #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
-            for gn, ps in props_groups.items():
-                if gn != "focusing":
-                    group_flag = False
-                    for prop in ps:
-                        if not prop in check_points:
-                            if camera_state_org[s].get(prop, None) is not None:
-                                v = camera_state_org[s][prop]
-                            else:
-                                v = get_default(prop, True)
-                            check_points[prop] = [(v, t, None)]
-                        else:
-                            group_flag =  True
-                    if not group_flag:
+            if not camera_is_used and s > 0:
+                loop.append(loop[s-1])
+                spline.append(spline[s-1])
+                camera_check_points.append(camera_check_points[s-1])
+            else:
+                #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
+                for gn, ps in props_groups.items():
+                    if gn != "focusing":
+                        group_flag = False
                         for prop in ps:
-                            del check_points[prop]
-            for p in props_groups["focusing"]:
-                if p in check_points:
-                    del check_points[p]
-            camera_check_points.append(deepcopy(check_points))
-            loop.append({prop+"_loop": loops[s][prop] for prop, d in camera_props})
-            spline.append(deepcopy({prop+"_spline": splines[s][prop] for prop, d in camera_props}))
+                            if not prop in check_points:
+                                if camera_state_org[s].get(prop, None) is not None:
+                                    v = camera_state_org[s][prop]
+                                else:
+                                    v = get_default(prop, True)
+                                check_points[prop] = [(v, t, None)]
+                            else:
+                                group_flag =  True
+                        if not group_flag:
+                            for prop in ps:
+                                del check_points[prop]
+                for p in props_groups["focusing"]:
+                    if p in check_points:
+                        del check_points[p]
+                loop.append({prop+"_loop": loops[s][prop] for prop, d in camera_props})
+                spline.append({prop+"_spline": splines[s][prop] for prop, d in camera_props})
+                camera_check_points.append(check_points)
 
         image_check_points = []
         for s, (_, t, _) in enumerate(scene_keyframes):
@@ -990,7 +1034,7 @@ init -1598 python in _viewers:
                             if blur is None:
                                 blur = get_default("blur", False)
                             check_points[layer][tag]["blur"] = [(blur, t, None)]
-            image_check_points.append(deepcopy(check_points))
+            image_check_points.append(check_points)
         if play:
             renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
         else:
@@ -1704,39 +1748,67 @@ show %s""" % child
 
     def add_scene():
         global current_scene
-        current_scene = len(scene_keyframes)
-        scene_keyframes.append((renpy.store.persistent._viewer_transition, current_time, None))
-        image_state.append({})
-        image_state_org.append({})
-        camera_state_org.append({})
-        zorder_list.append({})
-        all_keyframes.append({})
-        sorted_keyframes.append([])
-        for p, d in camera_props:
-            camera_state_org[current_scene][p] = get_value(p, scene_keyframes[current_scene][1], False, current_scene-1)
+        for i, (v, t, _) in enumerate(scene_keyframes):
+            if t > current_time:
+                break
+            elif t == current_time:
+                i += 1
+                break
+        else:
+            i = len(scene_keyframes)
+        current_scene = i
+        scene_keyframes.insert(current_scene, (renpy.store.persistent._viewer_transition, current_time, None))
+        image_state.insert(current_scene, {})
+        image_state_org.insert(current_scene, {})
+        camera_state_org.insert(current_scene, {})
+        zorder_list.insert(current_scene, {})
+        all_keyframes.insert(current_scene, {})
+        sorted_keyframes.insert(current_scene, [])
         for l in renpy.config.layers:
             image_state[current_scene][l] = {}
             image_state_org[current_scene][l] = {}
             zorder_list[current_scene][l] = []
-        loops.append(defaultdict(lambda:False))
-        splines.append(defaultdict(lambda:{}))
+        loops.insert(current_scene, defaultdict(lambda:False))
+        splines.insert(current_scene, defaultdict(lambda:{}))
+        for i in range(current_scene-1, -1, -1):
+            if camera_keyframes_exist(i):
+                break
+        for p, d in camera_props:
+            camera_state_org[current_scene][p] = get_value(p, scene_keyframes[current_scene][1], False, i)
         renpy.show_screen("_action_editor")
+
+    def camera_keyframes_exist(scene_num):
+        for p, d in camera_props:
+            if p in all_keyframes[scene_num]:
+                break
+        else:
+            return False
+        return True
 
     def remove_scene(scene_num):
-        if current_scene != 0 and current_scene == len(scene_keyframes) - 1:
-            current_scene -= 1
-            del scene_keyframes[-1]
-            del image_state[-1]
-            del image_state_org[-1]
-            del camera_state_org[-1]
-            del zorder_list[-1]
-            del all_keyframes[-1]
-            del sorted_keyframes[-1]
-            del loops[-1]
-            del splines[-1]
+        global current_scene
+        if scene_num == 0:
+            return
+        current_scene -= 1
+        del scene_keyframes[scene_num]
+        del image_state[scene_num]
+        del image_state_org[scene_num]
+        del camera_state_org[scene_num]
+        del zorder_list[scene_num]
+        del all_keyframes[scene_num]
+        del sorted_keyframes[scene_num]
+        del loops[scene_num]
+        del splines[scene_num]
+        for s in range(scene_num, len(scene_keyframes)):
+            for i in range(s, -1, -1):
+                if camera_keyframes_exist(i):
+                    break
+            for p, d in camera_props:
+                camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
         renpy.show_screen("_action_editor")
+        change_time(current_time)
 
-    def move_scene(new, scene_num, update=False):
+    def move_scene(new, scene_num):
         scene_num_scene_keyframes = scene_keyframes.pop(scene_num)
         scene_num_image_state = image_state.pop(scene_num)
         scene_num_image_state_org = image_state_org.pop(scene_num)
@@ -1748,16 +1820,17 @@ show %s""" % child
         scene_num_splines = splines.pop(scene_num)
         for i, s in enumerate(scene_keyframes):
             if s[1] > new:
-                scene_num_scene_keyframes.insert(i, scene_num_scene_keyframes)
-                scene_num_image_state.insert(i, scene_num_image_state)
-                scene_num_image_state_org.insert(i, scene_num_image_state_org)
-                scene_num_camera_state_org.insert(i, scene_num_camera_state_org)
-                scene_num_zorder_list.insert(i, scene_num_zorder_list)
-                scene_num_all_keyframes.insert(i, scene_num_all_keyframes)
-                scene_num_sorted_keyframes.insert(i, scene_num_sorted_keyframes)
-                scene_num_loops.insert(i, scene_num_loops)
-                scene_num_splines.insert(i, scene_num_splines)
+                scene_keyframes.insert(i, scene_num_scene_keyframes)
+                image_state.insert(i, scene_num_image_state)
+                image_state_org.insert(i, scene_num_image_state_org)
+                camera_state_org.insert(i, scene_num_camera_state_org)
+                zorder_list.insert(i, scene_num_zorder_list)
+                all_keyframes.insert(i, scene_num_all_keyframes)
+                sorted_keyframes.insert(i, scene_num_sorted_keyframes)
+                loops.insert(i, scene_num_loops)
+                splines.insert(i, scene_num_splines)
                 new_scene_num = i
+                break
             elif s[1] == new:
                 scene_keyframes.insert(scene_num, scene_num_scene_keyframes)
                 image_state.insert(scene_num, scene_num_image_state)
@@ -1780,18 +1853,51 @@ show %s""" % child
             loops.append(scene_num_loops)
             splines.append(scene_num_splines)
             new_scene_num = len(scene_keyframes)-1
+        new = round(new, 2)
+        tran, old, w = scene_keyframes[new_scene_num]
+        scene_keyframes[new_scene_num] = (tran, new, w)
 
-        if new_scene_num != 0:
-            ref_scene_num = 0
-        else:
-            ref_scene_num = new_scene_num - 1
-        for p, d in camera_props:
-            camera_state_org[new_scene_num][prop] = get_value(prop, scene_keyframes[new_scene_num][1], False, ref_scene_num)
+        for s in range(new_scene_num, len(scene_keyframes)):
+            for i in range(s, -1, -1):
+                if camera_keyframes_exist(i):
+                    break
+            for p, d in camera_props:
+                camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
+        for k, cs in all_keyframes[new_scene_num].items():
+            for (v, t, w) in cs:
+                c = (v, t - (old - new), w)
+                if splines[new_scene_num][k]:
+                    for t in splines[new_scene_num][k]:
+                        knots = splines[new_scene_num][k].pop(t)
+                        splines[new_scene_num][k][t - (old - new)] = knots
+        sorted_keyframes[new_scene_num] = [t-(old-new) for t in sorted_keyframes[new_scene_num]]
         
-        if update:
-            renpy.show_screen("_action_editor")
-            change_time(current_time)
+        renpy.show_screen("_action_editor")
+        change_time(current_time)
         return
+
+    def edit_move_scene(scene_num):
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=scene_keyframes[scene_num][1])
+        if v:
+            try:
+                v = renpy.python.py_eval(v)
+                if v < 0:
+                    renpy.notify(_("Please type plus value"))
+                    return
+                move_scene(v, scene_num)
+            except:
+                renpy.notify(_("Please type value"))
+
+    def edit_scene_transition(scene_num):
+        default, t, w = scene_keyframes[scene_num]
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
+        if v:
+            if v == "None":
+                v = None
+            scene_keyframes[scene_num] = (v, t, w)
+            change_time(current_time)
+            return
+        renpy.notify(_("Please Input Transition"))
 
     def change_scene(scene_num):
         global current_scene, current_time
@@ -1957,17 +2063,20 @@ show %s""" % child
 
     def get_animation_delay():
         animation_time = 0
-        for cs in all_keyframes[current_scene].values():
-            for (v, t, w) in cs:
-                if isinstance(v, tuple):
-                    if isinstance(v[1], str):
-                        transition = renpy.python.py_eval("renpy.store."+v[1])
-                        delay = getattr(transition, "delay", None)
-                        if delay is None:
-                            delay = getattr(transition, "args")[0]
-                        t += delay
-                if t > animation_time:
-                    animation_time = t
+        for s, (tran, scene_start, _) in enumerate(scene_keyframes):
+            if scene_start > animation_time:
+                animation_time = scene_start
+            for cs in all_keyframes[s].values():
+                for (v, t, w) in cs:
+                    if isinstance(v, tuple):
+                        if isinstance(v[1], str):
+                            transition = renpy.python.py_eval("renpy.store."+v[1])
+                            delay = getattr(transition, "delay", None)
+                            if delay is None:
+                                delay = getattr(transition, "args")[0]
+                            t += delay
+                    if t > animation_time:
+                        animation_time = t
         return animation_time
 
     def set_group_keyframes(keyframes):
