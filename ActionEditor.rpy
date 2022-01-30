@@ -26,7 +26,7 @@
 #colormatrix, transformmatrixは十分再現できない
 
 #課題
-#キーフレームのマーカーを表示する
+#キーフレームのマーカーを表示する スタイルによって位置が変わる
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -930,7 +930,7 @@ init -1598 python in _viewers:
                     if camera_keyframes_exist(i):
                         break
                 for p, d in camera_props:
-                    camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
+                    camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
 
     def play(play):
         camera_check_points = []
@@ -1768,7 +1768,7 @@ show %s""" % child
             if camera_keyframes_exist(i):
                 break
         for p, d in camera_props:
-            camera_state_org[current_scene][p] = get_value(p, scene_keyframes[current_scene][1], False, i)
+            camera_state_org[current_scene][p] = round(get_value(p, scene_keyframes[current_scene][1], False, i), 3)
         renpy.show_screen("_action_editor")
 
     def camera_keyframes_exist(scene_num):
@@ -1798,7 +1798,7 @@ show %s""" % child
                 if camera_keyframes_exist(i):
                     break
             for p, d in camera_props:
-                camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
+                camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
         renpy.show_screen("_action_editor")
         change_time(current_time)
 
@@ -1856,7 +1856,7 @@ show %s""" % child
                 if camera_keyframes_exist(i):
                     break
             for p, d in camera_props:
-                camera_state_org[s][p] = get_value(p, scene_keyframes[s][1], False, i)
+                camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
         for k, cs in all_keyframes[new_scene_num].items():
             for (v, t, w) in cs:
                 c = (v, t - (old - new), w)
@@ -2060,6 +2060,13 @@ show %s""" % child
         for s, (tran, scene_start, _) in enumerate(scene_keyframes):
             if scene_start > animation_time:
                 animation_time = scene_start
+            if isinstance(tran, str):
+                transition = renpy.python.py_eval("renpy.store."+tran)
+                delay = getattr(transition, "delay", None)
+                if delay is None:
+                    delay = getattr(transition, "args")[0]
+                if delay + scene_start  > animation_time:
+                    animation_time = delay + scene_start
             for cs in all_keyframes[s].values():
                 for (v, t, w) in cs:
                     if isinstance(v, tuple):
@@ -2072,6 +2079,28 @@ show %s""" % child
                     if t > animation_time:
                         animation_time = t
         return animation_time
+
+    def get_scene_delay(scene_num):
+        animation_time = 0
+        (tran, scene_start, _) = scene_keyframes[scene_num]
+        if isinstance(tran, str):
+            transition = renpy.python.py_eval("renpy.store."+tran)
+            delay = getattr(transition, "delay", None)
+            if delay is None:
+                delay = getattr(transition, "args")[0]
+            animation_time = delay + scene_start
+        for cs in all_keyframes[scene_num].values():
+            for (v, t, w) in cs:
+                if isinstance(v, tuple):
+                    if isinstance(v[1], str):
+                        transition = renpy.python.py_eval("renpy.store."+v[1])
+                        delay = getattr(transition, "delay", None)
+                        if delay is None:
+                            delay = getattr(transition, "args")[0]
+                        t += delay
+                if t > animation_time:
+                    animation_time = t
+        return animation_time - scene_start
 
     def set_group_keyframes(keyframes):
         result = {}
@@ -2101,13 +2130,13 @@ show %s""" % child
                 result[p] = cs
         return result
 
-    def camera_blur_amount(image_zpos, camera_zpos=None, dof=None, focusing=None):
-        if camera_zpos is None:
-            camera_zpos = get_property("offsetZ")+get_property("zpos")
-        if focusing is None:
-            focusing = get_property("focusing")
-        if dof is None:
-            dof = get_property("dof")
+    def camera_blur_amount(image_zpos, camera_zpos, dof, focusing):
+        # if camera_zpos is None:
+        #     camera_zpos = get_property("offsetZ")+get_property("zpos")
+        # if focusing is None:
+        #     focusing = get_property("focusing")
+        # if dof is None:
+        #     dof = get_property("dof")
         distance_from_focus = camera_zpos - image_zpos - focusing + renpy.config.perspective[1]
         if dof == 0:
             dof = 0.1
@@ -2200,276 +2229,103 @@ show %s""" % child
         else:
             return prop
 
+    def sort_zorder(state, layer, scene_num):
+        zorder = zorder_list[scene_num][layer]
+        return [(tag, state[tag]) for tag, _ in zorder]
+
     def put_clipboard():
         string = ""
-        camera_keyframes = {k:v for k, v in all_keyframes[current_scene].items() if not isinstance(k, tuple)}
-        camera_keyframes = set_group_keyframes(camera_keyframes)
-        camera_properties = []
-        for p, d in camera_props:
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    if gn not in camera_properties:
-                        camera_properties.append(gn)
-                    break
-            else:
-                camera_properties.append(p)
-        if renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0:
+        if (renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0 \
+            and len(scene_keyframes) == 1) \
+            or len(scene_keyframes) > 1:
             if renpy.store._window_auto:
                 window_mode = "window auto"
             else:
                 window_mode = "window"
             string += """
     {} hide""".format(window_mode)
-        if camera_keyframes:
-            string += """
+        for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
+            camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
+            camera_keyframes = set_group_keyframes(camera_keyframes)
+            camera_properties = []
+            for p, d in camera_props:
+                for gn, ps in props_groups.items():
+                    if p in ps:
+                        if gn not in camera_properties:
+                            camera_properties.append(gn)
+                        break
+                else:
+                    camera_properties.append(p)
+            if s > 0:
+                string += """
+    scene"""
+                
+            if camera_keyframes:
+                string += """
     camera:
         subpixel True """
-            if "crop" in camera_keyframes:
-                string += "{} {} ".format("crop_relative", True)
-            #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
-            #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
-            #rotateは設定されればキーフレームに入り、されてなければ問題ない
-            #アニメーションしないなら出力しなくてよいのでここでは不要
-            for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
-                    string += "{} {} ".format(p, cs[0][0])
-            sorted = put_prop_togetter(camera_keyframes)
-            if len(sorted):
-                if len(sorted) > 1 or loops[current_scene][xy_to_x(sorted[0][0][0])]:
-                    add_tab = "    "
-                else:
-                    add_tab = ""
-                for same_time_set in sorted:
-                    if len(sorted) > 1 or loops[current_scene][xy_to_x(sorted[0][0][0])]:
-                        string += """
-        parallel:
-            """
-                    else:
-                        string += """
-        """
-                    for p, cs in same_time_set:
+                if "crop" in camera_keyframes:
+                    string += "{} {} ".format("crop_relative", True)
+                #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
+                #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
+                #rotateは設定されればキーフレームに入り、されてなければ問題ない
+                #アニメーションしないなら出力しなくてよいのでここでは不要
+                for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
                         string += "{} {} ".format(p, cs[0][0])
-                    cs = same_time_set[0][1]
-                    for i, c in enumerate(cs[1:]):
-                        string += """
-        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
-                        for p2, cs2 in same_time_set:
-                            string += "{} {} ".format(p2, cs2[i+1][0])
-                            if cs2[i+1][1] in splines[current_scene][xy_to_x(p2)] and splines[current_scene][xy_to_x(p2)][cs2[i+1][1]]:
-                                for knot in splines[current_scene][xy_to_x(p2)][cs2[i+1][1]]:
-                                    string += " knot {} ".format(knot)
-                    if loops[current_scene][xy_to_x(p)]:
-                        string += """
-            repeat"""
-
-        for layer in image_state_org[current_scene]:
-            state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}
-            for tag, value_org in state.items():
-                image_keyframes = {k[2]:v for k, v in all_keyframes[current_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                image_keyframes = set_group_keyframes(image_keyframes)
-                if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) and "blur" in image_keyframes:
-                    del image_keyframes["blur"]
-                image_properties = []
-                for p, d in transform_props:
-                    for gn, ps in props_groups.items():
-                        if p in ps:
-                            if gn not in image_properties:
-                                image_properties.append(gn)
-                            break
+                sorted = put_prop_togetter(camera_keyframes)
+                if len(sorted):
+                    if len(sorted) > 1 or loops[s][xy_to_x(sorted[0][0][0])]:
+                        add_tab = "    "
                     else:
-                        if p not in special_props:
-                            image_properties.append(p)
-                if image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) or tag in image_state[current_scene][layer]:
-                    image_name = state[tag]["child"][0]
-                    if "child" in image_keyframes:
-                        last_child = image_keyframes["child"][-1][0][0]
-                        if last_child is not None:
-                            last_tag = last_child.split()[0]
-                            if last_tag == image_name.split()[0]:
-                                image_name = last_child
-                    string += """
-    show {}""".format(image_name)
-                    if image_name.split()[0] != tag:
-                        string += " as {}".format(tag)
-                    if layer != "master":
-                        string += " onlayer {}".format(layer)
-                    if tag in image_state[current_scene][layer]:
-                        string += " at default"
-                    string += """:
-        subpixel True """
-                    if "crop" in image_keyframes:
-                        string += "{} {} ".format("crop_relative", True)
-                    for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes and len(image_keyframes[p]) == 1], layer, tag):
-                            string += "{} {} ".format(p, cs[0][0])
-                    sorted = put_prop_togetter(image_keyframes, layer, tag)
-                    if "child" in image_keyframes:
-                        if len(sorted) >= 1 or loops[current_scene][(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)):
-                            add_tab = "    "
+                        add_tab = ""
+                    for same_time_set in sorted:
+                        if len(sorted) > 1 or loops[s][xy_to_x(sorted[0][0][0])]:
                             string += """
-        parallel:"""
-                        else:
-                            add_tab = ""
-                        last_time = 0.0
-                        for i in range(0, len(image_keyframes["child"]), 1):
-                            (image, transition), t, w = image_keyframes["child"][i]
-                            widget = None
-                            if i > 0:
-                                old_widget = image_keyframes["child"][i-1][0][0]
-                                if old_widget is not None:
-                                    widget = old_widget
-                            if i < len(image_keyframes["child"])-1:
-                                new_widget = image_keyframes["child"][i+1][0][0]
-                                if new_widget is not None:
-                                    widget = new_widget
-                            if widget is None:
-                                if image is not None:
-                                    widget = image
-                            if widget is None:
-                                null = "Null()"
-                            else:
-                                w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
-                                null = "Null({}, {})".format(w, h)
-                            if (t - last_time) > 0:
-                                string += """
-        {}{}""".format(add_tab, t-last_time)
-                            if i == 0 and (image is not None and transition is not None):
-                                string += """
-        {}{}""".format(add_tab, null)
-                            if image is None:
-                                string += """
-        {}{}""".format(add_tab, null)
-                            else:
-                                string += """
-        {}'{}'""".format(add_tab, image)
-                            if transition is not None:
-                                string += " with {}".format(transition)
-
-                                transition = renpy.python.py_eval("renpy.store."+transition)
-                                delay = getattr(transition, "delay", None)
-                                if delay is None:
-                                    delay = getattr(transition, "args")[0]
-                                t += delay
-                            last_time = t
-                        if loops[current_scene][(tag,layer,"child")]:
-                            string += """
-            repeat"""
-                    if len(sorted):
-                        if len(sorted) > 1 or loops[current_scene][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)):
-                            add_tab = "    "
-                        else:
-                            add_tab = ""
-                        for same_time_set in sorted:
-                            if len(sorted) > 1 or loops[current_scene][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)):
-                                string += """
-        parallel:"""
-                            string += """
-        """+add_tab
-                            for p, cs in same_time_set:
-                                string += "{} {} ".format(p, cs[0][0])
-                            cs = same_time_set[0][1]
-                            for i, c in enumerate(cs[1:]):
-                                string += """
-        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
-                                for p2, cs2 in same_time_set:
-                                    string += "{} {} ".format(p2, cs2[i+1][0])
-                                    if cs2[i+1][1] in splines[current_scene][(tag, layer, xy_to_x(p2))] and splines[current_scene][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
-                                        for knot in splines[current_scene][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
-                                            string += " knot {} ".format(knot)
-                            if loops[current_scene][(tag,layer,xy_to_x(p))]:
-                                string += """
-            repeat"""
-                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)):
-                        focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
-                        for p, cs in image_keyframes.items():
-                            if len(cs) > 1 or "child" in image_keyframes:
-                                string += """
         parallel:
             """
-                                break
                         else:
-                            string += "\n        "
-                        if "focusing" in all_keyframes[current_scene]:
-                            focusing_cs["focusing"] = all_keyframes[current_scene]["focusing"]
-                        if "dof" in all_keyframes[current_scene]:
-                            focusing_cs["dof"] = all_keyframes[current_scene]["dof"]
-                        if loops[current_scene]["focusing"] or loops[current_scene]["dof"]:
-                            focusing_loop = {}
-                            focusing_loop["focusing_loop"] = loops[current_scene]["focusing"]
-                            focusing_loop["dof_loop"] = loops[current_scene]["dof"]
-                            string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                        else:
-                            string += "{} camera_blur({}) ".format("function", focusing_cs)
-
-        if renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0:
-            string += """
-    with Pause({})""".format(get_animation_delay())
-            if renpy.store.persistent._viewer_allow_skip:
-
-                if camera_keyframes:
-                    for p, cs in camera_keyframes.items():
-                        if len(cs) > 1:
                             string += """
-    camera:"""
-                            for p, cs in camera_keyframes.items():
-                                if len(cs) > 1 and loops[current_scene][p]:
-                                    string += """
-        animation"""
-                                    break
-                            first = True
-                            for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
-                                if len(cs) > 1 and not loops[current_scene][xy_to_x(p)]:
-                                    if first:
-                                        first = False
-                                        string += """
         """
-                                    string += "{} {} ".format(p, cs[-1][0])
-                            for p, cs in sort_props(camera_keyframes):
-                                if len(cs) > 1 and loops[current_scene][p]:
-                                    string += """
-        parallel:"""
-                                    string += """
-            {} {}""".format(p, cs[0][0])
-                                    for i, c in enumerate(cs[1:]):
-                                        string += """
-            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
-                                        if c[1] in splines[current_scene][p] and splines[current_scene][p][c[1]]:
-                                            for knot in splines[current_scene][p][c[1]]:
-                                                string += " knot {}".format(knot)
-                                    string += """
+                        for p, cs in same_time_set:
+                            string += "{} {} ".format(p, cs[0][0])
+                        cs = same_time_set[0][1]
+                        for i, c in enumerate(cs[1:]):
+                            string += """
+        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
+                            for p2, cs2 in same_time_set:
+                                string += "{} {} ".format(p2, cs2[i+1][0])
+                                if cs2[i+1][1] in splines[s][xy_to_x(p2)] and splines[s][xy_to_x(p2)][cs2[i+1][1]]:
+                                    for knot in splines[s][xy_to_x(p2)][cs2[i+1][1]]:
+                                        string += " knot {} ".format(knot)
+                        if loops[s][xy_to_x(p)]:
+                            string += """
             repeat"""
-                            break
 
-                for layer in image_state_org[current_scene]:
-                    state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}
-                    for tag, value_org in state.items():
-                        image_keyframes = {k[2]:v for k, v in all_keyframes[current_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                        image_keyframes = set_group_keyframes(image_keyframes)
-                        if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) and "blur" in image_keyframes:
-                            del image_keyframes["blur"]
-                        image_properties = []
-                        for p, d in transform_props:
-                            for gn, ps in props_groups.items():
-                                if p in ps:
-                                    if gn not in image_properties:
-                                        image_properties.append(gn)
-                                    break
-                            else:
-                                if p not in special_props:
-                                    image_properties.append(p)
-
-                        if not image_keyframes:
-                            continue
-                        for p, cs in image_keyframes.items():
-                            if len(cs) > 1:
+            for layer in image_state_org[s]:
+                state = {k: v for dic in [image_state_org[s][layer], image_state[s][layer]] for k, v in dic.items()}
+                for tag, _ in zorder_list[s][layer]:
+                    value_org = state[tag]
+                    image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
+                    image_keyframes = set_group_keyframes(image_keyframes)
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) and "blur" in image_keyframes:
+                        del image_keyframes["blur"]
+                    image_properties = []
+                    for p, d in transform_props:
+                        for gn, ps in props_groups.items():
+                            if p in ps:
+                                if gn not in image_properties:
+                                    image_properties.append(gn)
                                 break
                         else:
-                            continue
-
+                            if p not in special_props:
+                                image_properties.append(p)
+                    if image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) or tag in image_state[s][layer]:
                         image_name = state[tag]["child"][0]
                         if "child" in image_keyframes:
                             last_child = image_keyframes["child"][-1][0][0]
                             if last_child is not None:
                                 last_tag = last_child.split()[0]
-                                if last_tag == tag:
+                                if last_tag == image_name.split()[0]:
                                     image_name = last_child
                         string += """
     show {}""".format(image_name)
@@ -2477,67 +2333,24 @@ show %s""" % child
                             string += " as {}".format(tag)
                         if layer != "master":
                             string += " onlayer {}".format(layer)
-
-                        for p, cs in image_keyframes.items():
-                            if len(cs) > 1 and (p != "child" or loops[current_scene][(tag, layer, "child")]):
-                                break
-                        else:
-                            continue
-                        string += ":"
-                        for p, cs in image_keyframes.items():
-                            if len(cs) > 1 and loops[current_scene][(tag, layer, p)]:
-                                string += """
-        animation"""
-                                break
-                        first = True
-                        for p, cs in x_and_y_to_xy(sort_props(image_keyframes), layer, tag, check_loop=True):
-                            if p not in special_props:
-                                if len(cs) > 1 and not loops[current_scene][(tag, layer, xy_to_x(p))]:
-                                    if first:
-                                        first = False
-                                        string += """
+                        string += """:
         """
-                                    string += "{} {} ".format(p, cs[-1][0])
-
-                        if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)):
-                            focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
-                            if "focusing" in all_keyframes[current_scene]:
-                                focusing_cs["focusing"] = all_keyframes[current_scene]["focusing"]
-                            if "dof" in all_keyframes[current_scene]:
-                                focusing_cs["dof"] = all_keyframes[current_scene]["dof"]
-                            if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
-                                if not loops[current_scene]["focusing"]:
-                                    focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
-                                if not loops[current_scene]["dof"]:
-                                    focusing_cs["dof"] = [focusing_cs["dof"][-1]]
-                                if loops[current_scene]["focusing"] or loops[current_scene]["dof"]:
-                                    focusing_loop = {}
-                                    focusing_loop["focusing_loop"] = loops[current_scene]["focusing"]
-                                    focusing_loop["dof_loop"] = loops[current_scene]["dof"]
-                                    string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                                else:
-                                    string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
-
-                        for p, cs in sort_props(image_keyframes):
-                            if p not in special_props:
-                                if len(cs) > 1 and loops[current_scene][(tag, layer, p)]:
-                                    string += """
+                        if tag in image_state[s][layer]:
+                            string += "default "
+                        string += "subpixel True "
+                        if "crop" in image_keyframes:
+                            string += "{} {} ".format("crop_relative", True)
+                        for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes and len(image_keyframes[p]) == 1], layer, tag):
+                                string += "{} {} ".format(p, cs[0][0])
+                        sorted = put_prop_togetter(image_keyframes, layer, tag)
+                        if "child" in image_keyframes:
+                            if len(sorted) >= 1 or loops[s][(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                                add_tab = "    "
+                                string += """
         parallel:"""
-                                    string += """
-            {} {}""".format(p, cs[0][0])
-                                    for i, c in enumerate(cs[1:]):
-                                        string += """
-            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
-                                        if c[1] in splines[current_scene][(tag, layer, p)] and splines[current_scene][(tag, layer, p)][c[1]]:
-                                            for knot in splines[current_scene][(tag, layer, p)][c[1]]:
-                                                string += " knot {}".format(knot)
-                                    string += """
-            repeat"""
-
-                        if "child" in image_keyframes and loops[current_scene][(tag,layer,"child")]:
-                            last_time = 0.0
-                            string += """
-        parallel:"""
+                            else:
+                                add_tab = ""
+                            last_time = scene_start
                             for i in range(0, len(image_keyframes["child"]), 1):
                                 (image, transition), t, w = image_keyframes["child"][i]
                                 widget = None
@@ -2559,16 +2372,16 @@ show %s""" % child
                                     null = "Null({}, {})".format(w, h)
                                 if (t - last_time) > 0:
                                     string += """
-            {}""".format(t-last_time)
+        {}{}""".format(add_tab, t-last_time)
                                 if i == 0 and (image is not None and transition is not None):
                                     string += """
-            {}""".format(null)
+        {}{}""".format(add_tab, null)
                                 if image is None:
                                     string += """
-            {}""".format(null)
+        {}{}""".format(add_tab, null)
                                 else:
                                     string += """
-            '{}'""".format(image)
+        {}'{}'""".format(add_tab, image)
                                 if transition is not None:
                                     string += " with {}".format(transition)
 
@@ -2578,9 +2391,274 @@ show %s""" % child
                                         delay = getattr(transition, "args")[0]
                                     t += delay
                                 last_time = t
+                            if loops[s][(tag,layer,"child")]:
+                                string += """
+            repeat"""
+                        if len(sorted):
+                            if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                                add_tab = "    "
+                            else:
+                                add_tab = ""
+                            for same_time_set in sorted:
+                                if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                                    string += """
+        parallel:"""
+                                string += """
+        """+add_tab
+                                for p, cs in same_time_set:
+                                    string += "{} {} ".format(p, cs[0][0])
+                                cs = same_time_set[0][1]
+                                for i, c in enumerate(cs[1:]):
+                                    string += """
+        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
+                                    for p2, cs2 in same_time_set:
+                                        string += "{} {} ".format(p2, cs2[i+1][0])
+                                        if cs2[i+1][1] in splines[s][(tag, layer, xy_to_x(p2))] and splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
+                                            for knot in splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
+                                                string += " knot {} ".format(knot)
+                                if loops[s][(tag,layer,xy_to_x(p))]:
+                                    string += """
+            repeat"""
+                        if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                            focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
+                            for p, cs in image_keyframes.items():
+                                if len(cs) > 1 or "child" in image_keyframes:
+                                    string += """
+        parallel:
+            """
+                                    break
+                            else:
+                                string += "\n        "
+                            for p in props_groups["focusing"]:
+                                if p in all_keyframes[s]:
+                                    focusing_cs[p] = [(v, t-scene_start, w) for cs in all_keyframes[s][p] for (v, t, w) in cs]
+                            if loops[s]["focusing"] or loops[s]["dof"]:
+                                focusing_loop = {}
+                                focusing_loop["focusing_loop"] = loops[s]["focusing"]
+                                focusing_loop["dof_loop"] = loops[s]["dof"]
+                                string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                            else:
+                                string += "{} camera_blur({}) ".format("function", focusing_cs)
+            if s != 0:
+                string += """
+    with {}""".format(scene_tran)
+            if len(scene_keyframes) > 1:
+                if s < len(scene_keyframes)-1:
+                    pause_time = scene_keyframes[s+1][1] - scene_start
+                else:
+                    pause_time = get_scene_delay(s)
+                if scene_tran is not None:
+                    transition = renpy.python.py_eval("renpy.store."+scene_tran)
+                    scene_tran_delay = getattr(transition, "delay", None)
+                    if scene_tran_delay is None:
+                        scene_tran_delay = getattr(transition, "args")[0]
+                else:
+                    scene_tran_delay = 0
+                pause_time -= scene_tran_delay
+                pause_time = round(pause_time, 2)
+                if pause_time > 0:
+                    string += """
+    with Pause({})""".format(pause_time)
+
+        if (renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0) \
+            and len(scene_keyframes) == 1:
+            string += """
+    with Pause({})""".format(get_animation_delay())
+        if (renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0 \
+            and renpy.store.persistent._viewer_allow_skip) \
+            or len(scene_keyframes) > 1:
+
+            for i in range(-1, -len(scene_keyframes)-1, -1):
+                if camera_keyframes_exist(i):
+                    break
+            last_camera_scene = i
+            camera_keyframes = {k:v for k, v in all_keyframes[last_camera_scene].items() if not isinstance(k, tuple)}
+            for p, d in camera_props:
+                if p not in camera_keyframes:
+                    if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
+                        camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]
+            camera_keyframes = set_group_keyframes(camera_keyframes)
+            if camera_keyframes:
+                for p, cs in camera_keyframes.items():
+                    if len(cs) > 1:
+                        string += """
+    camera:"""
+                        for p, cs in camera_keyframes.items():
+                            if len(cs) > 1 and loops[last_camera_scene][p]:
+                                string += """
+        animation"""
+                                break
+                        first = True
+                        for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
+                            if len(cs) > 1 and not loops[last_camera_scene][xy_to_x(p)]:
+                                if first:
+                                    first = False
+                                    string += """
+        """
+                                string += "{} {} ".format(p, cs[-1][0])
+                        for p, cs in sort_props(camera_keyframes):
+                            if len(cs) > 1 and loops[last_camera_scene][p]:
+                                string += """
+        parallel:"""
+                                string += """
+            {} {}""".format(p, cs[0][0])
+                                for i, c in enumerate(cs[1:]):
+                                    string += """
+            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                    if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
+                                        for knot in splines[last_camera_scene][p][c[1]]:
+                                            string += " knot {}".format(knot)
+                                string += """
+            repeat"""
+                        break
+
+            last_scene = len(scene_keyframes)-1
+            for layer in image_state_org[last_scene]:
+                state = {k: v for dic in [image_state_org[last_scene][layer], image_state[last_scene][layer]] for k, v in dic.items()}
+                for tag, _ in zorder_list[last_scene][layer]:
+                    image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
+                    image_keyframes = set_group_keyframes(image_keyframes)
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)) and "blur" in image_keyframes:
+                        del image_keyframes["blur"]
+                    image_properties = []
+                    for p, d in transform_props:
+                        for gn, ps in props_groups.items():
+                            if p in ps:
+                                if gn not in image_properties:
+                                    image_properties.append(gn)
+                                break
+                        else:
+                            if p not in special_props:
+                                image_properties.append(p)
+
+                    if not image_keyframes:
+                        continue
+                    for p, cs in image_keyframes.items():
+                        if len(cs) > 1:
+                            break
+                    else:
+                        continue
+
+                    image_name = state[tag]["child"][0]
+                    if "child" in image_keyframes:
+                        last_child = image_keyframes["child"][-1][0][0]
+                        if last_child is not None:
+                            last_tag = last_child.split()[0]
+                            if last_tag == tag:
+                                image_name = last_child
+                    string += """
+    show {}""".format(image_name)
+                    if image_name.split()[0] != tag:
+                        string += " as {}".format(tag)
+                    if layer != "master":
+                        string += " onlayer {}".format(layer)
+
+                    for p, cs in image_keyframes.items():
+                        if len(cs) > 1 and (p != "child" or loops[last_scene][(tag, layer, "child")]):
+                            break
+                    else:
+                        continue
+                    string += ":"
+                    for p, cs in image_keyframes.items():
+                        if len(cs) > 1 and loops[last_scene][(tag, layer, p)]:
                             string += """
+        animation"""
+                            break
+                    first = True
+                    for p, cs in x_and_y_to_xy(sort_props(image_keyframes), layer, tag, check_loop=True):
+                        if p not in special_props:
+                            if len(cs) > 1 and not loops[last_scene][(tag, layer, xy_to_x(p))]:
+                                if first:
+                                    first = False
+                                    string += """
+        """
+                                string += "{} {} ".format(p, cs[-1][0])
+
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)):
+                        focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
+                        if "focusing" in all_keyframes[last_scene]:
+                            focusing_cs["focusing"] = all_keyframes[last_scene]["focusing"]
+                        if "dof" in all_keyframes[last_scene]:
+                            focusing_cs["dof"] = all_keyframes[last_scene]["dof"]
+                        if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
+                            if not loops[last_scene]["focusing"]:
+                                focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
+                            if not loops[last_scene]["dof"]:
+                                focusing_cs["dof"] = [focusing_cs["dof"][-1]]
+                            if loops[last_scene]["focusing"] or loops[last_scene]["dof"]:
+                                focusing_loop = {}
+                                focusing_loop["focusing_loop"] = loops[last_scene]["focusing"]
+                                focusing_loop["dof_loop"] = loops[last_scene]["dof"]
+                                string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                            else:
+                                string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
+
+                    for p, cs in sort_props(image_keyframes):
+                        if p not in special_props:
+                            if len(cs) > 1 and loops[last_scene][(tag, layer, p)]:
+                                string += """
+        parallel:"""
+                                string += """
+            {} {}""".format(p, cs[0][0])
+                                for i, c in enumerate(cs[1:]):
+                                    string += """
+            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+                                    if c[1] in splines[last_scene][(tag, layer, p)] and splines[last_scene][(tag, layer, p)][c[1]]:
+                                        for knot in splines[last_scene][(tag, layer, p)][c[1]]:
+                                            string += " knot {}".format(knot)
+                                string += """
             repeat"""
 
+                    if "child" in image_keyframes and loops[last_scene][(tag,layer,"child")]:
+                        last_time = scene_keyframes[last_scene][1]
+                        string += """
+        parallel:"""
+                        for i in range(0, len(image_keyframes["child"]), 1):
+                            (image, transition), t, w = image_keyframes["child"][i]
+                            widget = None
+                            if i > 0:
+                                old_widget = image_keyframes["child"][i-1][0][0]
+                                if old_widget is not None:
+                                    widget = old_widget
+                            if i < len(image_keyframes["child"])-1:
+                                new_widget = image_keyframes["child"][i+1][0][0]
+                                if new_widget is not None:
+                                    widget = new_widget
+                            if widget is None:
+                                if image is not None:
+                                    widget = image
+                            if widget is None:
+                                null = "Null()"
+                            else:
+                                w, h = renpy.render(renpy.easy.displayable(widget), 0, 0, 0, 0).get_size()
+                                null = "Null({}, {})".format(w, h)
+                            if (t - last_time) > 0:
+                                string += """
+            {}""".format(t-last_time)
+                            if i == 0 and (image is not None and transition is not None):
+                                string += """
+            {}""".format(null)
+                            if image is None:
+                                string += """
+            {}""".format(null)
+                            else:
+                                string += """
+            '{}'""".format(image)
+                            if transition is not None:
+                                string += " with {}".format(transition)
+
+                                transition = renpy.python.py_eval("renpy.store."+transition)
+                                delay = getattr(transition, "delay", None)
+                                if delay is None:
+                                    delay = getattr(transition, "args")[0]
+                                t += delay
+                            last_time = t
+                        string += """
+            repeat"""
+
+        if (renpy.store.persistent._viewer_hide_window and get_animation_delay() > 0 \
+            and len(scene_keyframes) == 1) \
+            or len(scene_keyframes) > 1:
             string += """
     {} show""".format(window_mode)
         string += "\n\n"
