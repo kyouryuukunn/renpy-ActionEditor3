@@ -582,7 +582,8 @@ init -1598 python in _viewers:
         def event(self, ev, x, y, st):
 
             if renpy.map_event(ev, "mousedown_1"):
-                if self.x-self.width/2. <= x and x <= self.x+self.width/2. and self.y-self.height/2. <= y and y <= self.y+self.height/2.:
+                if self.x-self.width/2. <= x and x <= self.x+self.width/2. \
+                    and self.y-self.height/2. <= y and y <= self.y+self.height/2.:
                     self.dragging = True
             elif renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
@@ -784,7 +785,9 @@ init -1598 python in _viewers:
                     ry = pi - ry
                 else:
                     break
-            if (decimal(group.xdy) != decimal(-cos(rx)*sin(rz)+cos(rz)*sin(rx)*sin(ry))) or (decimal(group.xdz) != decimal(cos(rx)*cos(rz)*sin(ry)+sin(rx)*sin(rz))) or (decimal(group.ydz) != decimal(cos(rx)*sin(ry)*sin(rz)-cos(rz)*sin(rx))):
+            if (decimal(group.xdy) != decimal(-cos(rx)*sin(rz)+cos(rz)*sin(rx)*sin(ry))) \
+                or (decimal(group.xdz) != decimal(cos(rx)*cos(rz)*sin(ry)+sin(rx)*sin(rz))) \
+                or (decimal(group.ydz) != decimal(cos(rx)*sin(ry)*sin(rz)-cos(rz)*sin(rx))):
                 #no supported matrix is used.
                 return 0., 0., 0., 0., 0., 0.
 
@@ -861,7 +864,8 @@ init -1598 python in _viewers:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
             default = get_default(prop, not isinstance(key, tuple))
-            if prop not in force_float and (prop in force_wide_range or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
+            if prop not in force_float and (prop in force_wide_range \
+                or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_property(key), float) and prop in force_wide_range:
                     if prop in force_plus:
                         v = float(v)
@@ -1028,9 +1032,13 @@ init -1598 python in _viewers:
                     if p in css:
                         del css[p]
         if play:
-            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
+            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)( \
+             camera_check_points=camera_check_points, image_check_points=image_check_points, \
+             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
         else:
-            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)(camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
+            renpy.show("action_preview", what=renpy.store.Transform(function=renpy.curry(viewer_transform)( \
+             camera_check_points=camera_check_points, image_check_points=image_check_points, \
+             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
 
     def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None):
         if time is None:
@@ -1042,8 +1050,14 @@ init -1598 python in _viewers:
             if time >= checkpoint:
                 start = scene_checkpoints[i-1]
                 goal = scene_checkpoints[i]
-                old_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry(camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1], scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], subpixel=subpixel, time=time, scene_num=i-1)), time, at)
-                new_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry(camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i)), time, at)
+                old_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
+                 camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1], \
+                 scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], \
+                 subpixel=subpixel, time=time, scene_num=i-1)), time, at)
+                new_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
+                 camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
+                 scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
+                 subpixel=subpixel, time=time, scene_num=i)), time, at)
                 
                 if goal[0] is not None and goal[0] != "None":
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
@@ -1053,7 +1067,10 @@ init -1598 python in _viewers:
                     child = new_widget
                 break
         else:
-            child = renpy.store.Transform(function=renpy.curry(camera_transform)(camera_check_points=camera_check_points[0], image_check_points=image_check_points[0], scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0], subpixel=subpixel, time=time, scene_num=0))
+            child = renpy.store.Transform(function=renpy.curry(camera_transform)( \
+             camera_check_points=camera_check_points[0], image_check_points=image_check_points[0], \
+             scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0], \
+             subpixel=subpixel, time=time, scene_num=0))
         box.add(child)
         tran.set_child(box)
         return 0
@@ -1068,10 +1085,15 @@ init -1598 python in _viewers:
                     for p in props_groups["focusing"]:
                         image_loop[p+"_loop"] = loops[scene_num][p]
                         image_spline[p+"_spline"] = splines[scene_num][p]
-                    image_box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=image_check_points[layer][tag], loop=image_loop, spline=image_spline, subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
+                    image_box.add(renpy.store.Transform(function=renpy.curry(transform)( \
+                     check_points=image_check_points[layer][tag], \
+                     loop=image_loop, spline=image_spline, \
+                     subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
         camera_box = renpy.display.layout.MultiBox(layout='fixed')
         #camera position doesn't have effect whithout box
-        camera_box.add(renpy.store.Transform(function=renpy.curry(transform)(check_points=camera_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints))(image_box))
+        camera_box.add(renpy.store.Transform(function=renpy.curry(transform)( \
+         check_points=camera_check_points, loop=loop, spline=spline, \
+         subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints))(image_box))
         tran.set_child(camera_box)
         return 0
 
@@ -1091,8 +1113,6 @@ init -1598 python in _viewers:
         for p, cs in check_points.items():
             if not cs:
                 break
-            # if in_editor and camera and get_value("perspective", scene_checkpoints[scene_num][1], True, scene_num=scene_num) and p in ["xpos", "ypos", "zpos", "rotate", "xanchor", "yanchor", "xoffset", "yoffset"]:
-            #     continue
 
             if loop[p+"_loop"] and cs[-1][1]:
                 if time % cs[-1][1] != 0:
@@ -1629,7 +1649,9 @@ show %s""" % child
             else:
                 if p not in special_props:
                     value = get_property((tag, layer, p), False)
-                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)) or (tag in image_state[current_scene][layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
+                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing \
+                        or not get_value("perspective", scene_keyframes[current_scene][1], True)) \
+                        or (tag in image_state[current_scene][layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
                         if string.find(":") < 0:
                             string += ":\n        "
                         string += "%s %s " % (p, value)
@@ -1933,7 +1955,9 @@ show %s""" % child
             if k in all_keyframes[current_scene]:
                 for (v, t, w) in all_keyframes[current_scene][k]:
                     if t == remove_time:
-                        if remove_time != scene_keyframes[current_scene][1] or (remove_time == scene_keyframes[current_scene][1] and len(all_keyframes[current_scene][k]) == 1):
+                        if remove_time != scene_keyframes[current_scene][1] \
+                            or (remove_time == scene_keyframes[current_scene][1] \
+                             and len(all_keyframes[current_scene][k]) == 1):
                             remove_list.append((v, t, w))
             for c in remove_list:
                 if c[1] in splines[current_scene][k]:
@@ -2323,7 +2347,8 @@ show %s""" % child
                     value_org = state[tag]
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
-                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) and "blur" in image_keyframes:
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) \
+                        and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
                     for p, d in transform_props:
@@ -2335,7 +2360,8 @@ show %s""" % child
                         else:
                             if p not in special_props:
                                 image_properties.append(p)
-                    if image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) or tag in image_state[s][layer]:
+                    if image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) \
+                        or tag in image_state[s][layer]:
                         image_name = state[tag]["child"][0]
                         if "child" in image_keyframes:
                             last_child = image_keyframes["child"][-1][0][0]
@@ -2360,7 +2386,8 @@ show %s""" % child
                                 string += "{} {} ".format(p, cs[0][0])
                         sorted = put_prop_togetter(image_keyframes, layer, tag)
                         if "child" in image_keyframes:
-                            if len(sorted) >= 1 or loops[s][(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                            if len(sorted) >= 1 or loops[s][(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing \
+                                 and get_value("perspective", scene_keyframes[s][1], True, s)):
                                 add_tab = "    "
                                 string += """
         parallel:"""
@@ -2411,12 +2438,14 @@ show %s""" % child
                                 string += """
             repeat"""
                         if len(sorted):
-                            if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                            if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes \
+                                or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
                                 add_tab = "    "
                             else:
                                 add_tab = ""
                             for same_time_set in sorted:
-                                if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                                if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes \
+                                    or (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
                                     string += """
         parallel:"""
                                 string += """
@@ -2534,7 +2563,8 @@ show %s""" % child
                 for tag, _ in zorder_list[last_scene][layer]:
                     image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
-                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)) and "blur" in image_keyframes:
+                    if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)) \
+                        and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
                     for p, d in transform_props:
