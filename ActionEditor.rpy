@@ -520,7 +520,8 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, use
                     else:
                         $_range = range*2
                         $_v = v + range
-                    bar adjustment ui.adjustment(range=_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)) xalign 1. yalign .5 style "action_editor_bar"
+                    bar adjustment ui.adjustment(range=_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)):
+                        xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("+") action [Function(_viewers.add_knot, key, time, pre[0]), renpy.restart_interaction]
         hbox:
             null width 50
