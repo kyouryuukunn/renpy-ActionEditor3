@@ -3,7 +3,6 @@
 #再現条件不明
 #hideが動作しないときがある
 #ホイールが片側動作しない, warper選択画面でのスクロールもできなかった
-#childのみならばparallelなくてよい
 
 #新機能
 #再生中に右クリックで再生停止可能に
@@ -22,8 +21,12 @@
 #Ren'Py 8に対応
 
 #既知の問題
+#childのみならばparallelなくてよい
 #perspectiveで数値を指定されていたらどうする?
 #colormatrix, transformmatrixは十分再現できない
+
+#課題
+#キーフレームのマーカーを表示する
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -404,7 +407,8 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        textbutton _("spline") action [SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), Show("_spline_editor", edit_func=edit_func, change_func=change_func, key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t)]
+                        if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
+                            textbutton _("spline") action [SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), Show("_spline_editor", edit_func=edit_func, change_func=change_func, key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t)]
                         textbutton _("{}".format(v)) action [Function(edit_func, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), Function(_viewers.change_time, t)]
                     textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)) xalign 1. yalign .5 style "action_editor_bar"
