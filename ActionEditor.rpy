@@ -980,7 +980,9 @@ init -1598 python in _viewers:
                 org = state[prop]
                 if org is None:
                     org = get_default(prop, not isinstance(key, tuple))
-                if prop == "child" and tag in image_state[current_scene][layer]:
+                if prop == "child" and \
+                    ((current_scene == 0 and tag in image_state[current_scene][layer]) \
+                    or (current_scene != 0 and time > scene_keyframes[current_scene][1])):
                     org = (None, None)
                 all_keyframes[current_scene][key] = [(org, scene_keyframes[current_scene][1], renpy.store.persistent._viewer_warper), (value, time, renpy.store.persistent._viewer_warper)]
         sort_keyframes()
@@ -1472,7 +1474,8 @@ init -1598 python in _viewers:
                 for p, d in transform_props:
                     if p == "child":
                         image_state[current_scene][layer][added_tag][p] = (image_name, None)
-                        set_keyframe((added_tag, layer, p), (image_name, renpy.store.persistent._viewer_transition))
+                        if current_scene == 0 or current_time > scene_keyframes[current_scene][1]:
+                            set_keyframe((added_tag, layer, p), (image_name, renpy.store.persistent._viewer_transition))
                     else:
                         image_state[current_scene][layer][added_tag][p] = get_property((added_tag, layer, p), False)
                 change_time(current_time)
@@ -1538,6 +1541,7 @@ init -1598 python in _viewers:
         del image_state[current_scene][layer][tag]
         remove_keyframes(tag, layer)
         sort_keyframes()
+        zorder_list[current_scene][layer] = [(ztag, z) for (ztag, z) in zorder_list[current_scene][layer] if ztag != tag]
 
     def get_default(prop, camera=False):
         if camera:
