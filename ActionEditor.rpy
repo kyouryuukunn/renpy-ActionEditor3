@@ -291,9 +291,9 @@ screen _action_editor_option():
             textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
             text _("Show/Hide camera icon")
             textbutton _("camera icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
-            text _("Show/Hide window during animation in clipboard")
+            text _("Show/Hide window during animation in clipboard(window is forced to be hide when the action has multi scene)")
             textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
-            text _("Allow/Disallow skipping animation in clipboard")
+            text _("Allow/Disallow skipping animation in clipboard(be forced to allow when the action has multi scene)")
             text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
             textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
             text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
@@ -930,7 +930,11 @@ init -1598 python in _viewers:
                     if camera_keyframes_exist(i):
                         break
                 for p, d in camera_props:
-                    camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
+                    middle_value = get_value(p, scene_keyframes[s][1], False, i)
+                    if isinstance(middle_value, float):
+                        camera_state_org[s][p] = round(middle_value, 3)
+                    else:
+                        camera_state_org[s][p] = middle_value
 
     def play(play):
         camera_check_points = []
@@ -1768,7 +1772,11 @@ show %s""" % child
             if camera_keyframes_exist(i):
                 break
         for p, d in camera_props:
-            camera_state_org[current_scene][p] = round(get_value(p, scene_keyframes[current_scene][1], False, i), 3)
+            middle_value = get_value(p, scene_keyframes[current_scene][1], False, i)
+            if isinstance(middle_value, float):
+                camera_state_org[current_scene][p] = round(middle_value, 3)
+            else:
+                camera_state_org[current_scene][p] = middle_value
         renpy.show_screen("_action_editor")
 
     def camera_keyframes_exist(scene_num):
@@ -1798,7 +1806,11 @@ show %s""" % child
                 if camera_keyframes_exist(i):
                     break
             for p, d in camera_props:
-                camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
+                middle_value = get_value(p, scene_keyframes[s][1], False, i)
+                if isinstance(middle_value, float):
+                    camera_state_org[s][p] = round(middle_value, 3)
+                else:
+                    camera_state_org[s][p] = middle_value
         renpy.show_screen("_action_editor")
         change_time(current_time)
 
@@ -1856,7 +1868,11 @@ show %s""" % child
                 if camera_keyframes_exist(i):
                     break
             for p, d in camera_props:
-                camera_state_org[s][p] = round(get_value(p, scene_keyframes[s][1], False, i), 3)
+                middle_value = get_value(p, scene_keyframes[s][1], False, i)
+                if isinstance(middle_value, float):
+                    camera_state_org[s][p] = round(middle_value, 3)
+                else:
+                    camera_state_org[s][p] = middle_value
         for k, cs in all_keyframes[new_scene_num].items():
             for (v, t, w) in cs:
                 c = (v, t - (old - new), w)
