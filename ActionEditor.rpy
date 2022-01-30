@@ -35,6 +35,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._wide_range)
         key "rollforward" action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")-100+persistent._wide_range)
     key "K_SPACE" action play_action
+    key "action_editor" action NullAction()
 
     $offsetX, offsetY = _viewers.get_property("offsetX"), _viewers.get_property("offsetY")
     $range = persistent._wide_range
