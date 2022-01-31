@@ -7,9 +7,8 @@ lemma forum
 
  日本語マニュアルはドキュメント後半にあります。
 
- This script adds the ability to simulate a 3D camera within Ren'Py, along with an
- in-game Action Editor and Image Viewer GUI to assist in animating the camera.
- To install, copy all files in the camera directory to your game directory.
+ This script adds the ability to adjust and view transform properties of images
+ and camera by in-game Action Editor and Image Viewer GUI.
 
  Ren'Py <http://www.renpy.org/>
 
@@ -18,20 +17,16 @@ lemma forum
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
 
  In current version ActionEditor, below functions are removed.
- * spline
  * expression
  * loading last action
 
- To install, copy all files in the camera directory to your game directory.
- Then enable it like below.
-	camera:
-        perspective True
+ To install, copy all files in the camera directory into your game directory.
 
  Action Editor
 ================
 
- This allows you to adjusts coordinates of the  camera and transform properties
- of images in real-time with a GUI. It can then generate a script based on these changes and
+ This allows you to adjusts transform properties of camera and images in
+ real-time with a GUI. It can then generate a script based on these changes and
  place it on the clipboard for later pasting into Ren'Py scripts.
 
  When `config.developer` is True, pressing action_editor (by default,
@@ -39,32 +34,33 @@ lemma forum
  
  The Action Editor has the following features:
  
-  * View and adjust the transform properties of images, camera coordinates, and 3D layer depth with bars
-  * View and adjust the x and y coordinates of the camera with a mouse-positionable camera
+  * View and adjust the transform properties of images and camera with adjusting a bar or typing value.
+  * View and adjust the x and y coordinates of the camera with a draggable camera icon.
   * Adjust the z coordinate of the camera with the mouse wheel.
-  * Adjust the x,y coordinate of the camera with the keyboard(hjkl, HJKL).
-  * Alternatively, each value can be adjusted with the keyboard without going back to the original script.
-  * Add, delete, and edit keyframes on a timeline.
+  * Adjust the x,y coordinate of the camera with the keyboard(hjkl, HJKL, wasd, WASD).
+  * Reset the value with right-click on the value button.
+  * Add, delete, and edit keyframes on a timeline like video editing software.
+  * the spline motion and loop is availabe
   * After setting up a scene with the desired look and animations, the Action
     Editor will generate a script and place it on your clipboard for pasting
     into your Ren'Py scripts. (v6.99 and later only)
   * Introducing the concept of depth of field and allow to adjust focus position and dof.
-  * Showing and replacing, hiding image with transition(use None for image name to hide image)
+    Blur each image according to dof, focus postion and the distance between the camera and the image.
+  * Show, replace and hide a image with transition(use None for a image name to hide image)
+  * Change a scene with scene statement.
   * There is the option for hiding window during the ATL animation in clipboard data.
   * There is the option for allowing to skip ATL animation in clipboard data.
 
- some config variables is availabe in ActionEditor_config.rpy
-
  Note
  * blur transform property of each images are used for simulating camera blur in function transform prperty,
- so blur transform properties of each images aren't availabe when focusing is enabled.
- Set function property to None when you want to disable camera blur for already shownd images.
- * Can't get correct value If any other transform_matrix than below Matrixes are used.
+   so blur transform properties of each images aren't availabe when focusing is enabled.
+   Set function property to None when you want to disable camera blur for already shownd images.
+ * ActionEditor Can't get correct value If any other transform_matrix than below Matrixes are used.
     OffsetMatrix * RotateMatrix
     OffsetMatrix
     RotateMatrix
- * Can't get colormatrix property.
- * Skipping animations may not work when the animations includes loop and the tag is already shown.
+ * ActionEditor Can't get colormatrix property.
+ * Skipping animations may not work when those include the tags which are already shown and have loop animations.
 
  Image Viewer
 ================
@@ -85,44 +81,47 @@ lemma forum
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
 
- 3Dカメラの再現を自作スクリプトから3Dステージに切り替えたことにより、旧版にあった最後のアクションを読み込む機能、スプライン、エクスプレッション機能はなくなりました。
+ 3Dカメラの再現を自作スクリプトから3Dステージに切り替えたことにより、旧版にあった最後のアクションを読み込む機能、エクスプレッション機能はなくなりました。
  使用したい場合はそれぞれ以下で代用してください。
- * スプライン ActionEditorで座標を確認後、手動でknotを使用してスプラインを指定してください <https://ja.renpy.org/doc/html/atl.html#interpolation-statement>
  * エクスプレッション function transform プロパティで代用してください。 <https://ja.renpy.org/doc/html/atl.html#function-statement>
 
- 使用にはフォルダ内のファイルをgameフォルダにコピーし、ゲーム開始時に以下のようにしてカメラを有効化してください
-	camera:
-        perspective True
+ 使用にはフォルダ内のファイルをgameフォルダにコピーしてください。
 
  演出エディター(Action Editor)
 ================
 
- 演出エディターでは変換プロパティーやカメラ、レイヤーの座標設定をGUI上で変更し、
- 結果を確認できます。さらにそれらの値を時間軸に沿って変更可能なので、スクリプト
- を変更するたびに、リロードで結果を確認する従来の方法より遥かに短時間で動的演出
- を作成可能です。設定した値はクリップボードに送られ、スクリプトに貼り付けられま
- す。
- さらにfocusingを有効にすると被写界深度の概念を導入し、カメラと画像との距離で
- ブラーをかけられます。
+ 演出エディターではcameraや画像の transform プロパティーをGUI上で変更し、結果を
+ 確認できます。さらにそれらの値を時間軸に沿って変更可能なので、スクリプトを変更
+ するたびに、リロードで結果を確認する従来の方法より遥かに短時間でアニメーション
+ を作成可能です。設定したアニメーションをクリップボードに送って、スクリプトに貼
+ り付けられます。
+ さらにfocusingを有効にすると被写界深度の概念をRen'Pyに導入して、カメラと画像と
+ の距離に応じてブラーがかかるようにもできます。。
 
  config.developer が True なら、Shift+Pで演出エディターが起動します。
  
  演出エディターでは以下の機能が利用可能です。:
  
- * 各画像の変換プロパティーやカメラ、レイヤー座標を直接入力またはバーの操作により変更
+ * カメラや各画像の transform プロパティーを直接数値入力またはバーの操作により変更
+ * カメラアイコンのドラッグでカメラのx,y座標を移動
+ * マウスホイールでカメラのz座標を移動
+ * キーボード(hjkl,HJKL,wasd,WASD)によりカメラのxy座標を移動
  * 数値を右クリックでリセット
- * カメラアイコンのドラッグまたはマウスホイール、キーボード(hjkl,HJKL)によるカメラ移動
  * 動画編集ソフトの様にキーフレームを設定して時間軸にそった演出を作成
+ * transform プロパティーへのスプライン補間やループ設定
  * 作成した演出のコードをクリップボードに送る(v6.99以上, Windows限定)
- * 被写界深度の概念を導入し、フォーカス位置と被写界深度を操作可能
- * トランジションを伴う画像の表示、置き換え、非表示(画像を非表示するには画像名にNoneを入力してください)
- * クリップボードへの出力データでアニメーション中はウィンドウを非表示するようにするオプション
- * クリップボードへの出力データでアニメーションスキップ可能にするオプション
-
-   ActionEditor_config.rpyで細かい挙動を調整できます。
+ * 被写界深度の概念を導入し、フォーカス位置と被写界深度を操作可能にする。これらの
+   値とカメラと各画像のz座標から各画像にブラーがかけられる(通常のブラーと排他)
+ * トランジションを伴う画像の表示、置き換え、非表示
+   (画像を非表示するには画像名にNoneを入力してください)
+ * sceneステートメントによるシーンの切り替え
+ * オプションから、アニメーション中はウィンドウを非表示にするフォーマットでクリップボードに出力するか選択可
+   (複数シーンを使用する場合は強制的にウィンドウ非表示となります)
+ * オプションから、アニメーションスキップ可能にするフォーマットでクリップボードに出力するか選択可
+   (複数シーンを使用する場合は強制的にスキップ可となります)
 
  注意
- *focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります
+ *focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
  *funtion transform propertyにcamera_blurを使用して表示している画像にはblurをかけられません。既に表示している画像の
  focusingを無効にしたい場合はfunctionプロパティーをいったんNoneにしてください
  *matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
@@ -130,7 +129,7 @@ lemma forum
     OffsetMatrix
     RotateMatrix
  *colormatrixプロパティーは現在の値をエディターでは読み込めません。
- *アニメーション終了後と同じ画像を表示してスキップを可能にしていますが、ループが含まれ、同じタグの画像がすでに表示されている場合は正常に動作しません。
+ *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
    
