@@ -101,7 +101,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
 
             hbox:
                 style_group "action_editor_a"
-                textbutton _("time: [_viewers.current_time:>.2f] s") action Function(_viewers.edit_time)
+                textbutton _("time: [_viewers.current_time:>05.2f] s") action Function(_viewers.edit_time)
                 textbutton _("<") action Function(_viewers.prev_time)
                 textbutton _(">") action Function(_viewers.next_time)
                 textbutton _("play") action play_action
@@ -159,11 +159,11 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     SensitiveIf(p in _viewers.all_keyframes[_viewers.current_scene]), \
                                     SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
                                 if isinstance(value, int):
-                                    textbutton "[value]":
+                                    textbutton "[value:> ]":
                                         action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
                                         alternate reset_action style_group "action_editor_b"
                                 else:
-                                    textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus):
+                                    textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus):
                                         alternate reset_action style_group "action_editor_b"
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
@@ -176,7 +176,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 textbutton "  [p]" action [\
                                     SensitiveIf(p in _viewers.all_keyframes[_viewers.current_scene]), \
                                     SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, edit_func=_viewers.edit_value, change_func=f)]
-                                textbutton "[value:>.2f]":
+                                textbutton "[value:> .2f]":
                                     action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus)
                                     alternate reset_action style_group "action_editor_b"
                                 if p in _viewers.force_plus:
@@ -221,11 +221,11 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
                                     Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
                                 if isinstance(value, int):
-                                    textbutton "[value]":
+                                    textbutton "[value:> ]":
                                         action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
                                         alternate Function(_viewers.reset, (tab, layer, p)) style_group "action_editor_b"
                                 else:
-                                    textbutton "[value:>.2f]":
+                                    textbutton "[value:> .2f]":
                                         action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)
                                         alternate Function(_viewers.reset, (tab, layer, p)) style_group "action_editor_b"
                                 if p in _viewers.force_plus:
@@ -240,7 +240,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     SensitiveIf((tab, layer, p) in _viewers.all_keyframes[_viewers.current_scene]), \
                                     SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
                                     Show("_edit_keyframe", key=(tab, layer, p), edit_func=_viewers.edit_value, change_func=f)]
-                                textbutton "[value:>.2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus):
+                                textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus):
                                     alternate Function(_viewers.reset, (tab, layer, p)) style_group "action_editor_b"
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
@@ -315,7 +315,9 @@ init -1598:
     style action_editor_b_button:
         take action_editor_button
         size_group "action_editor_b"
-    style action_editor_b_button_text is action_editor_button_text
+        xminimum 140
+    style action_editor_b_button_text is action_editor_button_text:
+        xalign 1.0
 
 screen _input_screen(message="type value", default=""):
     modal True
@@ -471,7 +473,7 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
                         textbutton _("{}".format(v)) action [\
                             Function(edit_func, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
                             Function(_viewers.change_time, t)]
-                    textbutton _("[t:>.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
+                    textbutton _("[t:>05.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)):
                         xalign 1. yalign .5 style "action_editor_bar"
         hbox:
@@ -1113,6 +1115,12 @@ init -1598 python in _viewers:
         if time is None:
             time = st
         box = renpy.display.layout.MultiBox(layout='fixed')
+        # box.add(renpy.store.Solid("#000", xsize=renpy.config.screen_width, ysize=10,     pos=(0., 0.), anchor=(0., 1.)))
+        # box.add(renpy.store.Solid("#000", xsize=renpy.config.screen_width, ysize=10,     pos=(0., 1.), anchor=(0., 0.)))
+        # box.add(renpy.store.Solid("#000", xsize=10, ysize=renpy.config.screen_height+20, pos=(0., 0.), anchor=(1., 10)))
+        # box.add(renpy.store.Solid("#000", xsize=10, ysize=renpy.config.screen_height+20, pos=(1., 0.), anchor=(0., 10)))
+        # tran.align = (0.5, 0.)
+        # tran.zoom = 0.6
         for i in range(-1, -len(scene_checkpoints), -1):
             checkpoint = scene_checkpoints[i][1]
             pre_checkpoint = scene_checkpoints[i-1][1]
