@@ -1,3 +1,4 @@
+
 #課題
 
 #再現条件不明
@@ -616,6 +617,7 @@ init -1598 python in _viewers:
             self.child = renpy.displayable(child)
             self.dragging = False
 
+
         def init(self, int_x=True, int_y=True):
             self.int_x = int_x
             self.int_y = int_y
@@ -630,6 +632,7 @@ init -1598 python in _viewers:
 
             self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
             self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
+
 
         def render(self, width, height, st, at):
 
@@ -647,6 +650,7 @@ init -1598 python in _viewers:
 
             # Return the render.
             return render
+
 
         def event(self, ev, x, y, st):
 
@@ -688,8 +692,10 @@ init -1598 python in _viewers:
             # Pass the event to our child.
             # return self.child.event(ev, x, y, st)
 
+
         def per_interact(self):
             renpy.redraw(self, 0)
+
 
         def visit(self):
             return [ self.child ]
@@ -700,6 +706,7 @@ init -1598 python in _viewers:
     # create the image which is doing transition at the given time.
     # TransitionDisplayble(dissolve(old_widget, new_widget), 0, 0)
 
+
         def __init__(self, transition, st, at, **properties):
             super(DuringTransitionDisplayble, self).__init__(**properties)
 
@@ -707,12 +714,14 @@ init -1598 python in _viewers:
             self.st = st
             self.at = at
         
+
         def render(self, width, height, st, at):
             #st, at is 0 allways?
             return self.transition.render(width, height, self.st, self.at)
 
 
     class FixedTimeDisplayable(renpy.Displayable):
+
 
         def __init__(self, d, st, at, **properties):
             super(FixedTimeDisplayable, self).__init__(**properties)
@@ -721,6 +730,7 @@ init -1598 python in _viewers:
             self.st = st
             self.at = at
         
+
         def render(self, width, height, st, at):
             #st, at is 0 allways?
             return self.d.render(width, height, self.st, self.at)
@@ -728,11 +738,13 @@ init -1598 python in _viewers:
 
     class RenderToDisplayable(renpy.Displayable):
 
+
         def __init__(self, render, **properties):
             super(RenderToDisplayable, self).__init__(**properties)
 
             self.render = render
         
+
         def render(self, width, height, st, at):
             #st, at is 0 allways?
             return self.render
@@ -887,6 +899,7 @@ init -1598 python in _viewers:
         else:
             return None
 
+
     def reset(key_list):
         if current_time < scene_keyframes[current_scene][1]:
             renpy.notify(_("can't change values before the start tiem of the current scene"))
@@ -912,12 +925,15 @@ init -1598 python in _viewers:
             set_keyframe(key, v)
         change_time(current_time)
 
+
     def image_reset():
         key_list = [(tag, layer, prop) for layer in renpy.config.layers for tag, props in {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}.items() for prop in props]
         reset(key_list)
 
+
     def camera_reset():
         reset([p for p, d in camera_props])
+
 
     def generate_changed(key):
         if isinstance(key, tuple):
@@ -954,6 +970,7 @@ init -1598 python in _viewers:
                 splines[current_scene][key][time][knot_number] = v
             change_time(time)
         return changed
+
 
     def set_keyframe(key, value, recursion=False, time=None):
         if isinstance(key, tuple):
@@ -1010,6 +1027,7 @@ init -1598 python in _viewers:
                         camera_state_org[s][p] = round(middle_value, 3)
                     else:
                         camera_state_org[s][p] = middle_value
+
 
     def play(play):
         camera_check_points = []
@@ -1111,6 +1129,7 @@ init -1598 python in _viewers:
              camera_check_points=camera_check_points, image_check_points=image_check_points, \
              scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
 
+
     def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None):
         if time is None:
             time = st
@@ -1119,29 +1138,29 @@ init -1598 python in _viewers:
         # box.add(renpy.store.Solid("#000", xsize=renpy.config.screen_width, ysize=10,     pos=(0., 1.), anchor=(0., 0.)))
         # box.add(renpy.store.Solid("#000", xsize=10, ysize=renpy.config.screen_height+20, pos=(0., 0.), anchor=(1., 10)))
         # box.add(renpy.store.Solid("#000", xsize=10, ysize=renpy.config.screen_height+20, pos=(1., 0.), anchor=(0., 10)))
-        # tran.align = (0.5, 0.)
+        # tran.align = (1.0, 0.)
         # tran.zoom = 0.6
         for i in range(-1, -len(scene_checkpoints), -1):
             checkpoint = scene_checkpoints[i][1]
-            pre_checkpoint = scene_checkpoints[i-1][1]
             if time >= checkpoint:
-                start = scene_checkpoints[i-1]
                 goal = scene_checkpoints[i]
-                old_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
-                 camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1], \
-                 scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], \
-                 subpixel=subpixel, time=time, scene_num=i-1)), time, at)
-                new_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
-                 camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
-                 scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
-                 subpixel=subpixel, time=time, scene_num=i)), time, at)
-                
-                if goal[0] is not None and goal[0] != "None":
+                if goal[0] is None or goal[0] == "None" or time - checkpoint > get_transition_delay(goal[0]):
+                    child = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
+                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
+                     subpixel=subpixel, time=time, scene_num=i)), time, at)
+                else:
+                    old_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
+                     camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1], \
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], \
+                     subpixel=subpixel, time=time, scene_num=i-1)), time, at)
+                    new_widget = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
+                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
+                     subpixel=subpixel, time=time, scene_num=i)), time, at)
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
                     during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
                     child = during_transition_displayable
-                else:
-                    child = new_widget
                 break
         else:
             child = renpy.store.Transform(function=renpy.curry(camera_transform)( \
@@ -1151,6 +1170,7 @@ init -1598 python in _viewers:
         box.add(child)
         tran.set_child(box)
         return 0
+
 
     def camera_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None, scene_num=0):
         image_box = renpy.display.layout.MultiBox(layout='fixed')
@@ -1173,6 +1193,7 @@ init -1598 python in _viewers:
          subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints))(image_box))
         tran.set_child(camera_box)
         return 0
+
 
     def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, in_editor=True, scene_num=None, scene_checkpoints=None):
         # check_points = { prop: [ (value, time, warper).. ] }
@@ -1371,6 +1392,7 @@ init -1598 python in _viewers:
                 tran.set_child(child)
         return 0
 
+
     def get_property(key, default=True, scene_num=None):
         if scene_num is None:
             scene_num = current_scene
@@ -1396,6 +1418,7 @@ init -1598 python in _viewers:
         else:
             return None
 
+
     def edit_value(function, use_wide_range=False, default="", force_plus=False, time=None):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
         if v:
@@ -1420,6 +1443,7 @@ init -1598 python in _viewers:
             else:
                 renpy.notify(_("Please type plus value"))
 
+
     def edit_default_transition():
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", message="Type transition")
         if v:
@@ -1428,6 +1452,7 @@ init -1598 python in _viewers:
             renpy.store.persistent._viewer_transition = v
             return
         renpy.notify(_("Please Input Transition"))
+
 
     def edit_transition(tag, layer, time=None):
         if time is None:
@@ -1448,6 +1473,7 @@ init -1598 python in _viewers:
             change_time(time)
             return
         renpy.notify(_("Please Input Transition"))
+
 
     def add_image(layer):
         if current_time < scene_keyframes[current_scene][1]:
@@ -1492,6 +1518,7 @@ init -1598 python in _viewers:
             renpy.notify(_("Please type image name"))
             return
 
+
     def change_child(tag, layer, time=None, default=None):
         if time is None:
             time = current_time
@@ -1518,6 +1545,7 @@ init -1598 python in _viewers:
             renpy.notify(_("Please type image name"))
             return
 
+
     def toggle_zzoom(tag, layer):
         zzoom = get_value((tag, layer, "zzoom"), scene_keyframes[current_scene][1], True)
         zzoom_org={n: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for n, v in dic.items()}[tag]["zzoom"]
@@ -1526,6 +1554,7 @@ init -1598 python in _viewers:
         else:
             remove_keyframe(scene_keyframes[current_scene][1], (tag, layer, "zzoom"))
         change_time(current_time)
+
 
     def toggle_perspective():
         perspective = get_value("perspective", scene_keyframes[current_scene][1], True)
@@ -1540,6 +1569,7 @@ init -1598 python in _viewers:
             set_keyframe("perspective", perspective, time=scene_keyframes[current_scene][1])
         change_time(current_time)
 
+
     def remove_image(layer, tag):
         def remove_keyframes(layer, tag):
             for k in [k for k in all_keyframes[current_scene] if isinstance(k, tuple) and k[0] == tag and k[1] == layer]:
@@ -1551,6 +1581,7 @@ init -1598 python in _viewers:
         sort_keyframes()
         zorder_list[current_scene][layer] = [(ztag, z) for (ztag, z) in zorder_list[current_scene][layer] if ztag != tag]
 
+
     def get_default(prop, camera=False):
         if camera:
             props = camera_props
@@ -1559,6 +1590,7 @@ init -1598 python in _viewers:
         for p, d in props:
             if p == prop:
                 return d
+
 
     def get_value(key, time=None, default=False, scene_num=None):
         if scene_num is None:
@@ -1637,6 +1669,7 @@ init -1598 python in _viewers:
             else:
                 return cs[0][0]
 
+
     def put_camera_clipboard():
         group_cache = defaultdict(lambda:{})
         group_flag = {}
@@ -1684,6 +1717,7 @@ camera"""
             renpy.notify(_("Can't open clipboard"))
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
+
 
     def put_image_clipboard(tag, layer):
         group_cache = defaultdict(lambda:{})
@@ -1753,7 +1787,7 @@ show %s""" % child
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
-    ##########################################################################
+
     def edit_warper(check_points, old, value_org):
         warper = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter", current_warper=value_org)
         if warper:
@@ -1765,6 +1799,7 @@ show %s""" % child
                         cs[i] = (v, t, warper)
                         break
         renpy.restart_interaction()
+
 
     def edit_move_keyframe(keys, old):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=old)
@@ -1779,6 +1814,7 @@ show %s""" % child
             except:
                 renpy.notify(_("Please type value"))
 
+
     def edit_move_all_keyframe():
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=moved_time)
         if v:
@@ -1790,6 +1826,7 @@ show %s""" % child
             except:
                 renpy.notify(_("Please type value"))
 
+
     def edit_time():
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=current_time)
         if v:
@@ -1800,6 +1837,7 @@ show %s""" % child
                 change_time(v)
             except:
                 renpy.notify(_("Please type value"))
+
 
     def edit_range_value(object, field, use_int):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=getattr(object, field))
@@ -1819,6 +1857,7 @@ show %s""" % child
             except:
                 renpy.notify(_("Please type value"))
 
+
     def next_time():
         if not sorted_keyframes[current_scene]:
             change_time(scene_keyframes[current_scene][1])
@@ -1829,6 +1868,7 @@ show %s""" % child
                     change_time(t)
                     return
             change_time(scene_keyframes[current_scene][1])
+
 
     def prev_time():
         if not sorted_keyframes[current_scene]:
@@ -1844,6 +1884,7 @@ show %s""" % child
                     change_time(sorted_keyframes[current_scene][-1])
                 else:
                     change_time(scene_keyframes[current_scene][1])
+
 
     def add_scene():
         global current_scene
@@ -1880,6 +1921,7 @@ show %s""" % child
                 camera_state_org[current_scene][p] = middle_value
         renpy.show_screen("_action_editor")
 
+
     def camera_keyframes_exist(scene_num):
         for p, d in camera_props:
             if p in all_keyframes[scene_num]:
@@ -1887,6 +1929,7 @@ show %s""" % child
         else:
             return False
         return True
+
 
     def remove_scene(scene_num):
         global current_scene
@@ -1914,6 +1957,7 @@ show %s""" % child
                     camera_state_org[s][p] = middle_value
         renpy.show_screen("_action_editor")
         change_time(current_time)
+
 
     def move_scene(new, scene_num):
         scene_num_scene_keyframes = scene_keyframes.pop(scene_num)
@@ -1987,6 +2031,7 @@ show %s""" % child
         change_time(current_time)
         return
 
+
     def edit_move_scene(scene_num):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=scene_keyframes[scene_num][1])
         if v:
@@ -1999,6 +2044,7 @@ show %s""" % child
             except:
                 renpy.notify(_("Please type value"))
 
+
     def edit_scene_transition(scene_num):
         default, t, w = scene_keyframes[scene_num]
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
@@ -2010,21 +2056,25 @@ show %s""" % child
             return
         renpy.notify(_("Please Input Transition"))
 
+
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
         renpy.show_screen("_action_editor")
         change_time(current_time)
 
+
     def select_default_warper():
         v = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter")
         if v:
             renpy.store.persistent._viewer_warper = v
 
+
     def clear_keyframes():
         global all_keyframes, sorted_keyframes
         all_keyframes = [{}]
         sorted_keyframes = [[]]
+
 
     def remove_keyframe(remove_time, key):
         if not isinstance(key, list):
@@ -2047,9 +2097,11 @@ show %s""" % child
         sort_keyframes()
         change_time(current_time)
 
+
     def remove_all_keyframe(time):
         keylist = [k for k in all_keyframes[current_scene]]
         remove_keyframe(time, keylist)
+
 
     def sort_keyframes():
         sorted_keyframes[current_scene][:] = []
@@ -2059,6 +2111,7 @@ show %s""" % child
                     sorted_keyframes[current_scene].append(t)
         sorted_keyframes[current_scene].sort()
 
+
     def move_all_keyframe(new, old):
         global moved_time
         if new < scene_keyframes[current_scene][1]:
@@ -2066,6 +2119,7 @@ show %s""" % child
         moved_time = round(new, 2)
         k_list = [k for k in all_keyframes[current_scene].keys()]
         move_keyframe(new, old, k_list)
+
 
     def move_keyframe(new, old, keys):
         if new < scene_keyframes[current_scene][1]:
@@ -2098,6 +2152,7 @@ show %s""" % child
         sort_keyframes()
         renpy.restart_interaction()
 
+
     def keyframes_exist(k, time=None):
         if time is None:
             time = current_time
@@ -2109,6 +2164,7 @@ show %s""" % child
                 return True
         return False
 
+
     def add_knot(key, time, default, knot_number=None):
         if time in splines[current_scene][key]:
             if knot_number is not None:
@@ -2118,11 +2174,13 @@ show %s""" % child
         else:
             splines[current_scene][key][time] = [default]
 
+
     def remove_knot(key, time, i):
         if time in splines[current_scene][key]:
             splines[current_scene][key][time].pop(i)
             if not splines[current_scene][key][time]:
                 del splines[current_scene][key][time]
+
 
     def change_time(v):
         global current_time
@@ -2131,6 +2189,7 @@ show %s""" % child
         #     current_time = scene_keyframes[current_scene][1]
         play(False)
         renpy.restart_interaction()
+
 
     def open_action_editor():
         global current_time, current_scene, scene_keyframes, zorder_list
@@ -2174,52 +2233,50 @@ show %s""" % child
         renpy.call_screen("_action_editor")
         renpy.store._window = _window
 
+
+    def get_transition_delay(tran):
+        if tran is None:
+            return 0
+        if isinstance(tran, str):
+            tran = renpy.python.py_eval("renpy.store."+tran)
+        delay = getattr(tran, "delay", None)
+        if delay is None:
+            delay = getattr(tran, "args")[0]
+        return delay
+
+
     def get_animation_delay():
         animation_time = 0
         for s, (tran, scene_start, _) in enumerate(scene_keyframes):
             if scene_start > animation_time:
                 animation_time = scene_start
-            if isinstance(tran, str):
-                transition = renpy.python.py_eval("renpy.store."+tran)
-                delay = getattr(transition, "delay", None)
-                if delay is None:
-                    delay = getattr(transition, "args")[0]
-                if delay + scene_start  > animation_time:
-                    animation_time = delay + scene_start
+            delay = get_transition_delay(tran)
+            if delay + scene_start  > animation_time:
+                animation_time = delay + scene_start
             for cs in all_keyframes[s].values():
                 for (v, t, w) in cs:
                     if isinstance(v, tuple):
-                        if isinstance(v[1], str):
-                            transition = renpy.python.py_eval("renpy.store."+v[1])
-                            delay = getattr(transition, "delay", None)
-                            if delay is None:
-                                delay = getattr(transition, "args")[0]
-                            t += delay
+                        delay = get_transition_delay(v[1])
+                        t += delay
                     if t > animation_time:
                         animation_time = t
         return animation_time
 
+
     def get_scene_delay(scene_num):
         animation_time = 0
         (tran, scene_start, _) = scene_keyframes[scene_num]
-        if isinstance(tran, str):
-            transition = renpy.python.py_eval("renpy.store."+tran)
-            delay = getattr(transition, "delay", None)
-            if delay is None:
-                delay = getattr(transition, "args")[0]
-            animation_time = delay + scene_start
+        delay = get_transition_delay(tran)
+        animation_time = delay + scene_start
         for cs in all_keyframes[scene_num].values():
             for (v, t, w) in cs:
                 if isinstance(v, tuple):
-                    if isinstance(v[1], str):
-                        transition = renpy.python.py_eval("renpy.store."+v[1])
-                        delay = getattr(transition, "delay", None)
-                        if delay is None:
-                            delay = getattr(transition, "args")[0]
-                        t += delay
+                    delay = get_transition_delay(v[1])
+                    t += delay
                 if t > animation_time:
                     animation_time = t
         return animation_time - scene_start
+
 
     def set_group_keyframes(keyframes):
         result = {}
@@ -2249,6 +2306,7 @@ show %s""" % child
                 result[p] = cs
         return result
 
+
     def camera_blur_amount(image_zpos, camera_zpos, dof, focusing):
         # if camera_zpos is None:
         #     camera_zpos = get_property("offsetZ")+get_property("zpos")
@@ -2264,12 +2322,14 @@ show %s""" % child
             blur_amount = abs(blur_amount)
         return blur_amount
 
+
     def sort_props(keyframes):
         sorted = []
         for p in sort_ref_list:
             if p in keyframes:
                 sorted.append((p, keyframes[p]))
         return sorted
+
 
     def put_prop_togetter(keyframes, layer=None, tag=None):
         sorted = []
@@ -2308,6 +2368,7 @@ show %s""" % child
                 ks = x_and_y_to_xy(ks, layer=layer, tag=tag, check_spline=True)
         return result
 
+
     def x_and_y_to_xy(keyframe_list, layer=None, tag=None, check_spline=False, check_loop=False):
         for xy, (x, y) in xygroup.items():
             if x in [p for p, cs in keyframe_list] and y in [p for p, cs in keyframe_list]:
@@ -2342,15 +2403,18 @@ show %s""" % child
                 keyframe_list.pop(yi)
         return keyframe_list
 
+
     def xy_to_x(prop):
         if prop in xygroup:
             return xygroup[prop][0]
         else:
             return prop
 
+
     def sort_zorder(state, layer, scene_num):
         zorder = zorder_list[scene_num][layer]
         return [(tag, state[tag]) for tag, _ in zorder]
+
 
     def put_clipboard():
         string = ""
@@ -2506,12 +2570,7 @@ show %s""" % child
         {}'{}'""".format(add_tab, image)
                                 if transition is not None:
                                     string += " with {}".format(transition)
-
-                                    transition = renpy.python.py_eval("renpy.store."+transition)
-                                    delay = getattr(transition, "delay", None)
-                                    if delay is None:
-                                        delay = getattr(transition, "args")[0]
-                                    t += delay
+                                    t += get_transition_delay(transition)
                                 last_time = t
                             if loops[s][(tag,layer,"child")]:
                                 string += """
@@ -2571,14 +2630,7 @@ show %s""" % child
                     pause_time = scene_keyframes[s+1][1] - scene_start
                 else:
                     pause_time = get_scene_delay(s)
-                if scene_tran is not None:
-                    transition = renpy.python.py_eval("renpy.store."+scene_tran)
-                    scene_tran_delay = getattr(transition, "delay", None)
-                    if scene_tran_delay is None:
-                        scene_tran_delay = getattr(transition, "args")[0]
-                else:
-                    scene_tran_delay = 0
-                pause_time -= scene_tran_delay
+                pause_time -= get_transition_delay(scene_tran)
                 pause_time = round(pause_time, 2)
                 if pause_time > 0:
                     string += """
@@ -2771,12 +2823,7 @@ show %s""" % child
             '{}'""".format(image)
                             if transition is not None:
                                 string += " with {}".format(transition)
-
-                                transition = renpy.python.py_eval("renpy.store."+transition)
-                                delay = getattr(transition, "delay", None)
-                                if delay is None:
-                                    delay = getattr(transition, "args")[0]
-                                t += delay
+                                t += get_transition_delay(transition)
                             last_time = t
                         string += """
             repeat"""
@@ -2814,3 +2861,4 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
+eturn renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
