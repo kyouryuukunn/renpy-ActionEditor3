@@ -60,7 +60,7 @@ init -2000 python in _viewers:
         filtered_list = []
         filter_elements = filter_string.split()
         if filter_elements:
-            for name in renpy.display.image.images:
+            for name in get_image_name_candidates():
                 if name[0].startswith(filter_elements[0]):
                     if len(filter_elements) == 1:
                         filtered_list.append(" ".join(name))
@@ -109,20 +109,14 @@ init -1 python in _viewers:
     @renpy.pure
     class ShowImage(renpy.store.Action, renpy.store.DictEquality):
         def __init__(self, image_name_tuple):
-            string=""
-            for e in image_name_tuple:
-                string += e + " "
-            self.string = string.strip()
+            self.string = " ".join(image_name_tuple)
             self.check = None
 
         def __call__(self):
             if self.check is None:
-                for n in renpy.display.image.images:
+                for n in get_image_name_candidates():
                     if set(n) == set(self.string.split()) and n[0] == self.string.split()[0]:
-                        self.string=""
-                        for e in n:
-                            self.string += e + " "
-                        self.string = self.string.strip()
+                        self.string = " ".join(n)
                         try:
                             for fn in renpy.display.image.images[n].predict_files():
                                 if not renpy.loader.loadable(fn):
@@ -131,7 +125,7 @@ init -1 python in _viewers:
                             else:
                                 self.check = True
                         except:
-                            self.check = True #text displayable
+                            self.check = True #text displayable or Live2D
             try:
                 if self.check:
                     renpy.show(self.string, at_list=[renpy.store.truecenter], layer="screens", tag="preview")

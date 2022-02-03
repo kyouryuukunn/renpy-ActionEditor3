@@ -1,4 +1,3 @@
-
 #課題
 
 #再現条件不明
@@ -1144,7 +1143,7 @@ init -1598 python in _viewers:
             checkpoint = scene_checkpoints[i][1]
             if time >= checkpoint:
                 goal = scene_checkpoints[i]
-                if goal[0] is None or goal[0] == "None" or time - checkpoint > get_transition_delay(goal[0]):
+                if time - checkpoint >= get_transition_delay(goal[0]):
                     child = FixedTimeDisplayable(renpy.store.Transform(function=renpy.curry( \
                      camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
                      scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
@@ -1159,7 +1158,7 @@ init -1598 python in _viewers:
                      scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
                      subpixel=subpixel, time=time, scene_num=i)), time, at)
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
-                    during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
+                    during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time - checkpoint, 0)
                     child = during_transition_displayable
                 break
         else:
@@ -1353,22 +1352,22 @@ init -1598 python in _viewers:
                         tran.set_child(renpy.store.Null())
                         break
                     elif start[0][0] is None:
-                        new_widget = renpy.easy.displayable(goal[0][0])
+                        new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
                         w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                         old_widget = renpy.store.Null(w, h)
                     elif goal[0][0] is None:
-                        old_widget = renpy.easy.displayable(start[0][0])
+                        old_widget = FixedTimeDisplayable(renpy.easy.displayable(start[0][0]), time, at)
                         w, h = renpy.render(old_widget, 0, 0, 0, 0).get_size()
                         new_widget = renpy.store.Null(w, h)
                     else:
-                        old_widget = renpy.easy.displayable(start[0][0])
-                        new_widget = renpy.easy.displayable(goal[0][0])
-                    if goal[0][1] is not None and goal[0][1] != "None":
+                        old_widget = FixedTimeDisplayable(renpy.easy.displayable(start[0][0]), time, at)
+                        new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
+                    if time - checkpoint >= get_transition_delay(goal[0][1]):
+                        child = new_widget
+                    else:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                         during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
                         child = during_transition_displayable
-                    else:
-                        child = new_widget
                     tran.set_child(child)
                     break
             else:
@@ -1381,14 +1380,14 @@ init -1598 python in _viewers:
                     fixed_time = time-checkpoint
                     if fixed_time < 0:
                         fixed_time = 0
-                    new_widget = renpy.easy.displayable(goal[0][0])
+                    new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
                     w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                     old_widget = renpy.store.Null(w, h)
-                    if goal[0][1] is not None and goal[0][1] != "None":
+                    if fixed_time >= get_transition_delay(goal[0][1]):
+                        child = new_widget
+                    else:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                         child = DuringTransitionDisplayble(transition(old_widget, new_widget), fixed_time, 0)
-                    else:
-                        child = new_widget
                 tran.set_child(child)
         return 0
 
@@ -1484,7 +1483,7 @@ init -1598 python in _viewers:
 
         if not isinstance(name, tuple):
             name = tuple(name.split())
-        for n in renpy.display.image.images:
+        for n in get_image_name_candidates():
             if set(n) == set(name):
                 for tag in state:
                     if tag == n[0]:
@@ -1517,6 +1516,38 @@ init -1598 python in _viewers:
         else:
             renpy.notify(_("Please type image name"))
             return
+
+
+    def get_image_name_candidates():
+        from itertools import combinations
+        result = []
+        for n, d in renpy.display.image.images.items():
+            if isinstance(d, renpy.store.Live2D):
+                name = n[0]
+                expression = d.common.expressions
+                nonexclusive = d.common.nonexclusive
+                motions = d.common.motions
+                attribute_filter = d.common.attribute_filter
+
+                nonexclusive_sets = []
+                for i in range(1,len(nonexclusive)+1):
+                    for comb in combinations(nonexclusive, n):
+                        nonexclusive_sets.append(comb)
+                filtered_nonexclusive_sets = set()
+                if attribute_filter is not None:
+                    for nes in nonexclusive_sets:
+                        filtered_nonexclusive_sets.add(attribute_filter(nes))
+
+                for m in motions:
+                    result.append((name, m))
+                    for e in expression:
+                        result.append((name, m, e))
+                        for nes in filtered_nonexclusive_sets:
+                            result.append((name, m, )+nes)
+                            result.append((name, m, e)+nes)
+            else:
+                result.append(n)
+        return result
 
 
     def change_child(tag, layer, time=None, default=None):
@@ -2235,7 +2266,7 @@ show %s""" % child
 
 
     def get_transition_delay(tran):
-        if tran is None:
+        if tran is None or tran == "None":
             return 0
         if isinstance(tran, str):
             tran = renpy.python.py_eval("renpy.store."+tran)
@@ -2861,4 +2892,3 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
-eturn renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
