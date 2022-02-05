@@ -579,7 +579,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 # textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
     if not time and persistent._show_camera_icon:
-        add _viewers.dragged
+        add _viewers.camera_icon
 
 transform _no_show():
     alpha 0
@@ -909,6 +909,99 @@ init -1598:
 
 
 init -1598 python in _viewers:
+    class CameraIcon(renpy.Displayable):
+
+        def __init__(self, child, **properties):
+            super(CameraIcon, self).__init__(**properties)
+            # The child.
+            self.child = renpy.displayable(child)
+            self.dragging = False
+
+
+        def init(self, int_x=True, int_y=True):
+            self.int_x = int_x
+            self.int_y = int_y
+            if self.int_x:
+                self.x_range = renpy.store.persistent._wide_range
+            else:
+                self.x_range = renpy.store.persistent._narrow_range
+            if self.int_y:
+                self.y_range = renpy.store.persistent._wide_range
+            else:
+                self.y_range = renpy.store.persistent._narrow_range
+
+            self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
+            self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
+
+
+        def render(self, width, height, st, at):
+
+            # Create a render from the child.
+            child_render = renpy.render(self.child, width, height, st, at)
+
+            # Get the size of the child.
+            self.width, self.height = child_render.get_size()
+
+            # Create the render we will return.
+            render = renpy.Render(renpy.config.screen_width, renpy.config.screen_height)
+
+            # Blit (draw) the child's render to our render.
+            render.blit(child_render, (self.x-self.width/2., self.y-self.height/2.))
+
+            # Return the render.
+            return render
+
+
+        def event(self, ev, x, y, st):
+
+            if renpy.map_event(ev, "mousedown_1"):
+                if self.x-self.width/2. <= x and x <= self.x+self.width/2. \
+                    and self.y-self.height/2. <= y and y <= self.y+self.height/2.:
+                    self.dragging = True
+            elif renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+
+            # if x <= 0:
+            #     x = 0
+            # if renpy.config.screen_width <= x:
+            #     x = renpy.config.screen_width
+            # if y <= 0:
+            #     y = 0
+            # if renpy.config.screen_height <= y:
+            #     y = renpy.config.screen_height
+
+            if get_property("offsetX") != int(self.cx) or get_property("offsetY") != int(self.cy):
+                self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
+                self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
+                renpy.redraw(self, 0)
+
+            if self.dragging:
+                if self.x != x or self.y != y:
+                    self.cx = 2*self.x_range*float(x)/renpy.config.screen_width
+                    self.cy = 2*self.y_range*float(y)/renpy.config.screen_height
+                    if self.int_x:
+                        self.cx = int(self.cx)
+                    if self.int_y:
+                        self.cy = int(self.cy)
+                    if self.cx != get_property("offsetX") or self.cy != get_property("offsetY"):
+                        generate_changed("offsetX")(self.cx)
+                        generate_changed("offsetY")(self.cy)
+                    self.x, self.y = x, y
+                    renpy.redraw(self, 0)
+
+            # Pass the event to our child.
+            # return self.child.event(ev, x, y, st)
+
+
+        def per_interact(self):
+            renpy.redraw(self, 0)
+
+
+        def visit(self):
+            return [ self.child ]
+    camera_icon = CameraIcon("camera.png")
+
+
     class Dragged(renpy.Displayable):
 
         def __init__(self, child, **properties):
@@ -999,6 +1092,3 @@ init -1598 python in _viewers:
 
         def visit(self):
             return [ self.child ]
-    dragged = Dragged("camera.png")
-
-

@@ -1619,7 +1619,7 @@ show %s""" % child
             zorder_list[current_scene][l] = renpy.get_zorder_list(l)
         scene_keyframes = [(None, 0, None)]
         action_editor_init()
-        dragged.init(True, True)
+        camera_icon.init(True, True)
         _window = renpy.store._window
         renpy.store._window = False
         change_time(0)
