@@ -77,7 +77,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     if not time:
         timer .2 action renpy.restart_interaction repeat True
 
-    $state={k: v for dic in [_viewers.image_state_org[_viewers.current_scene][layer], _viewers.image_state[_viewers.current_scene][layer]] for k, v in dic.items()}
+    $state=_viewers.get_image_state(layer)
     $state_list = list(state)
     $page_list = []
     if len(state_list) > _viewers.tab_amount_in_page:
@@ -151,8 +151,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         $reset_action = [Function(_viewers.reset, p)]
                         if p in _viewers.props_groups["focusing"]:
                             for l in renpy.config.layers:
-                                $state={n: v for dic in [_viewers.image_state_org[_viewers.current_scene][l], _viewers.image_state[_viewers.current_scene][l]] for n, v in dic.items()}
-                                $reset_action += [Function(_viewers.reset, (tag, l, p)) for tag in state]
+                                $reset_action += [Function(_viewers.reset, (tag, l, p)) for tag in _viewers.get_image_state(l)]
                         if p not in _viewers.force_float and (p in _viewers.force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 textbutton "  [p]" action [\
@@ -266,7 +265,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         SensitiveIf(tab in _viewers.image_state[_viewers.current_scene][layer]), \
                         Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), \
                         Function(_viewers.remove_image, layer, tab)] size_group None
-                    $state={n: v for dic in [_viewers.image_state_org[_viewers.current_scene][layer], _viewers.image_state[_viewers.current_scene][layer]] for n, v in dic.items()}
                     textbutton _("zzoom") action [\
                         SelectedIf(_viewers.get_value((tab, layer, "zzoom"), _viewers.scene_keyframes[_viewers.current_scene][1], True)), \
                         Function(_viewers.toggle_zzoom, tab, layer)] size_group None
@@ -908,7 +906,7 @@ init -1598 python in _viewers:
         for key in key_list:
             if isinstance(key, tuple):
                 tag, layer, prop = key
-                state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}[tag]
+                state = get_image_state(layer)[tag]
                 props = transform_props
             else:
                 prop = key
@@ -926,7 +924,7 @@ init -1598 python in _viewers:
 
 
     def image_reset():
-        key_list = [(tag, layer, prop) for layer in renpy.config.layers for tag, props in {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}.items() for prop in props]
+        key_list = [(tag, layer, prop) for layer in renpy.config.layers for tag, props in get_image_state(layer).items() for prop in props]
         reset(key_list)
 
 
@@ -937,7 +935,7 @@ init -1598 python in _viewers:
     def generate_changed(key):
         if isinstance(key, tuple):
             tag, layer, prop = key
-            state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}[tag]
+            state = get_image_state(layer)[tag]
         else:
             prop = key
             state = camera_state_org[current_scene]
@@ -974,7 +972,7 @@ init -1598 python in _viewers:
     def set_keyframe(key, value, recursion=False, time=None):
         if isinstance(key, tuple):
             tag, layer, prop = key
-            state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}[tag]
+            state = get_image_state(layer)[tag]
         else:
             prop = key
             state = camera_state_org[current_scene]
@@ -1071,7 +1069,7 @@ init -1598 python in _viewers:
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
             for layer in renpy.config.layers:
-                state = {k: v for dic in [image_state_org[s][layer], image_state[s][layer]] for k, v in dic.items()}
+                state = get_image_state(layer, s)
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
@@ -1401,7 +1399,7 @@ init -1598 python in _viewers:
                 key = prop
         if isinstance(key, tuple):
             tag, layer, prop = key
-            state = {k: v for dic in [image_state_org[scene_num][layer], image_state[scene_num][layer]] for k, v in dic.items()}[tag]
+            state = get_image_state(layer, scene_num)[tag]
         else:
             prop = key
             state = camera_state_org[scene_num]
@@ -1479,7 +1477,7 @@ init -1598 python in _viewers:
             renpy.notify(_("can't change values before the start tiem of the current scene"))
             return
         name = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter")
-        state = {k: v2 for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v2 in dic.items()}
+        state = get_image_state(layer)
 
         if not isinstance(name, tuple):
             name = tuple(name.split())
@@ -1579,7 +1577,7 @@ init -1598 python in _viewers:
 
     def toggle_zzoom(tag, layer):
         zzoom = get_value((tag, layer, "zzoom"), scene_keyframes[current_scene][1], True)
-        zzoom_org={n: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for n, v in dic.items()}[tag]["zzoom"]
+        zzoom_org=get_image_state(layer)[tag]["zzoom"]
         if zzoom == zzoom_org or (not zzoom and not zzoom_org):
             set_keyframe((tag, layer, "zzoom"), not zzoom, time=scene_keyframes[current_scene][1])
         else:
@@ -1633,7 +1631,7 @@ init -1598 python in _viewers:
         if isinstance(key, tuple):
             tag, layer, prop = key
             if key not in all_keyframes[scene_num]:
-                v = {k: v for dic in [image_state_org[scene_num][layer], image_state[scene_num][layer]] for k, v in dic.items()}[tag][prop]
+                v = get_image_state(layer)[tag][prop]
                 if v is not None:
                     return v
                 elif default:
@@ -1703,9 +1701,7 @@ init -1598 python in _viewers:
 
     def put_camera_clipboard():
         group_cache = defaultdict(lambda:{})
-        group_flag = {}
-        for gn, ps in props_groups.items():
-            group_flag[gn] = False
+        group_flag = {gn:False for gn in props_groups}
         string = """
 camera"""
         for p, d in camera_props:
@@ -1752,11 +1748,9 @@ camera"""
 
     def put_image_clipboard(tag, layer):
         group_cache = defaultdict(lambda:{})
-        group_flag = {}
-        state = {k: v for dic in [image_state_org[current_scene][layer], image_state[current_scene][layer]] for k, v in dic.items()}
+        group_flag = {gn:False for gn in props_groups}
+        state = get_image_state(layer)
 
-        for gn, ps in props_groups.items():
-            group_flag[gn] = False
         child = state[tag]["child"][0]
         string = """
 show %s""" % child
@@ -2354,12 +2348,16 @@ show %s""" % child
         return blur_amount
 
 
+    def get_image_state(layer, scene_num=None):
+        if scene_num is None:
+            scene_num = current_scene
+        result = dict(image_state_org[scene_num][layer])
+        result.update(image_state[scene_num][layer])
+        return result
+
+
     def sort_props(keyframes):
-        sorted = []
-        for p in sort_ref_list:
-            if p in keyframes:
-                sorted.append((p, keyframes[p]))
-        return sorted
+        return [(p, keyframes[p]) for p in sort_ref_list if p in keyframes]
 
 
     def put_prop_togetter(keyframes, layer=None, tag=None):
@@ -2516,7 +2514,7 @@ show %s""" % child
             repeat"""
 
             for layer in image_state_org[s]:
-                state = {k: v for dic in [image_state_org[s][layer], image_state[s][layer]] for k, v in dic.items()}
+                state = get_image_state(layer, s)
                 for tag, _ in zorder_list[s][layer]:
                     value_org = state[tag]
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
@@ -2721,7 +2719,7 @@ show %s""" % child
 
             last_scene = len(scene_keyframes)-1
             for layer in image_state_org[last_scene]:
-                state = {k: v for dic in [image_state_org[last_scene][layer], image_state[last_scene][layer]] for k, v in dic.items()}
+                state = get_image_state(layer, last_scene)
                 for tag, _ in zorder_list[last_scene][layer]:
                     image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
