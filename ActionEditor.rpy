@@ -10,6 +10,7 @@
 #zzoomを追加
 #perspectiveを追加
 #optionページを追加
+#最初のキーフレームをキーフレームエデイタで編集削除可能に
 #perspectiveがNoneのときはcropを操作できるように
 
 #変更
@@ -354,6 +355,8 @@ screen _action_editor_option():
             textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
             text _("Enable/Disable simulating camera blur(This is available when perspective is True)")
             textbutton _("focusing") action [SensitiveIf(_viewers.get_value("perspective", _viewers.scene_keyframes[_viewers.current_scene][1], True)), SelectedIf(persistent._viewer_focusing), ToggleField(persistent, "_viewer_focusing"), Function(_viewers.change_time, _viewers.current_time)]
+            text _("One line includes only one property in clipboard data")
+            textbutton _("one_line_one_property") action [ToggleField(persistent, "_one_line_one_prop")]
             text _("Assign default warper")
             textbutton "[persistent._viewer_warper]" action _viewers.select_default_warper
             text _("Assign default transition(example: dissolve, Dissolve(5), None)")
@@ -1733,8 +1736,14 @@ camera"""
         for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes]):
             if string.find(":") < 0:
                 string += ":\n        "
-            string += "{} {} ".format(p, cs[0][0])
-        string += "\n\n"
+            string += "{} {}".format(p, cs[0][0])
+            if renpy.store.persistent._one_line_one_prop:
+                string += "\n        "
+            else:
+                string += " "
+
+        string = '\n'.join(filter(lambda x: x.strip(), string.split('\n')))
+        string = "\n"+ string + "\n\n"
 
         try:
             from pygame import scrap, locals
@@ -1772,18 +1781,28 @@ show %s""" % child
                 string += " onlayer %s" % layer
         if tag in image_state[current_scene][layer]:
             string += """:
-    default """
+    default"""
+            if renpy.store.persistent._one_line_one_prop:
+                string += "\n        "
+            else:
+                string += " "
         for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes]):
             if string.find(":") < 0:
                 string += ":\n        "
-            string += "{} {} ".format(p, cs[0][0])
+            string += "{} {}".format(p, cs[0][0])
+            if renpy.store.persistent._one_line_one_prop:
+                string += "\n        "
+            else:
+                string += " "
         if renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True):
             focus = get_value("focusing", current_time, True)
             dof = get_value("dof", current_time, True)
             result = "function camera_blur({'focusing':[(%s, 0, None)], 'dof':[(%s, 0, None)]})" % (focus, dof)
             string += "\n        "
             string += result
-        string += "\n\n"
+
+        string = '\n'.join(filter(lambda x: x.strip(), string.split('\n')))
+        string = "\n"+ string + "\n\n"
         try:
             from pygame import scrap, locals
             scrap.put(locals.SCRAP_TEXT, string)
@@ -2226,6 +2245,8 @@ show %s""" % child
             renpy.store.persistent._time_range = time_range
         if renpy.store.persistent._show_camera_icon is None:
             renpy.store.persistent._show_camera_icon = default_show_camera_icon
+        if renpy.store.persistent._one_line_one_prop is None:
+            renpy.store.persistent._one_line_one_prop = default_one_line_one_prop
         zorder_list = [{}]
         for l in renpy.config.layers:
             zorder_list[current_scene][l] = renpy.get_zorder_list(l)
@@ -2376,6 +2397,12 @@ show %s""" % child
             result.append(same_time_set)
             for ks in result:
                 ks = x_and_y_to_xy(ks, layer=layer, tag=tag, check_spline=True)
+        if renpy.store.persistent._one_line_one_prop:
+            result_dict = {k:v for same_time_set in result for (k, v) in same_time_set}
+            result.clear()
+            for p in sort_ref_list:
+                if p in result_dict:
+                    result.append([(p, result_dict[p])])
         return result
 
 
@@ -2456,15 +2483,23 @@ show %s""" % child
             if camera_keyframes:
                 string += """
     camera:
-        subpixel True """
+        subpixel True"""
                 if "crop" in camera_keyframes:
-                    string += "{} {} ".format("crop_relative", True)
+                    string += " {} {}".format("crop_relative", True)
+                if renpy.store.persistent._one_line_one_prop:
+                    string += "\n        "
+                else:
+                    string += " "
                 #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
                 #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
                 #rotateは設定されればキーフレームに入り、されてなければ問題ない
                 #アニメーションしないなら出力しなくてよいのでここでは不要
                 for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
-                        string += "{} {} ".format(p, cs[0][0])
+                    string += "{} {}".format(p, cs[0][0])
+                    if renpy.store.persistent._one_line_one_prop:
+                        string += "\n        "
+                    else:
+                        string += " "
                 sorted = put_prop_togetter(camera_keyframes)
                 if len(sorted):
                     if len(sorted) > 1 or loops[s][xy_to_x(sorted[0][0][0])]:
@@ -2535,8 +2570,14 @@ show %s""" % child
                         string += "subpixel True "
                         if "crop" in image_keyframes:
                             string += "{} {} ".format("crop_relative", True)
+                        if renpy.store.persistent._one_line_one_prop:
+                            string += "\n        "
                         for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes and len(image_keyframes[p]) == 1], layer, tag):
-                                string += "{} {} ".format(p, cs[0][0])
+                                string += "{} {}".format(p, cs[0][0])
+                                if renpy.store.persistent._one_line_one_prop:
+                                    string += "\n        "
+                                else:
+                                    string += " "
                         sorted = put_prop_togetter(image_keyframes, layer, tag)
                         if "child" in image_keyframes:
                             if len(sorted) >= 1 or loops[s][(tag, layer, "child")] or (renpy.store.persistent._viewer_focusing \
@@ -2681,7 +2722,11 @@ show %s""" % child
                                     first = False
                                     string += """
         """
-                                string += "{} {} ".format(p, cs[-1][0])
+                                string += "{} {}".format(p, cs[-1][0])
+                                if renpy.store.persistent._one_line_one_prop:
+                                    string += "\n        "
+                                else:
+                                    string += " "
                         for p, cs in sort_props(camera_keyframes):
                             if len(cs) > 1 and loops[last_camera_scene][p]:
                                 string += """
@@ -2759,7 +2804,11 @@ show %s""" % child
                                     first = False
                                     string += """
         """
-                                string += "{} {} ".format(p, cs[-1][0])
+                                string += "{} {}".format(p, cs[-1][0])
+                                if renpy.store.persistent._one_line_one_prop:
+                                    string += "\n        "
+                                else:
+                                    string += " "
 
                     if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)):
                         focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
@@ -2843,7 +2892,8 @@ show %s""" % child
             or len(scene_keyframes) > 1:
             string += """
     {} show""".format(window_mode)
-        string += "\n\n"
+        string = '\n'.join(filter(lambda x: x.strip(), string.split('\n')))
+        string = "\n"+ string + "\n\n"
 
         if string:
             string = string.replace("u'", "'", 999)
