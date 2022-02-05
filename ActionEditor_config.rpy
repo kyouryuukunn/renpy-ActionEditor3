@@ -78,6 +78,33 @@ init -1600 python in _viewers:
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
 
+    sort_ref_list = [
+    "pos",
+    "anchor",
+    "offset",
+    "xpos", 
+    "xanchor", 
+    "xoffset", 
+    "ypos", 
+    "yanchor", 
+    "yoffset", 
+    "zpos", 
+    "matrixtransform", 
+    "matrixanchor", 
+    "rotate", 
+    "xzoom", 
+    "yzoom", 
+    "zoom", 
+    "crop", 
+    "alpha", 
+    "additive", 
+    "blur", 
+    "matrixcolor", 
+    ]
+
+    xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
+
+init 1600 python in _viewers:
     transform_props = (
     ("child", (None, None)), 
     ("xpos", 0.5), 
@@ -153,29 +180,3 @@ init -1600 python in _viewers:
     ("invert", 0.), 
     ("perspective", None)
     )
-
-    sort_ref_list = [
-    "pos",
-    "anchor",
-    "offset",
-    "xpos", 
-    "xanchor", 
-    "xoffset", 
-    "ypos", 
-    "yanchor", 
-    "yoffset", 
-    "zpos", 
-    "matrixtransform", 
-    "matrixanchor", 
-    "rotate", 
-    "xzoom", 
-    "yzoom", 
-    "zoom", 
-    "crop", 
-    "alpha", 
-    "additive", 
-    "blur", 
-    "matrixcolor", 
-    ]
-
-    xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}

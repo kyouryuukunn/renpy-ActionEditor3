@@ -2330,12 +2330,6 @@ show %s""" % child
 
 
     def camera_blur_amount(image_zpos, camera_zpos, dof, focusing):
-        # if camera_zpos is None:
-        #     camera_zpos = get_property("offsetZ")+get_property("zpos")
-        # if focusing is None:
-        #     focusing = get_property("focusing")
-        # if dof is None:
-        #     dof = get_property("dof")
         distance_from_focus = camera_zpos - image_zpos - focusing + renpy.config.perspective[1]
         if dof == 0:
             dof = 0.1
