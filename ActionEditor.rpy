@@ -453,7 +453,20 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
         has vbox
         label _("KeyFrames") xalign .5
         for i, (v, t, w) in enumerate(check_points):
-            if t != _viewers.scene_keyframes[_viewers.current_scene][1]:
+            if t == _viewers.scene_keyframes[_viewers.current_scene][1]:
+                hbox:
+                    textbutton _("x") action [SensitiveIf(len(check_points) == 1), Function(_viewers.remove_keyframe, remove_time=t, key=k_list), Hide("_edit_keyframe")] size_group None
+                    if p == "child":
+                        textbutton "[v[0]]" action None
+                        textbutton "with" action None size_group None
+                        textbutton "[v[1]]" action None
+                    else:
+                        textbutton _("{}".format(w)) action None
+                        if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
+                            textbutton _("spline") action None
+                        textbutton _("{}".format(v)) action None
+                    textbutton _("[t:>05.2f] s") action None
+            else:
                 hbox:
                     textbutton _("x") action [Function(_viewers.remove_keyframe, remove_time=t, key=k_list), renpy.restart_interaction] size_group None
                     if p == "child":
