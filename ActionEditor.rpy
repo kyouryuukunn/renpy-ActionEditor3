@@ -603,18 +603,29 @@ init -1598 python in _viewers:
              scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0], \
              subpixel=subpixel, time=time, scene_num=0))
         if not renpy.store.persistent._viewer_legacy_gui:
-            preview_size=0.6
             if round(float(renpy.config.screen_width)/renpy.config.screen_height, 2) == 1.78:
                 box.add(renpy.store.Transform(zoom=preview_size, xpos=(1 - preview_size)/2)(child))
-                box.add(renpy.store.Solid("#000", xsize=renpy.config.screen_width, ysize=(1-preview_size), ypos=preview_size))
-                box.add(renpy.store.Solid("#000", xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
-                box.add(renpy.store.Solid("#000", xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
+                box.add(renpy.store.Solid(preview_background_color, xsize=renpy.config.screen_width, ysize=(1-preview_size), ypos=preview_size))
+                box.add(renpy.store.Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
+                box.add(renpy.store.Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
+                if renpy.store.persistent._viewer_rot:
+                    for i in range(1, 3):
+                        box.add(renpy.store.Solid("#F00", xsize=preview_size, ysize=1, xpos=(1-preview_size)/2, ypos=preview_size*i/3))
+                        box.add(renpy.store.Solid("#F00", xsize=1, ysize=preview_size, xpos=preview_size*i/3+(1-preview_size)/2))
             else:
-                box.add(renpy.store.Transform(zoom=preview_size, xalign=1.)(child))
-                box.add(renpy.store.Solid("#000", xsize=renpy.config.screen_width, ysize=(1-preview_size), ypos=preview_size))
-                box.add(renpy.store.Solid("#000", xsize=(1-preview_size), ysize=preview_size, xpos=0.))
+                box.add(renpy.store.Transform(zoom=preview_size)(child))
+                box.add(renpy.store.Solid(preview_background_color, xsize=renpy.config.screen_width, ysize=(1-preview_size), ypos=preview_size))
+                box.add(renpy.store.Solid(preview_background_color, xsize=(1-preview_size), ysize=preview_size, xalign=1.))
+                if renpy.store.persistent._viewer_rot:
+                    for i in range(1, 3):
+                        box.add(renpy.store.Solid("#F00", xsize=preview_size, ysize=1, ypos=preview_size*i/3))
+                        box.add(renpy.store.Solid("#F00", xsize=1, ysize=preview_size, xpos=preview_size*i/3))
         else:
             box.add(child)
+            if renpy.store.persistent._viewer_rot:
+                for i in range(1, 3):
+                    box.add(renpy.store.Solid("#F00", xsize=1., ysize=1, ypos=renpy.config.screen_height*i//3))
+                    box.add(renpy.store.Solid("#F00", xsize=1, ysize=1., xpos=renpy.config.screen_width*i//3))
         tran.set_child(box)
         return 0
 
@@ -960,7 +971,10 @@ init -1598 python in _viewers:
                     else:
                         image_state[current_scene][layer][added_tag][p] = get_property((added_tag, layer, p), False)
                 change_time(current_time)
-                renpy.show_screen("_action_editor", tab=added_tag, layer=layer)
+                if renpy.store.persistent._viewer_legacy_gui:
+                    renpy.show_screen("_action_editor", tab=added_tag, layer=layer)
+                else:
+                    renpy.show_screen("_new_action_editor", tab=added_tag, layer=layer)
                 return
         else:
             renpy.notify(_("Please type image name"))
@@ -1375,7 +1389,10 @@ show %s""" % child
                 camera_state_org[current_scene][p] = round(middle_value, 3)
             else:
                 camera_state_org[current_scene][p] = middle_value
-        renpy.show_screen("_action_editor")
+        if renpy.store.persistent._viewer_legacy_gui:
+            renpy.show_screen("_action_editor")
+        else:
+            renpy.show_screen("_new_action_editor")
 
 
     def camera_keyframes_exist(scene_num):
@@ -1411,7 +1428,10 @@ show %s""" % child
                     camera_state_org[s][p] = round(middle_value, 3)
                 else:
                     camera_state_org[s][p] = middle_value
-        renpy.show_screen("_action_editor")
+        if renpy.store.persistent._viewer_legacy_gui:
+            renpy.show_screen("_action_editor")
+        else:
+            renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
 
@@ -1483,7 +1503,10 @@ show %s""" % child
                         splines[new_scene_num][k][t - (old - new)] = knots
         sorted_keyframes[new_scene_num] = [t-(old-new) for t in sorted_keyframes[new_scene_num]]
         
-        renpy.show_screen("_action_editor")
+        if renpy.store.persistent._viewer_legacy_gui:
+            renpy.show_screen("_action_editor")
+        else:
+            renpy.show_screen("_new_action_editor")
         change_time(current_time)
         return
 
@@ -1516,7 +1539,10 @@ show %s""" % child
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
-        renpy.show_screen("_action_editor")
+        if renpy.store.persistent._viewer_legacy_gui:
+            renpy.show_screen("_action_editor")
+        else:
+            renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
 
@@ -1690,7 +1716,10 @@ show %s""" % child
         _window = renpy.store._window
         renpy.store._window = False
         change_time(0)
-        renpy.call_screen("_action_editor")
+        if renpy.store.persistent._viewer_legacy_gui:
+            renpy.call_screen("_action_editor")
+        else:
+            renpy.call_screen("_new_action_editor")
         renpy.store._window = _window
 
 

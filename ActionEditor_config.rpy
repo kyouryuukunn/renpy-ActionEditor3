@@ -23,6 +23,9 @@ init -1600 python in _viewers:
     default_one_line_one_prop = False
     # If True, One line includes only one property in clipboard data
     # Trueならクリップボードデータで一行に1つのプロパティーのみ記述します。
+    default_legacy_gui = False
+    # If True, use legacy action editor screen
+    # Trueなら以前のレイアウトでActionEditorを表示します。
     focusing = False
     # If True, set camera keymap FPS(wasd), otherwise vim(hjkl)
     #Trueなら、カメラはWASD, wasdで、Falseならhjkl, HJKLで移動します。
@@ -46,13 +49,16 @@ init -1600 python in _viewers:
     #エディターのバーに表示する時間の範囲です。
     time_range = 7.0
 
+    preview_size=0.6
+    preview_background_color="#111"
+
 
     props_set = [
         ("child", "xpos", "ypos", "zpos", "rotate"), 
-        ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ", "dof", "focusing"),
+        ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"),
         ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
         ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
-        ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue")
+        ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")
     ]
     props_set_names = [
         "Child/Pos    ", 
