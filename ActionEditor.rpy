@@ -149,10 +149,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         (persistent._viewer_focusing and _viewers.get_value("perspective", _viewers.scene_keyframes[_viewers.current_scene][1], True))):
                         $value = _viewers.get_property(p)
                         $ f = _viewers.generate_changed(p)
-                        $reset_action = [Function(_viewers.reset, p)]
-                        if p in _viewers.props_groups["focusing"]:
-                            for l in renpy.config.layers:
-                                $reset_action += [Function(_viewers.reset, (tag, l, p)) for tag in _viewers.get_image_state(l)]
                         if p not in _viewers.force_float and (p in _viewers.force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                             hbox:
                                 textbutton "  [p]" action [\
@@ -161,10 +157,10 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 if isinstance(value, int):
                                     textbutton "[value:> ]":
                                         action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
-                                        alternate reset_action style_group "action_editor_b"
+                                        alternate Function(_viewers.reset, p) style_group "action_editor_b"
                                 else:
                                     textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus):
-                                        alternate reset_action style_group "action_editor_b"
+                                        alternate Function(_viewers.reset, p) style_group "action_editor_b"
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
                                         xalign 1. yalign .5 style "action_editor_bar"
@@ -178,7 +174,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, edit_func=_viewers.edit_value, change_func=f)]
                                 textbutton "[value:> .2f]":
                                     action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus)
-                                    alternate reset_action style_group "action_editor_b"
+                                    alternate Function(_viewers.reset, p) style_group "action_editor_b"
                                 if p in _viewers.force_plus:
                                     bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
                                         xalign 1. yalign .5 style "action_editor_bar"
@@ -2665,7 +2661,7 @@ show %s""" % child
                                 string += "\n        "
                             for p in props_groups["focusing"]:
                                 if p in all_keyframes[s]:
-                                    focusing_cs[p] = [(v, t-scene_start, w) for cs in all_keyframes[s][p] for (v, t, w) in cs]
+                                    focusing_cs[p] = [(v, t-scene_start, w) for (v, t, w) in all_keyframes[s][p]]
                             if loops[s]["focusing"] or loops[s]["dof"]:
                                 focusing_loop = {}
                                 focusing_loop["focusing_loop"] = loops[s]["focusing"]
