@@ -1510,6 +1510,7 @@ init -1598 python in _viewers:
                     else:
                         image_state[current_scene][layer][added_tag][p] = get_property((added_tag, layer, p), False)
                 change_time(current_time)
+                renpy.show_screen("_action_editor", tab=added_tag, layer=layer)
                 return
         else:
             renpy.notify(_("Please type image name"))
@@ -1700,43 +1701,26 @@ init -1598 python in _viewers:
 
 
     def put_camera_clipboard():
-        group_cache = defaultdict(lambda:{})
-        group_flag = {gn:False for gn in props_groups}
-        string = """
-camera"""
+        camera_keyframes = {k:[(round(get_value(k, current_time), 3), 0, None)] for k, v in all_keyframes[current_scene].items() if not isinstance(k, tuple)}
+        camera_keyframes = set_group_keyframes(camera_keyframes)
+        camera_properties = []
         for p, d in camera_props:
-            value = get_property(p)
             for gn, ps in props_groups.items():
                 if p in ps:
-                    if value != d:
-                        group_flag[gn] = True
-                    group_cache[gn][p] = value
-                    if len(group_cache[gn]) == len(props_groups[gn]) and group_flag[gn]:
-                        result = None
-                        if gn == "matrixtransform":
-                            rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
-                            ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                            result = "matrixtransform OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
-                        elif gn == "matrixanchor":
-                            mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
-                            result = "matrixanchor (%s, %s) " % (mxa, mya)
-                        elif gn == "matrixcolor":
-                            i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                            result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s) " % (i, c, s, b, h)
-                        elif gn == "crop":
-                            result = "crop_relative True crop (%s, %s, %s, %s) " % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                        if result:
-                            if string.find(":") < 0:
-                                string += ":\n        "
-                            string += result
+                    if gn not in camera_properties:
+                        camera_properties.append(gn)
                     break
             else:
-                value = get_property(p, False)
-                if value is not None and value != d:
-                    if string.find(":") < 0:
-                        string += ":\n        "
-                    string += "%s %s " % (p, value)
+                camera_properties.append(p)
+
+        string = """
+camera"""
+        for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes]):
+            if string.find(":") < 0:
+                string += ":\n        "
+            string += "{} {} ".format(p, cs[0][0])
         string += "\n\n"
+
         try:
             from pygame import scrap, locals
             scrap.put(locals.SCRAP_TEXT, string)
@@ -1747,8 +1731,21 @@ camera"""
 
 
     def put_image_clipboard(tag, layer):
-        group_cache = defaultdict(lambda:{})
-        group_flag = {gn:False for gn in props_groups}
+        image_keyframes = {k[2]:[(round(get_value(k, current_time), 3), 0, None)] for k, v in all_keyframes[current_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
+        image_keyframes = set_group_keyframes(image_keyframes)
+        if (renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) \
+            and "blur" in image_keyframes:
+            del image_keyframes["blur"]
+        image_properties = []
+        for p, d in transform_props:
+            for gn, ps in props_groups.items():
+                if p in ps:
+                    if gn not in image_properties:
+                        image_properties.append(gn)
+                    break
+            else:
+                if p not in special_props:
+                    image_properties.append(p)
         state = get_image_state(layer)
 
         child = state[tag]["child"][0]
@@ -1758,48 +1755,16 @@ show %s""" % child
                 string += " as %s" % tag
         if layer != "master":
                 string += " onlayer %s" % layer
-        for p, d in transform_props:
-            value = get_property((tag, layer, p))
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    if value != d:
-                        group_flag[gn] = True
-                    group_cache[gn][p] = value
-                    if len(group_cache[gn]) == len(props_groups[gn]) and group_flag[gn]:
-                        result = None
-                        if gn == "matrixtransform":
-                            rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
-                            ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                            result = "matrixtransform  OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s) " % (ox, oy, oz, rx, ry, rz)
-                        elif gn == "matrixanchor":
-                            mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
-                            result = "matrixanchor (%s, %s) " % (mxa, mya)
-                        elif gn == "matrixcolor":
-                            i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                            result = "matrixcolor InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s) " % (i, c, s, b, h)
-                        elif gn == "crop":
-                            result = "crop_relative True crop (%s, %s, %s, %s) " % (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                        if result:
-                            if string.find(":") < 0:
-                                string += ":\n        "
-                            string += result
-                    break
-            else:
-                if p not in special_props:
-                    value = get_property((tag, layer, p), False)
-                    if value is not None and value != d and (p != "blur" or not renpy.store.persistent._viewer_focusing \
-                        or not get_value("perspective", scene_keyframes[current_scene][1], True)) \
-                        or (tag in image_state[current_scene][layer] and p in ["xpos", "ypos", "xanchor", "yanchor"]):
-                        if string.find(":") < 0:
-                            string += ":\n        "
-                        string += "%s %s " % (p, value)
+        if tag in image_state[current_scene][layer]:
+            string += """:
+    default """
+        for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes]):
+            if string.find(":") < 0:
+                string += ":\n        "
+            string += "{} {} ".format(p, cs[0][0])
         if renpy.store.persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True):
-            focus = get_default("focusing")
-            if "focusing" in group_cache["focusing"]:
-                focus = group_cache["focusing"]["focusing"]
-            dof = get_default("dof")
-            if "dof" in group_cache["focusing"]:
-                dof = group_cache["focusing"]["dof"]
+            focus = get_value("focusing", current_time, True)
+            dof = get_value("dof", current_time, True)
             result = "function camera_blur({'focusing':[(%s, 0, None)], 'dof':[(%s, 0, None)]})" % (focus, dof)
             string += "\n        "
             string += result
@@ -2361,6 +2326,7 @@ show %s""" % child
 
 
     def put_prop_togetter(keyframes, layer=None, tag=None):
+        #時間軸とx, yを纏める キーフレームが一つのみのものは含めない
         sorted = []
         for p in sort_ref_list:
             if p in keyframes:
