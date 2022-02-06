@@ -1,11 +1,12 @@
-# tab="images"/"camera", layer="master",  
+
 screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
     $indent = "  "
     $play_action = [SensitiveIf(_viewers.sorted_keyframes[_viewers.current_scene] or len(_viewers.scene_keyframes) > 1), \
-        SelectedIf(False), Function(_viewers.play, play=True), Hide("_new_action_editor"), \
+        SelectedIf(False), Function(_viewers.play, play=True), \
         Show("_new_action_editor", tab=tab, layer=layer, opened=opened, time=_viewers.get_animation_delay())]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
+    key "hide_windows" action NullAction()
 
     $offsetX, offsetY = _viewers.get_property("offsetX"), _viewers.get_property("offsetY")
     $range = persistent._wide_range
@@ -33,39 +34,26 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
 
     if time:
         timer time+1 action [Show("_new_action_editor", tab=tab, layer=layer, opened=opened), \
-                            Function(_viewers.change_time, _viewers.current_time), renpy.restart_interaction]
+                            Function(_viewers.change_time, _viewers.current_time)]
         key "game_menu" action [Show("_new_action_editor", tab=tab, layer=layer, opened=opened), \
                             Function(_viewers.change_time, _viewers.current_time)]
-        key "hide_windows" action NullAction()
     else:
-        key "game_menu" action Return()
-    #camera transformはget_properyで所得できるようになるまで時間差があるので定期更新する
-    # かなり動作が重くなる
-    # camera transform properties need some times until being allowed to get property so I update screen.
-    if not time:
-        timer .1 action renpy.restart_interaction repeat True
+        key "game_menu" action Confirm("Close Editor?", Return())
 
     $state=_viewers.get_image_state(layer)
     if _viewers.get_value("perspective", _viewers.scene_keyframes[_viewers.current_scene][1], True) == False and tab == "camera":
         $tab = state.keys()[0]
 
+
     frame:
-        $(x, y) = renpy.get_mouse_pos()
-        if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
-            $x = int((x-config.screen_width*(1.-_viewers.preview_size)/2)/_viewers.preview_size)
-            $y = int(y/_viewers.preview_size)
-        else:
-            $(x, y) = (x/_viewers.preview_size, y/_viewers.preview_size)
-        $rx = x/float(config.screen_width)
-        $ry = y/float(config.screen_height)
         style_group "new_action_editor"
         align (1., 0.)
         vbox:
             xfill False
             text "absolute" xalign 1.
-            text "([x:>4], [y:>4])" xalign 1.
+            add DynamicDisplayable(_viewers.absolute_pos) xalign 1.
             text "fraction" xalign 1.
-            text "([rx:>.3], [ry:>.3])" xalign 1.
+            add DynamicDisplayable(_viewers.rel_pos) xalign 1.
 
     frame:
         pos (1., _viewers.preview_size)
@@ -74,7 +62,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
         vbox:
             style_group "new_action_editor_a"
             textbutton _("option") action Show("_action_editor_option")
-            textbutton _("scene list") action [SensitiveIf(len(_viewers.scene_keyframes) > 1), Show("_scene_editor")]
+            textbutton _("scene editor") action [SensitiveIf(len(_viewers.scene_keyframes) > 1), Show("_scene_editor")]
             hbox:
                 xalign 1.
                 textbutton _("remove keys") action [ \
@@ -99,6 +87,12 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                 hbox:
                     style_group "new_action_editor_c"
                     textbutton _("time: [_viewers.current_time:>05.2f] s") action Function(_viewers.edit_time) xalign 1. size_group None
+                # fixed:
+                #     drag:
+                #         drag_name "time"
+                #         child _viewers.key_child
+                #         xpos _viewers.to_drag_pos(_viewers.current_time)
+                #         dragged _viewers.drag_change_time
                 bar adjustment ui.adjustment(range=persistent._time_range, value=_viewers.current_time, changed=_viewers.change_time):
                     xalign 1. yalign .5 style "new_action_editor_bar"
             viewport:
@@ -147,15 +141,15 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                 for p, d in _viewers.camera_props:
                                     if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] or \
                                         (persistent._viewer_focusing and _viewers.get_value("perspective", _viewers.scene_keyframes[s][1], True))):
+                                        $key = p
                                         $value = _viewers.get_property(p)
                                         $ f = _viewers.generate_changed(p)
+                                        $cs = _viewers.all_keyframes[_viewers.current_scene].get(key, [])
                                         if p not in _viewers.force_float and (p in _viewers.force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                                             hbox:
                                                 hbox:
                                                     style_group "new_action_editor_c"
-                                                    textbutton indent*3+"  [p]" action [\
-                                                        SensitiveIf(p in _viewers.all_keyframes[s]), \
-                                                        SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
+                                                    text indent*3+"  [p]"
                                                     if isinstance(value, int):
                                                         textbutton "[value:> ]":
                                                             action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
@@ -163,28 +157,38 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                     else:
                                                         textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus):
                                                             alternate Function(_viewers.reset, p) style_group "new_action_editor_b"
-                                                if p in _viewers.force_plus:
-                                                    bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
-                                                        xalign 1. yalign .5 style "new_action_editor_bar"
-                                                else:
-                                                    bar adjustment ui.adjustment(range=persistent._wide_range*2, value=value+persistent._wide_range, page=1, changed=f):
-                                                        xalign 1. yalign .5 style "new_action_editor_bar"
+                                                fixed:
+                                                    add _viewers.time_line_background
+                                                    for c in cs:
+                                                        $(v, t, w) = c
+                                                        drag:
+                                                            child _viewers.key_child
+                                                            hover_child _viewers.key_hovere_child
+                                                            xpos _viewers.to_drag_pos(t)
+                                                            droppable False
+                                                            dragged _viewers.generate_key_drag(key, t)
+                                                            clicked Function(_viewers.change_time, t)
+                                                            alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=True, change_func=f)
                                         else:
                                             hbox:
                                                 hbox:
                                                     style_group "new_action_editor_c"
-                                                    textbutton indent*3+"  [p]" action [\
-                                                        SensitiveIf(p in _viewers.all_keyframes[s]), \
-                                                        SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, edit_func=_viewers.edit_value, change_func=f)]
+                                                    text indent*3+"  [p]"
                                                     textbutton "[value:> .2f]":
                                                         action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus)
                                                         alternate Function(_viewers.reset, p) style_group "new_action_editor_b"
-                                                if p in _viewers.force_plus:
-                                                    bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
-                                                        xalign 1. yalign .5 style "new_action_editor_bar"
-                                                else:
-                                                    bar adjustment ui.adjustment(range=persistent._narrow_range*2, value=value+persistent._narrow_range, page=.05, changed=f):
-                                                        xalign 1. yalign .5 style "new_action_editor_bar"
+                                                fixed:
+                                                    add _viewers.time_line_background
+                                                    for c in cs:
+                                                        $(v, t, w) = c
+                                                        drag:
+                                                            child _viewers.key_child
+                                                            hover_child _viewers.key_hovere_child
+                                                            xpos _viewers.to_drag_pos(t)
+                                                            droppable False
+                                                            dragged _viewers.generate_key_drag(key, t)
+                                                            clicked Function(_viewers.change_time, t)
+                                                            alternate Show("_keyframe_altername_menu", key=key, check_point=c, change_func=f)
                                 for i, props_set_name in enumerate(_viewers.props_set_names):
                                     if i > opened:
                                         hbox:
@@ -222,66 +226,85 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                             if p in _viewers.props_set[opened] and (p not in _viewers.props_groups["focusing"] and (((persistent._viewer_focusing \
                                                 and _viewers.get_value("perspective", _viewers.scene_keyframes[s][1], True)) and p != "blur") \
                                                 or (not persistent._viewer_focusing or not _viewers.get_value("perspective", _viewers.scene_keyframes[s][1], True)))):
-                                                $value = _viewers.get_property((tab, layer, p))
-                                                $ f = _viewers.generate_changed((tab, layer, p))
+                                                $key = (tab, layer, p)
+                                                $value = _viewers.get_property(key)
+                                                $f = _viewers.generate_changed(key)
+                                                $cs = _viewers.all_keyframes[_viewers.current_scene].get(key, [])
                                                 if p == "child":
-                                                    vbox:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action [\
-                                                                SensitiveIf((tab, layer, p) in _viewers.all_keyframes[s]), \
-                                                                SelectedIf(_viewers.keyframes_exist((tab, layer, p))), Show("_edit_keyframe", key=(tab, layer, p))]
-                                                            textbutton "[value[0]]" action [\
-                                                                SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), \
-                                                                Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
-                                                        hbox:
-                                                            textbutton "" action None
-                                                            style_group "new_action_editor_c"
+                                                    hbox:
+                                                        vbox:
+                                                            xfill False
                                                             hbox:
-                                                                xsize None
-                                                                textbutton "with" action None size_group None
+                                                                style_group "new_action_editor_c"
+                                                                text indent*3+"  [p]"
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*4+"  [value[0]]" action [\
+                                                                    SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), \
+                                                                    Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*4+"  with" action None size_group None
                                                                 textbutton "[value[1]]" action [\
-                                                                    SensitiveIf((tab, layer, p) in _viewers.all_keyframes[s]), \
+                                                                    SensitiveIf(key in _viewers.all_keyframes[s]), \
                                                                     SelectedIf(_viewers.keyframes_exist((tab, layer, "child"))), \
                                                                     Function(_viewers.edit_transition, tab, layer)] size_group None
+                                                        fixed:
+                                                            add _viewers.time_line_background
+                                                            for c in cs:
+                                                                $(v, t, w) = c
+                                                                drag:
+                                                                    child _viewers.key_child
+                                                                    hover_child _viewers.key_hovere_child
+                                                                    xpos _viewers.to_drag_pos(t)
+                                                                    droppable False
+                                                                    dragged _viewers.generate_key_drag(key, t)
+                                                                    clicked Function(_viewers.change_time, t)
+                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c)
                                                 elif p not in _viewers.force_float and (p in _viewers.force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
                                                     hbox:
                                                         hbox:
                                                             style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes[s]), \
-                                                                SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
-                                                                Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
+                                                            text indent*3+"  [p]"
                                                             if isinstance(value, int):
                                                                 textbutton "[value:> ]":
                                                                     action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
-                                                                    alternate Function(_viewers.reset, (tab, layer, p)) style_group "new_action_editor_b"
+                                                                    alternate Function(_viewers.reset, key) style_group "new_action_editor_b"
                                                             else:
                                                                 textbutton "[value:> .2f]":
                                                                     action Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)
-                                                                    alternate Function(_viewers.reset, (tab, layer, p)) style_group "new_action_editor_b"
-                                                        if p in _viewers.force_plus:
-                                                            bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
-                                                                xalign 1. yalign .5 style "new_action_editor_bar"
-                                                        else:
-                                                            bar adjustment ui.adjustment(range=persistent._wide_range*2, value=value+persistent._wide_range, page=1, changed=f):
-                                                                xalign 1. yalign .5 style "new_action_editor_bar"
+                                                                    alternate Function(_viewers.reset, key) style_group "new_action_editor_b"
+                                                        fixed:
+                                                            add _viewers.time_line_background
+                                                            for c in cs:
+                                                                $(v, t, w) = c
+                                                                drag:
+                                                                    child _viewers.key_child
+                                                                    hover_child _viewers.key_hovere_child
+                                                                    xpos _viewers.to_drag_pos(t)
+                                                                    droppable False
+                                                                    dragged _viewers.generate_key_drag(key, t)
+                                                                    clicked Function(_viewers.change_time, t)
+                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=True, change_func=f)
                                                 else:
                                                     hbox:
                                                         hbox:
                                                             style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action [\
-                                                                SensitiveIf((tab, layer, p) in _viewers.all_keyframes[s]), \
-                                                                SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
-                                                                Show("_edit_keyframe", key=(tab, layer, p), edit_func=_viewers.edit_value, change_func=f)]
+                                                            text indent*3+"  [p]"
                                                             textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus):
-                                                                alternate Function(_viewers.reset, (tab, layer, p)) style_group "new_action_editor_b"
-                                                        if p in _viewers.force_plus:
-                                                            bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
-                                                                xalign 1. yalign .5 style "new_action_editor_bar"
-                                                        else:
-                                                            bar adjustment ui.adjustment(range=persistent._narrow_range*2, value=value+persistent._narrow_range, page=.05, changed=f):
-                                                                xalign 1. yalign .5 style "new_action_editor_bar"
+                                                                alternate Function(_viewers.reset, key) style_group "new_action_editor_b"
+                                                        fixed:
+                                                            add _viewers.time_line_background
+                                                            for c in cs:
+                                                                $(v, t, w) = c
+                                                                drag:
+                                                                    child _viewers.key_child
+                                                                    hover_child _viewers.key_hovere_child
+                                                                    xpos _viewers.to_drag_pos(t)
+                                                                    droppable False
+                                                                    dragged _viewers.generate_key_drag(key, t)
+                                                                    clicked Function(_viewers.change_time, t)
+                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c, change_func=f)
                                         for i, props_set_name in enumerate(_viewers.props_set_names):
                                             if i > opened:
                                                 hbox:
@@ -293,6 +316,92 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                         Function(_viewers.remove_image, layer, tab)] size_group None
                         textbutton _(indent+"+") action Function(_viewers.add_image, layer)
                 textbutton _("+") action _viewers.add_scene
+
+
+screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_func=None):
+    key ["game_menu", "dismiss"] action Hide("_keyframe_altername_menu")
+    modal True
+
+    $(x, y) = renpy.get_mouse_pos()
+    $(width, height) = (config.screen_width, config.screen_height)
+
+    style_group "new_action_editor"
+    $check_points = _viewers.all_keyframes[_viewers.current_scene][key]
+    $i = check_points.index(check_point)
+    $(v, t, w) = check_point
+    if isinstance(key, tuple):
+        $n, l, p = key
+        $k_list = [key]
+        $check_points_list = [check_points]
+        $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
+        for gn, ps in _viewers.props_groups.items():
+            if p in ps:
+                $k_list = [(n, l, p) for p in _viewers.props_groups[gn]]
+                $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
+                $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+    else:
+        $k_list = [key]
+        $p = key
+        $check_points_list = [check_points]
+        $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
+        for gn, ps in _viewers.props_groups.items():
+            if p in ps:
+                if gn != "focusing":
+                    $k_list = _viewers.props_groups[gn]
+                    $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
+                    $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[gn]]
+
+    $renpy.store.test=(x, w)
+    frame:
+        background "#222"
+        pos (x, y)
+        if x + 300 > width:
+            xanchor 1.0
+        else:
+            xanchor 0.0
+        if y + 200 > height:
+            yanchor 1.0
+        else:
+            yanchor 0.0
+        vbox:
+            xfill False
+            on "unhovered" action Hide("_keyframe_altername_menu")
+            if p == "child":
+                textbutton "edit child: [v[0]]" action [Function(_viewers.change_child, n, l, time=t, default=v[0]), Hide("_keyframe_altername_menu")] size_group None
+                textbutton "edit transform: [v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
+            else:
+                textbutton _("edit value: [v]") action [\
+                    Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
+                    Function(_viewers.change_time, t), Hide("_keyframe_altername_menu")]
+                textbutton _("open warper selecter: [w]") action [Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w), Hide("_keyframe_altername_menu")]
+                if p not in [prop for ps in _viewers.props_groups.values() for prop in ps] and i > 0:
+                    textbutton _("spline editor") action [\
+                        SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
+                        Show("_spline_editor", change_func=change_func, \
+                            key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
+                            use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), Hide("_keyframe_altername_menu")]
+                textbutton _("reset") action [Function(_viewers.reset, key), Hide("_keyframe_altername_menu")]
+            textbutton _("edit time: [t]") action [Function(_viewers.edit_move_keyframe, keys=k_list, old=t), Hide("_keyframe_altername_menu")]
+            textbutton _("remove") action [SensitiveIf(t > 0 or len(check_points) == 1), Function(_viewers.remove_keyframe, remove_time=t, key=k_list), Hide("_keyframe_altername_menu")] size_group None
+            textbutton _("toggle loop") action [loop_button_action, Hide("_keyframe_altername_menu")] size_group None
+
+init -1599 python in _viewers:
+    key_xsize = 22
+    key_ysize = 22
+    key_half_xsize = 22 // 2
+    key_half_ysize = 22 // 2
+    time_line_background_color = "#222"
+    box = Fixed(xsize=key_xsize, ysize=key_ysize)
+    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
+    box.add(Transform(rotate=45)(Solid("#669", xsize=16, ysize=16)))
+    key_child = box
+    box = Fixed(xsize=key_xsize, ysize=key_ysize)
+    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
+    box.add(Transform(rotate=45)(Solid("#99C", xsize=16, ysize=16)))
+    key_hovere_child = box
+    c_box_size = 320
+    timeline_ysize = 27
+    time_line_background = Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize)
 
 init -1597:
     style new_action_editor_frame:
@@ -317,8 +426,9 @@ init -1597:
         xminimum 110
     style new_action_editor_vbox xfill True
     style new_action_editor_bar is slider:
-        ysize 20
-        xsize config.screen_width-320-50
+        # ysize _viewers.timeline_ysize
+        xoffset _viewers.key_half_xsize
+        xsize config.screen_width-_viewers.c_box_size-50-_viewers.key_half_xsize
 
     style new_action_editor_a_button:
         take new_action_editor_button
@@ -327,6 +437,13 @@ init -1597:
     style new_action_editor_a_button_text is new_action_editor_button_text
     style new_action_editor_a_bar is new_action_editor_bar
 
+    style new_action_editor_fixed:
+        xsize config.screen_width-_viewers.c_box_size-50+_viewers.key_half_xsize
+        ysize _viewers.key_ysize
+        yalign .5
+    # style new_action_editor_drag:
+    #     xanchor .5
+
     style new_action_editor_b_button:
         take new_action_editor_button
         size_group "new_action_editor_b"
@@ -334,18 +451,19 @@ init -1597:
     style new_action_editor_b_button_text is new_action_editor_button_text:
         xalign 1.0
 
+    style new_action_editor_c_text is new_action_editor_text
     style new_action_editor_c_button is new_action_editor_button:
         size_group "new_action_editor_c"
     style new_action_editor_c_button_text is new_action_editor_button_text
     style new_action_editor_c_bar is new_action_editor_bar
     style new_action_editor_c_hbox:
         size_group "new_action_editor_c"
-        xsize 320
+        xsize _viewers.c_box_size
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $play_action = [SensitiveIf(_viewers.sorted_keyframes[_viewers.current_scene] or len(_viewers.scene_keyframes) > 1), \
-        SelectedIf(False), Function(_viewers.play, play=True), Hide("_action_editor"), \
+        SelectedIf(False), Function(_viewers.play, play=True), \
         Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
     if _viewers.get_value("perspective", _viewers.scene_keyframes[_viewers.current_scene][1], True):
         key "rollback"    action Function(_viewers.generate_changed("offsetZ"), _viewers.get_property("offsetZ")+100+persistent._wide_range)
@@ -385,11 +503,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         key "hide_windows" action NullAction()
     else:
         key "game_menu" action Return()
-    #camera transformはget_properyで所得できるようになるまで時間差があるので定期更新する
-    # かなり動作が重くなる
-    # camera transform properties need some times until being allowed to get property so I update screen.
-    if not time:
-        timer .2 action renpy.restart_interaction repeat True
 
     $state=_viewers.get_image_state(layer)
     $state_list = list(state)
@@ -463,7 +576,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         hbox:
                             textbutton "  [p]" action [\
                                 SensitiveIf(p in _viewers.all_keyframes[_viewers.current_scene]), \
-                                SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
+                                SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=True, change_func=f)]
                             if isinstance(value, int):
                                 textbutton "[value:> ]":
                                     action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
@@ -481,7 +594,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         hbox:
                             textbutton "  [p]" action [\
                                 SensitiveIf(p in _viewers.all_keyframes[_viewers.current_scene]), \
-                                SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, edit_func=_viewers.edit_value, change_func=f)]
+                                SelectedIf(_viewers.keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
                             textbutton "[value:> .2f]":
                                 action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus)
                                 alternate Function(_viewers.reset, p) style_group "action_editor_b"
@@ -525,7 +638,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             textbutton "  [p]":
                                 action [SensitiveIf((tab, layer, p) in _viewers.all_keyframes[_viewers.current_scene]), \
                                 SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
-                                Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=True, edit_func=_viewers.edit_value, change_func=f)]
+                                Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=True, change_func=f)]
                             if isinstance(value, int):
                                 textbutton "[value:> ]":
                                     action [Function(_viewers.edit_value, f, use_wide_range=True, default=value, force_plus=p in _viewers.force_plus)]
@@ -545,7 +658,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             textbutton "  [p]" action [\
                                 SensitiveIf((tab, layer, p) in _viewers.all_keyframes[_viewers.current_scene]), \
                                 SelectedIf(_viewers.keyframes_exist((tab, layer, p))), \
-                                Show("_edit_keyframe", key=(tab, layer, p), edit_func=_viewers.edit_value, change_func=f)]
+                                Show("_edit_keyframe", key=(tab, layer, p), change_func=f)]
                             textbutton "[value:> .2f]" action Function(_viewers.edit_value, f, default=value, force_plus=p in _viewers.force_plus):
                                 alternate Function(_viewers.reset, (tab, layer, p)) style_group "action_editor_b"
                             if p in _viewers.force_plus:
@@ -721,6 +834,7 @@ screen _move_keyframes:
     modal True
     key "game_menu" action Hide("_move_keyframes")
     frame:
+        yalign .5
         style_group "action_editor_subscreen"
         has vbox
         textbutton _("time: [_viewers.moved_time:>.2f] s") action Function(_viewers.edit_move_all_keyframe)
@@ -728,12 +842,12 @@ screen _move_keyframes:
             xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
-screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=False):
+screen _edit_keyframe(key, change_func=None, use_wide_range=False):
     $check_points = _viewers.all_keyframes[_viewers.current_scene][key]
     if isinstance(key, tuple):
         $n, l, p = key
-        $k_list = key
-        $check_points_list = check_points
+        $k_list = [key]
+        $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
         for gn, ps in _viewers.props_groups.items():
             if p in ps:
@@ -741,9 +855,9 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
                 $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
                 $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[(n, l, gn)]]
     else:
-        $k_list = key
+        $k_list = [key]
         $p = key
-        $check_points_list = check_points
+        $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
         for gn, ps in _viewers.props_groups.items():
             if key in ps:
@@ -772,7 +886,7 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
                         if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
                             textbutton _("spline") action None
                         textbutton _("{}".format(v)) action [\
-                            Function(edit_func, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
+                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
                             Function(_viewers.change_time, t)]
                     textbutton _("[t:>05.2f] s") action None
             else:
@@ -787,11 +901,11 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
                         if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
-                                Show("_spline_editor", edit_func=edit_func, change_func=change_func, \
+                                Show("_spline_editor", change_func=change_func, \
                                     key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
                                     use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t)]
                         textbutton _("{}".format(v)) action [\
-                            Function(edit_func, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
+                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
                             Function(_viewers.change_time, t)]
                     textbutton _("[t:>05.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)):
@@ -800,7 +914,7 @@ screen _edit_keyframe(key, edit_func=None, change_func=None, use_wide_range=Fals
             textbutton _("loop") action loop_button_action size_group None
             textbutton _("close") action Hide("_edit_keyframe") xalign .98 size_group None
 
-screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, use_wide_range, force_plus, time):
+screen _spline_editor(change_func, key, prop, pre, post, default, use_wide_range, force_plus, time):
 
     modal True
     key "game_menu" action Hide("_spline_editor")
@@ -835,7 +949,7 @@ screen _spline_editor(edit_func, change_func, key, prop, pre, post, default, use
                     null width 50
                     textbutton _("x") action [Function(_viewers.remove_knot, key, time, i), renpy.restart_interaction] size_group None
                     textbutton "Knot{}".format(i+1) action None
-                    textbutton "{}".format(v) action [Function(edit_func, renpy.curry(change_func)(time=time, knot_number=i), default=v, use_wide_range=use_wide_range, force_plus=force_plus, time=time)]
+                    textbutton "{}".format(v) action [Function(_viewers.edit_value, renpy.curry(change_func)(time=time, knot_number=i), default=v, use_wide_range=use_wide_range, force_plus=force_plus, time=time)]
                     if force_plus:
                         $_range = range
                         $_v = v
@@ -909,6 +1023,68 @@ init -1598:
 
 
 init -1598 python in _viewers:
+    def drag_change_time(drags, drops):
+        barsize = config.screen_width-c_box_size-50+key_half_xsize
+        frac = drags[0].x/float(barsize)
+        goal_frac = (frac - float(key_half_xsize)/barsize)*float(barsize)/(barsize-2*key_half_xsize)
+        change_time(goal_frac*renpy.store.persistent._time_range)
+        return None
+
+
+    def generate_key_drag(key, t):
+        key_list = [key]
+        if isinstance(key, tuple):
+            n, l, p = key
+            for gn, ps in props_groups.items():
+                if p in ps:
+                    key_list = [(n, l, p) for p in props_groups[gn]]
+        else:
+            p = key
+            for gn, ps in props_groups.items():
+                if key in ps:
+                    if gn != "focusing":
+                        key_list = props_groups[gn]
+
+        def changed(drags, drops):
+            x = drags[0].x
+            y = drags[0].y
+            barsize = config.screen_width - c_box_size-50 + key_half_xsize
+            frac = float(x)/(barsize-key_xsize)
+            goal = frac*renpy.store.persistent._time_range
+            if not move_keyframe(new=goal, old=t, keys=key_list):
+                drags[0].snap(to_drag_pos(t), y)
+
+        return changed
+
+
+    def absolute_pos(st, at):
+        (x, y) = renpy.get_mouse_pos()
+        if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
+            x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
+            y = int(y/preview_size)
+        else:
+            (x, y) = (x/preview_size, y/preview_size)
+        return Text("({:>4}, {:>4})".format(x, y), size=16), 0.1
+
+
+    def rel_pos(st, at):
+        (x, y) = renpy.get_mouse_pos()
+        if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
+            x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
+            y = int(y/preview_size)
+        else:
+            (x, y) = (x/preview_size, y/preview_size)
+        rx = x/float(config.screen_width)
+        ry = y/float(config.screen_height)
+        return Text("({:>.3}, {:>.3})".format(rx, ry), size=16), 0.1
+
+
+    def to_drag_pos(time):
+        pos = time/renpy.store.persistent._time_range
+        barsize = config.screen_width-c_box_size-50+key_half_xsize
+        return pos*float(barsize-key_xsize)/barsize
+
+
     class CameraIcon(renpy.Displayable):
 
         def __init__(self, child, **properties):
@@ -930,8 +1106,8 @@ init -1598 python in _viewers:
             else:
                 self.y_range = renpy.store.persistent._narrow_range
 
-            self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
-            self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
+            self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
+            self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
 
 
         def render(self, width, height, st, at):
@@ -943,7 +1119,7 @@ init -1598 python in _viewers:
             self.width, self.height = child_render.get_size()
 
             # Create the render we will return.
-            render = renpy.Render(renpy.config.screen_width, renpy.config.screen_height)
+            render = renpy.Render(config.screen_width, config.screen_height)
 
             # Blit (draw) the child's render to our render.
             render.blit(child_render, (self.x-self.width/2., self.y-self.height/2.))
@@ -961,24 +1137,15 @@ init -1598 python in _viewers:
             elif renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
 
-            # if x <= 0:
-            #     x = 0
-            # if renpy.config.screen_width <= x:
-            #     x = renpy.config.screen_width
-            # if y <= 0:
-            #     y = 0
-            # if renpy.config.screen_height <= y:
-            #     y = renpy.config.screen_height
-
             if get_property("offsetX") != int(self.cx) or get_property("offsetY") != int(self.cy):
-                self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
-                self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
+                self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
+                self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
                 renpy.redraw(self, 0)
 
             if self.dragging:
                 if self.x != x or self.y != y:
-                    self.cx = 2*self.x_range*float(x)/renpy.config.screen_width
-                    self.cy = 2*self.y_range*float(y)/renpy.config.screen_height
+                    self.cx = 2*self.x_range*float(x)/config.screen_width
+                    self.cy = 2*self.y_range*float(y)/config.screen_height
                     if self.int_x:
                         self.cx = int(self.cx)
                     if self.int_y:
@@ -1000,95 +1167,3 @@ init -1598 python in _viewers:
         def visit(self):
             return [ self.child ]
     camera_icon = CameraIcon("camera.png")
-
-
-    class Dragged(renpy.Displayable):
-
-        def __init__(self, child, **properties):
-            super(Dragged, self).__init__(**properties)
-            # The child.
-            self.child = renpy.displayable(child)
-            self.dragging = False
-
-
-        def init(self, int_x=True, int_y=True):
-            self.int_x = int_x
-            self.int_y = int_y
-            if self.int_x:
-                self.x_range = renpy.store.persistent._wide_range
-            else:
-                self.x_range = renpy.store.persistent._narrow_range
-            if self.int_y:
-                self.y_range = renpy.store.persistent._wide_range
-            else:
-                self.y_range = renpy.store.persistent._narrow_range
-
-            self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
-            self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
-
-
-        def render(self, width, height, st, at):
-
-            # Create a render from the child.
-            child_render = renpy.render(self.child, width, height, st, at)
-
-            # Get the size of the child.
-            self.width, self.height = child_render.get_size()
-
-            # Create the render we will return.
-            render = renpy.Render(renpy.config.screen_width, renpy.config.screen_height)
-
-            # Blit (draw) the child's render to our render.
-            render.blit(child_render, (self.x-self.width/2., self.y-self.height/2.))
-
-            # Return the render.
-            return render
-
-
-        def event(self, ev, x, y, st):
-
-            if renpy.map_event(ev, "mousedown_1"):
-                if self.x-self.width/2. <= x and x <= self.x+self.width/2. \
-                    and self.y-self.height/2. <= y and y <= self.y+self.height/2.:
-                    self.dragging = True
-            elif renpy.map_event(ev, "mouseup_1"):
-                self.dragging = False
-
-            # if x <= 0:
-            #     x = 0
-            # if renpy.config.screen_width <= x:
-            #     x = renpy.config.screen_width
-            # if y <= 0:
-            #     y = 0
-            # if renpy.config.screen_height <= y:
-            #     y = renpy.config.screen_height
-
-            if get_property("offsetX") != int(self.cx) or get_property("offsetY") != int(self.cy):
-                self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*renpy.config.screen_width
-                self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*renpy.config.screen_height
-                renpy.redraw(self, 0)
-
-            if self.dragging:
-                if self.x != x or self.y != y:
-                    self.cx = 2*self.x_range*float(x)/renpy.config.screen_width
-                    self.cy = 2*self.y_range*float(y)/renpy.config.screen_height
-                    if self.int_x:
-                        self.cx = int(self.cx)
-                    if self.int_y:
-                        self.cy = int(self.cy)
-                    if self.cx != get_property("offsetX") or self.cy != get_property("offsetY"):
-                        generate_changed("offsetX")(self.cx)
-                        generate_changed("offsetY")(self.cy)
-                    self.x, self.y = x, y
-                    renpy.redraw(self, 0)
-
-            # Pass the event to our child.
-            # return self.child.event(ev, x, y, st)
-
-
-        def per_interact(self):
-            renpy.redraw(self, 0)
-
-
-        def visit(self):
-            return [ self.child ]
