@@ -138,7 +138,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                         for c in cs:
                                             $(v, t, w) = c
                                             drag:
-                                                child _viewers.key_child
+                                                child _viewers.insensitive_key_child
                                                 xpos to_drag_pos(t)
                                                 droppable False
                                                 draggable False
@@ -162,7 +162,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                             for c in all_keyframes[s].get(p, []):
                                                 $(v, t, w) = c
                                                 drag:
-                                                    child _viewers.key_child
+                                                    child _viewers.insensitive_key_child
                                                     xpos to_drag_pos(t)
                                                     droppable False
                                                     draggable False
@@ -189,7 +189,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                     for c in all_keyframes[s].get(p, []):
                                                         $(v, t, w) = c
                                                         drag:
-                                                            child _viewers.key_child
+                                                            child _viewers.insensitive_key_child
                                                             xpos to_drag_pos(t)
                                                             droppable False
                                                             draggable False
@@ -208,7 +208,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                         for c in all_keyframes[s].get(p, []):
                                                             $(v, t, w) = c
                                                             drag:
-                                                                child _viewers.key_child
+                                                                child _viewers.insensitive_key_child
                                                                 xpos to_drag_pos(t)
                                                                 droppable False
                                                                 draggable False
@@ -280,7 +280,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                         for c in all_keyframes[s].get(p, []):
                                                             $(v, t, w) = c
                                                             drag:
-                                                                child _viewers.key_child
+                                                                child _viewers.insensitive_key_child
                                                                 xpos to_drag_pos(t)
                                                                 droppable False
                                                                 draggable False
@@ -296,7 +296,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                             for c in all_keyframes[s].get((tag, layer, p), []):
                                                 $(v, t, w) = c
                                                 drag:
-                                                    child _viewers.key_child
+                                                    child _viewers.insensitive_key_child
                                                     xpos to_drag_pos(t)
                                                     droppable False
                                                     draggable False
@@ -321,7 +321,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                         for c in all_keyframes[s].get((tag, layer, p), []):
                                                             $(v, t, w) = c
                                                             drag:
-                                                                child _viewers.key_child
+                                                                child _viewers.insensitive_key_child
                                                                 xpos to_drag_pos(t)
                                                                 droppable False
                                                                 draggable False
@@ -338,7 +338,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                             for c in all_keyframes[s].get((tag, layer, p), []):
                                                                 $(v, t, w) = c
                                                                 drag:
-                                                                    child _viewers.key_child
+                                                                    child _viewers.insensitive_key_child
                                                                     xpos to_drag_pos(t)
                                                                     droppable False
                                                                     draggable False
@@ -439,7 +439,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                             for c in all_keyframes[s].get((tag, layer, p), []):
                                                                 $(v, t, w) = c
                                                                 drag:
-                                                                    child _viewers.key_child
+                                                                    child _viewers.insensitive_key_child
                                                                     xpos to_drag_pos(t)
                                                                     droppable False
                                                                     draggable False
@@ -535,12 +535,16 @@ init -1599 python in _viewers:
     time_line_background_color = "#222"
     box = Fixed(xsize=key_xsize, ysize=key_ysize)
     box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#669", xsize=16, ysize=16)))
+    box.add(Transform(rotate=45)(Solid("#77A", xsize=16, ysize=16)))
     key_child = box
     box = Fixed(xsize=key_xsize, ysize=key_ysize)
     box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#99C", xsize=16, ysize=16)))
+    box.add(Transform(rotate=45)(Solid("#AAE", xsize=16, ysize=16)))
     key_hovere_child = box
+    box = Fixed(xsize=key_xsize, ysize=key_ysize)
+    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
+    box.add(Transform(rotate=45)(Solid("#447", xsize=16, ysize=16)))
+    insensitive_key_child = box
     c_box_size = 320
     timeline_ysize = 27
     time_line_background = Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize)
