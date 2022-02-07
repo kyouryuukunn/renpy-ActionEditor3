@@ -1,5 +1,8 @@
 
 screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
+    $int_format = "{:> }" 
+    $float_format = "{:> .2f}"
+
     $generate_changed = _viewers.generate_changed
     $get_property = _viewers.get_property
     $get_value = _viewers.get_value
@@ -222,50 +225,30 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                         $value = get_property(p)
                                         $ f = generate_changed(p)
                                         $cs = all_keyframes[s].get(key, [])
-                                        if p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
-                                            hbox:
-                                                hbox:
-                                                    style_group "new_action_editor_c"
-                                                    textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                    if isinstance(value, int):
-                                                        textbutton "[value:> ]":
-                                                            action [Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)]
-                                                            alternate Function(reset, p) style_group "new_action_editor_b"
-                                                    else:
-                                                        textbutton "[value:> .2f]" action Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus):
-                                                            alternate Function(reset, p) style_group "new_action_editor_b"
-                                                fixed:
-                                                    add _viewers.time_line_background
-                                                    for c in cs:
-                                                        $(v, t, w) = c
-                                                        drag:
-                                                            child _viewers.key_child
-                                                            hover_child _viewers.key_hovere_child
-                                                            xpos to_drag_pos(t)
-                                                            droppable False
-                                                            dragged generate_key_drag(key, t)
-                                                            clicked Function(change_time, t)
-                                                            alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=True, change_func=f)
+                                        $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                        if not use_wide_range or isinstance(value, float):
+                                            $value_format = float_format
                                         else:
+                                            $value_format = int_format
+                                        hbox:
                                             hbox:
-                                                hbox:
-                                                    style_group "new_action_editor_c"
-                                                    textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                    textbutton "[value:> .2f]":
-                                                        action Function(edit_value, f, default=value, force_plus=p in force_plus)
-                                                        alternate Function(reset, p) style_group "new_action_editor_b"
-                                                fixed:
-                                                    add _viewers.time_line_background
-                                                    for c in cs:
-                                                        $(v, t, w) = c
-                                                        drag:
-                                                            child _viewers.key_child
-                                                            hover_child _viewers.key_hovere_child
-                                                            xpos to_drag_pos(t)
-                                                            droppable False
-                                                            dragged generate_key_drag(key, t)
-                                                            clicked Function(change_time, t)
-                                                            alternate Show("_keyframe_altername_menu", key=key, check_point=c, change_func=f)
+                                                style_group "new_action_editor_c"
+                                                textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC", \
+                                                    clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus), \
+                                                    alternate=Function(reset, p))
+                                            fixed:
+                                                add _viewers.time_line_background
+                                                for c in cs:
+                                                    $(v, t, w) = c
+                                                    drag:
+                                                        child _viewers.key_child
+                                                        hover_child _viewers.key_hovere_child
+                                                        xpos to_drag_pos(t)
+                                                        droppable False
+                                                        dragged generate_key_drag(key, t)
+                                                        clicked Function(change_time, t)
+                                                        alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
                                 for i, props_set_name in enumerate(props_set_names):
                                     if i > opened:
                                         hbox:
@@ -307,7 +290,7 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                     textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) style_group "new_action_editor_b" size_group None
                                 textbutton _(indent*2+"  zzoom") action [\
                                     SelectedIf(get_value((tab, layer, "zzoom"), scene_keyframes[s][1], True)), \
-                                    Function(_viewers.toggle_zzoom, tab, layer)]
+                                    Function(_viewers.toggle_boolean_property, (tab, layer, "zzoom"))]
                                 if tab == tag:
                                     if opened is None:
                                         for i, props_set_name in enumerate(props_set_names):
@@ -353,8 +336,13 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                 $value = get_property(key)
                                                 $f = generate_changed(key)
                                                 $cs = all_keyframes[s].get(key, [])
-                                                if p == "child":
-                                                    hbox:
+                                                $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                                if not use_wide_range or isinstance(value, float):
+                                                    $value_format = float_format
+                                                else:
+                                                    $value_format = int_format
+                                                hbox:
+                                                    if p == "child":
                                                         vbox:
                                                             xfill False
                                                             hbox:
@@ -371,62 +359,25 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                                     SensitiveIf(key in all_keyframes[s]), \
                                                                     SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                                                     Function(_viewers.edit_transition, tab, layer)] size_group None
-                                                        fixed:
-                                                            add _viewers.time_line_background
-                                                            for c in cs:
-                                                                $(v, t, w) = c
-                                                                drag:
-                                                                    child _viewers.key_child
-                                                                    hover_child _viewers.key_hovere_child
-                                                                    xpos to_drag_pos(t)
-                                                                    droppable False
-                                                                    dragged generate_key_drag(key, t)
-                                                                    clicked Function(change_time, t)
-                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c)
-                                                elif p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
-                                                    hbox:
+                                                    else:
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                            if isinstance(value, int):
-                                                                textbutton "[value:> ]":
-                                                                    action [Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)]
-                                                                    alternate Function(reset, key) style_group "new_action_editor_b"
-                                                            else:
-                                                                textbutton "[value:> .2f]":
-                                                                    action Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)
-                                                                    alternate Function(reset, key) style_group "new_action_editor_b"
-                                                        fixed:
-                                                            add _viewers.time_line_background
-                                                            for c in cs:
-                                                                $(v, t, w) = c
-                                                                drag:
-                                                                    child _viewers.key_child
-                                                                    hover_child _viewers.key_hovere_child
-                                                                    xpos to_drag_pos(t)
-                                                                    droppable False
-                                                                    dragged generate_key_drag(key, t)
-                                                                    clicked Function(change_time, t)
-                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=True, change_func=f)
-                                                else:
-                                                    hbox:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                            textbutton "[value:> .2f]" action Function(edit_value, f, default=value, force_plus=p in force_plus):
+                                                            textbutton value_format.format(value):
+                                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
                                                                 alternate Function(reset, key) style_group "new_action_editor_b"
-                                                        fixed:
-                                                            add _viewers.time_line_background
-                                                            for c in cs:
-                                                                $(v, t, w) = c
-                                                                drag:
-                                                                    child _viewers.key_child
-                                                                    hover_child _viewers.key_hovere_child
-                                                                    xpos to_drag_pos(t)
-                                                                    droppable False
-                                                                    dragged generate_key_drag(key, t)
-                                                                    clicked Function(change_time, t)
-                                                                    alternate Show("_keyframe_altername_menu", key=key, check_point=c, change_func=f)
+                                                    fixed:
+                                                        add _viewers.time_line_background
+                                                        for c in cs:
+                                                            $(v, t, w) = c
+                                                            drag:
+                                                                child _viewers.key_child
+                                                                hover_child _viewers.key_hovere_child
+                                                                xpos to_drag_pos(t)
+                                                                droppable False
+                                                                dragged generate_key_drag(key, t)
+                                                                clicked Function(change_time, t)
+                                                                alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
                                         for i, props_set_name in enumerate(props_set_names):
                                             if i > opened:
                                                 hbox:
@@ -608,6 +559,8 @@ init -1597:
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
+    $int_format = "{:> }" 
+    $float_format = "{:> .2f}"
     $generate_changed = _viewers.generate_changed
     $get_property = _viewers.get_property
     $get_value = _viewers.get_value
@@ -736,39 +689,32 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 if p in props_set[opened] and (p not in props_groups["focusing"] or \
                     (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True))):
                     $value = get_property(p)
-                    $ f = generate_changed(p)
-                    if p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
-                        hbox:
-                            textbutton "  [p]" action [\
-                                SensitiveIf(p in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=True, change_func=f)]
-                            if isinstance(value, int):
-                                textbutton "[value:> ]":
-                                    action [Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)]
-                                    alternate Function(reset, p) style_group "action_editor_b"
-                            else:
-                                textbutton "[value:> .2f]" action Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus):
-                                    alternate Function(reset, p) style_group "action_editor_b"
-                            if p in force_plus:
-                                bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
-                            else:
-                                bar adjustment ui.adjustment(range=persistent._wide_range*2, value=value+persistent._wide_range, page=1, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
+                    $f = generate_changed(p)
+                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                    if use_wide_range:
+                        $range = persistent._wide_range
+                        $bar_page = 1
                     else:
-                        hbox:
-                            textbutton "  [p]" action [\
-                                SensitiveIf(p in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
-                            textbutton "[value:> .2f]":
-                                action Function(edit_value, f, default=value, force_plus=p in force_plus)
-                                alternate Function(reset, p) style_group "action_editor_b"
-                            if p in force_plus:
-                                bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
-                            else:
-                                bar adjustment ui.adjustment(range=persistent._narrow_range*2, value=value+persistent._narrow_range, page=.05, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
+                        $range = persistent._narrow_range
+                        $bar_page = .05
+                    if p in force_plus:
+                        $bar_value = value
+                    else:
+                        $bar_value = value + range
+                        $range = range*2
+                    if not use_wide_range or isinstance(value, float):
+                        $value_format = float_format
+                    else:
+                        $value_format = int_format
+                    hbox:
+                        textbutton "  [p]" action [\
+                            SensitiveIf(p in all_keyframes[current_scene]), \
+                            SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
+                        textbutton value_format.format(value):
+                            action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                            alternate Function(reset, p) style_group "action_editor_b"
+                        bar adjustment ui.adjustment(range=range, value=bar_value, page=bar_page, changed=f):
+                            xalign 1. yalign .5 style "action_editor_bar"
             for i, props_set_name in enumerate(props_set_names):
                 if i > opened:
                     hbox:
@@ -784,12 +730,29 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") \
                     or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
                     $value = get_property((tab, layer, p))
-                    $ f = generate_changed((tab, layer, p))
-                    if p == "child":
-                        hbox:
-                            textbutton "  [p]" action [\
-                                SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist((tab, layer, p))), Show("_edit_keyframe", key=(tab, layer, p))]
+                    $f = generate_changed((tab, layer, p))
+                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                    if use_wide_range:
+                        $range = persistent._wide_range
+                        $bar_page = 1
+                    else:
+                        $range = persistent._narrow_range
+                        $bar_page = .05
+                    if p in force_plus:
+                        $bar_value = value
+                    else:
+                        $bar_value = value + range
+                        $range = range*2
+                    if not use_wide_range or isinstance(value, float):
+                        $value_format = float_format
+                    else:
+                        $value_format = int_format
+                    hbox:
+                        textbutton "  [p]":
+                            action [SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
+                            SelectedIf(keyframes_exist((tab, layer, p))), \
+                            Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=use_wide_range, change_func=f)]
+                        if p == "child":
                             textbutton "[value[0]]" action [\
                                 SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                 Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
@@ -798,40 +761,12 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
                                 SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                 Function(_viewers.edit_transition, tab, layer)] size_group None
-                    elif p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int))):
-                        hbox:
-                            textbutton "  [p]":
-                                action [SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist((tab, layer, p))), \
-                                Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=True, change_func=f)]
-                            if isinstance(value, int):
-                                textbutton "[value:> ]":
-                                    action [Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)]
-                                    alternate Function(reset, (tab, layer, p)) style_group "action_editor_b"
-                            else:
-                                textbutton "[value:> .2f]":
-                                    action Function(edit_value, f, use_wide_range=True, default=value, force_plus=p in force_plus)
-                                    alternate Function(reset, (tab, layer, p)) style_group "action_editor_b"
-                            if p in force_plus:
-                                bar adjustment ui.adjustment(range=persistent._wide_range, value=value, page=1, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
-                            else:
-                                bar adjustment ui.adjustment(range=persistent._wide_range*2, value=value+persistent._wide_range, page=1, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
-                    else:
-                        hbox:
-                            textbutton "  [p]" action [\
-                                SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist((tab, layer, p))), \
-                                Show("_edit_keyframe", key=(tab, layer, p), change_func=f)]
-                            textbutton "[value:> .2f]" action Function(edit_value, f, default=value, force_plus=p in force_plus):
+                        else:
+                            textbutton value_format.format(value):
+                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
                                 alternate Function(reset, (tab, layer, p)) style_group "action_editor_b"
-                            if p in force_plus:
-                                bar adjustment ui.adjustment(range=persistent._narrow_range, value=value, page=.05, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
-                            else:
-                                bar adjustment ui.adjustment(range=persistent._narrow_range*2, value=value+persistent._narrow_range, page=.05, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
+                        bar adjustment ui.adjustment(range=range, value=bar_value, page=bar_page, changed=f):
+                            xalign 1. yalign .5 style "action_editor_bar"
             for i, props_set_name in enumerate(props_set_names):
                 if i > opened:
                     hbox:
@@ -852,7 +787,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     Function(_viewers.remove_image, layer, tab)] size_group None
                 textbutton _("zzoom") action [\
                     SelectedIf(get_value((tab, layer, "zzoom"), scene_keyframes[current_scene][1], True)), \
-                    Function(_viewers.toggle_zzoom, tab, layer)] size_group None
+                    Function(_viewers.toggle_boolean_property, (tab, layer, "zzoom"))] size_group None
                 textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
                 # textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
@@ -1250,6 +1185,91 @@ init -1598 python in _viewers:
         return pos*float(barsize-key_xsize)/barsize
 
 
+    class DraggableValue(renpy.Displayable):
+
+
+        def __init__(self, format, key, changed, use_wide_range, force_plus, clicked=None, alternate=None, **properties):
+            super(DraggableValue, self).__init__(**properties)
+            from pygame import MOUSEMOTION
+            # The child.
+            self.format = format
+            self.key = key
+            self.changed = changed
+            self.use_wide_range = use_wide_range
+            self.force_plus = force_plus
+            self.clicked = clicked
+            self.alternate = alternate
+            self.dragging = False
+            self.kwargs = {}
+            for k, v in properties.items():
+                if k.startswith("text_"):
+                    self.kwargs[k[5:]] = v
+            if isinstance(key, tuple):
+                self.prop = key[2]
+            else:
+                self.prop = key
+
+            self.change_per_pix = 0.01
+            self.clicking = False
+            self.MOUSEMOTION = MOUSEMOTION
+
+
+        def render(self, width, height, st, at):
+            value = get_property(self.key)
+            # box = Fixed()
+            # box.add(Text(self.format.format(value), anchor=(.5, .5), **self.kwargs))
+            # render = box.render(width, height, st, at)
+            render = Text(self.format.format(value), anchor=(.5, .5), **self.kwargs).render(width, height, st, at)
+            self.width, self.height = render.get_size()
+            return render
+
+
+        def event(self, ev, x, y, st):
+            
+            return None
+            if ev.type == self.MOUSEMOTION:
+                if self.clicking and (self.last_x != x or self.last_y != y):
+                    self.dragging = True
+                
+            if x >= 0 and x <= self.width and y >= 0 and y <= self.height:
+                if renpy.map_event(ev, "mousedown_1"):
+                    self.clicking = True
+                    self.last_x = x
+                    self.last_y = y
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    self.clicking = False
+                    self.dragging = False
+                    if self.clicked is not None:
+                        rv = renpy.run(self.clicked)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    if self.alternate is not None:
+                        rv = renpy.run(self.alternate)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+
+            if renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+                self.last_y = None
+                raise renpy.display.core.IgnoreEvent()
+
+            if self.dragging:
+                value = get_property(self.key)
+                v = (x - self.last_x)*self.change_per_pix+value
+                self.changed(convert_to_changed_value(v, self.force_plus, self.use_wide_range))
+                
+            renpy.redraw(self, 0)
+
+
+        def per_interact(self):
+            renpy.redraw(self, 0)
+
+
     class CameraIcon(renpy.Displayable):
 
         def __init__(self, child, **properties):
@@ -1276,19 +1296,14 @@ init -1598 python in _viewers:
 
 
         def render(self, width, height, st, at):
-
             # Create a render from the child.
             child_render = renpy.render(self.child, width, height, st, at)
-
             # Get the size of the child.
             self.width, self.height = child_render.get_size()
-
             # Create the render we will return.
             render = renpy.Render(config.screen_width, config.screen_height)
-
             # Blit (draw) the child's render to our render.
             render.blit(child_render, (self.x-self.width/2., self.y-self.height/2.))
-
             # Return the render.
             return render
 
@@ -1320,9 +1335,6 @@ init -1598 python in _viewers:
                         generate_changed("offsetY")(self.cy)
                     self.x, self.y = x, y
                     renpy.redraw(self, 0)
-
-            # Pass the event to our child.
-            # return self.child.event(ev, x, y, st)
 
 
         def per_interact(self):

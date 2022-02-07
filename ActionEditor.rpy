@@ -326,6 +326,17 @@ init -1598 python in _viewers:
         return changed
 
 
+    def convert_to_changed_value(value, force_plus, use_wide_range):
+        if use_wide_range:
+            range = persistent._wide_range
+        else:
+            range = persistent._narrow_range
+        if force_plus:
+            return value
+        else:
+            return value + range
+
+
     def set_keyframe(key, value, recursion=False, time=None):
         if isinstance(key, tuple):
             tag, layer, prop = key
@@ -953,13 +964,18 @@ init -1598 python in _viewers:
             return
 
 
-    def toggle_zzoom(tag, layer):
-        zzoom = get_value((tag, layer, "zzoom"), scene_keyframes[current_scene][1], True)
-        zzoom_org=get_image_state(layer)[tag]["zzoom"]
-        if zzoom == zzoom_org or (not zzoom and not zzoom_org):
-            set_keyframe((tag, layer, "zzoom"), not zzoom, time=scene_keyframes[current_scene][1])
+    def toggle_boolean_property(key):
+        if isinstance(key, tuple):
+            tag, layer, prop = key
+            value_org = get_image_state(layer)[tag]["zzoom"]
         else:
-            remove_keyframe(scene_keyframes[current_scene][1], (tag, layer, "zzoom"))
+            value_org = camera_state_org[key]
+        value = get_value(key, scene_keyframes[current_scene][1], True)
+        #assume default is False
+        if value == value_org or (not value and not value_org):
+            set_keyframe(key, not value, time=scene_keyframes[current_scene][1])
+        else:
+            remove_keyframe(scene_keyframes[current_scene][1], key)
         change_time(current_time)
 
 
