@@ -250,6 +250,8 @@ init -1598 python in _viewers:
 
         elif group_name == "crop":
             return group
+        elif group_name == "alignaround":
+            return group
         else:
             return None
 
@@ -401,7 +403,14 @@ init -1598 python in _viewers:
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
             camera_is_used = False
+            polar_coordinate = False
+            for prop in ("xalignaround", "yalignaround", "radius", "angle"):
+                if prop in all_keyframes[s]:
+                    polar_coordinate = True
+                    break
             for prop, d in camera_props:
+                if polar_coordinate and prop in ("xpos", "ypos"):
+                    continue
                 if prop in all_keyframes[s]:
                     check_points[prop] = all_keyframes[s][prop]
                     camera_is_used = True
@@ -441,7 +450,14 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
+                    polar_coordinate = False
+                    for prop in ("xalignaround", "yalignaround", "radius", "angle"):
+                        if (tag, layer, prop) in all_keyframes[s]:
+                            polar_coordinate = True
+                            break
                     for prop, d in transform_props:
+                        if polar_coordinate and prop in ("xpos", "ypos"):
+                            continue
                         if (tag, layer, prop) in all_keyframes[s]:
                             check_points[layer][tag][prop] = all_keyframes[s][(tag, layer, prop)]
                         elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
@@ -647,6 +663,9 @@ init -1598 python in _viewers:
                                         elif gn == "crop":
                                             result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
                                             setattr(tran, gn, result)
+                                        elif gn == "alignaround":
+                                            result = (group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])
+                                            setattr(tran, gn, result)
                                         elif gn == "focusing":
                                             focusing = group_cache["focusing"]["focusing"]
                                             dof = group_cache["focusing"]["dof"]
@@ -695,6 +714,9 @@ init -1598 python in _viewers:
                                 setattr(tran, gn, result)
                             elif gn == "crop":
                                 result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
+                                setattr(tran, gn, result)
+                            elif gn == "alignaround":
+                                result = (group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])
                                 setattr(tran, gn, result)
                             elif gn == "focusing":
                                 focusing = group_cache["focusing"]["focusing"]
@@ -1716,6 +1738,9 @@ show %s""" % child
                         elif gn == "crop":
                             v = "(%s, %s, %s, %s)"
                             r = [(v%(xc[0], yc[0], wc[0], hc[0]), xc[1], xc[2]) for xc, yc, wc, hc in zip(group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])]
+                        elif gn == "alignaround":
+                            v = "(%s, %s)"
+                            r = [(v%(xa[0], ya[0]), xa[1], xa[2]) for xa, ya in zip(group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])]
                         if r:
                             result[gn] = r
                     break

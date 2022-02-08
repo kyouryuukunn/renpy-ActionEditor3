@@ -55,22 +55,23 @@ init -1600 python in _viewers:
     preview_background_color="#111"
 
 
-    props_set = [
-        ("child", "xpos", "ypos", "zpos", "rotate"), 
-        ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"),
-        ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
-        ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
-        ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")
-    ]
-    props_set_names = [
-        "Child/Pos    ", 
-        "3D Matrix    ",
-        "Anchor/Offset", 
-        "Zoom/Crop    ", 
-        "Effect       "
-    ]
+    props_set = (
+            ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "angle", "radius", "rotate"), 
+            ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"),
+            ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
+            ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
+            ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")
+            )
+    props_set_names = (
+            "Child/Pos    ", 
+            "3D Matrix    ",
+            "Anchor/Offset", 
+            "Zoom/Crop    ", 
+            "Effect       ",
+            )
 
     props_groups = {
+        "alignaround":["xalignaround", "yalignaround"], 
         "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
         "matrixanchor":["matrixanchorX", "matrixanchorY"], 
         "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
@@ -80,13 +81,16 @@ init -1600 python in _viewers:
 
     special_props = ["child"]
 
-    force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright"]
-    force_wide_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing"]
+    force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround"]
+    force_wide_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle"]
     force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing"]
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
 
     sort_ref_list = [
+    "alignaround"
+    "radius",
+    "angle"
     "pos",
     "anchor",
     "offset",
@@ -96,6 +100,9 @@ init -1600 python in _viewers:
     "ypos", 
     "yanchor", 
     "yoffset", 
+    "alignaround",
+    "radius",
+    "angle",
     "zpos", 
     "matrixtransform", 
     "matrixanchor", 
@@ -118,6 +125,10 @@ init 1600 python in _viewers:
     ("xpos", 0.5), 
     ("ypos", 1.), 
     ("zpos", 0.), 
+    # ("xalignaround", 0.),
+    # ("yalignaround", 0.),
+    # ("radius", 0),
+    # ("angle", 0),
     ("xanchor", 0.5), 
     ("yanchor", 1.), 
     ("matrixanchorX", 0.5), 
@@ -156,6 +167,10 @@ init 1600 python in _viewers:
     ("xpos", 0.), 
     ("ypos", 0.), 
     ("zpos", 0.), 
+    # ("xalignaround", 0.),
+    # ("yalignaround", 0.),
+    # ("radius", 0),
+    # ("angle", 0),
     ("xanchor", 0.), 
     ("yanchor", 0.), 
     ("matrixanchorX", 0.5), 

@@ -347,15 +347,12 @@ screen _new_action_editor(tab=None, layer="master", opened=None, time=0):
                                                             xfill False
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                            hbox:
-                                                                style_group "new_action_editor_c"
-                                                                textbutton indent*4+"  [value[0]]" action [\
+                                                                textbutton indent*3+"  [value[0]]" action [\
                                                                     SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                                                     Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*4+"  with [value[1]]" action [\
+                                                                textbutton indent*3+"  with [value[1]]" action [\
                                                                     SensitiveIf(key in all_keyframes[s]), \
                                                                     SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                                                     Function(_viewers.edit_transition, tab, layer)] size_group None
@@ -729,8 +726,9 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 if p in props_set[opened] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing \
                     and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") \
                     or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
-                    $value = get_property((tab, layer, p))
-                    $f = generate_changed((tab, layer, p))
+                    $key = (tab, layer, p)
+                    $value = get_property(key)
+                    $f = generate_changed(key)
                     $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                     if use_wide_range:
                         $range = persistent._wide_range
@@ -738,35 +736,35 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     else:
                         $range = persistent._narrow_range
                         $bar_page = .05
-                    if p in force_plus:
-                        $bar_value = value
-                    else:
-                        $bar_value = value + range
-                        $range = range*2
                     if not use_wide_range or isinstance(value, float):
                         $value_format = float_format
                     else:
                         $value_format = int_format
                     hbox:
                         textbutton "  [p]":
-                            action [SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
-                            SelectedIf(keyframes_exist((tab, layer, p))), \
-                            Show("_edit_keyframe", key=(tab, layer, p), use_wide_range=use_wide_range, change_func=f)]
+                            action [SensitiveIf(key in all_keyframes[current_scene]), \
+                            SelectedIf(keyframes_exist(key)), \
+                            Show("_edit_keyframe", key=key, use_wide_range=use_wide_range, change_func=f)]
                         if p == "child":
                             textbutton "[value[0]]" action [\
                                 SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                 Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
                             textbutton "with" action None size_group None
                             textbutton "[value[1]]" action [\
-                                SensitiveIf((tab, layer, p) in all_keyframes[current_scene]), \
+                                SensitiveIf(key in all_keyframes[current_scene]), \
                                 SelectedIf(keyframes_exist((tab, layer, "child"))), \
                                 Function(_viewers.edit_transition, tab, layer)] size_group None
                         else:
+                            if p in force_plus:
+                                $bar_value = value
+                            else:
+                                $bar_value = value + range
+                                $range = range*2
                             textbutton value_format.format(value):
                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
-                                alternate Function(reset, (tab, layer, p)) style_group "action_editor_b"
-                        bar adjustment ui.adjustment(range=range, value=bar_value, page=bar_page, changed=f):
-                            xalign 1. yalign .5 style "action_editor_bar"
+                                alternate Function(reset, key) style_group "action_editor_b"
+                            bar adjustment ui.adjustment(range=range, value=bar_value, page=bar_page, changed=f):
+                                xalign 1. yalign .5 style "action_editor_bar"
             for i, props_set_name in enumerate(props_set_names):
                 if i > opened:
                     hbox:
