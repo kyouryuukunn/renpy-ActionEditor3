@@ -918,9 +918,9 @@ init -1598 python in _viewers:
                         image_state[current_scene][layer][added_tag][p] = get_property((added_tag, layer, p), False)
                 change_time(current_time)
                 if persistent._viewer_legacy_gui:
-                    renpy.show_screen("_action_editor", tab=added_tag, layer=layer)
+                    renpy.show_screen("_action_editor")
                 else:
-                    renpy.show_screen("_new_action_editor", tab=added_tag, layer=layer)
+                    renpy.show_screen("_new_action_editor")
                 return
         else:
             renpy.notify(_("Please type image name"))
@@ -1309,14 +1309,17 @@ show %s""" % child
 
     def add_scene():
         global current_scene
-        for i, (v, t, _) in enumerate(scene_keyframes):
-            if t > current_time:
-                break
-            elif t == current_time:
-                i += 1
-                break
-        else:
-            i = len(scene_keyframes)
+        # 途中にシーンも挟めるがスクリーンの画面で末尾に+ボタンがあるので末尾追加でないと挙動に違和感
+        # 名前も連番なので、見失う
+        # for i, (v, t, _) in enumerate(scene_keyframes):
+        #     if t > current_time:
+        #         break
+        #     elif t == current_time:
+        #         i += 1
+        #         break
+        # else:
+        #     i = len(scene_keyframes)
+        i = len(scene_keyframes)
         current_scene = i
         scene_keyframes.insert(current_scene, (persistent._viewer_transition, current_time, None))
         image_state.insert(current_scene, {})
@@ -1342,7 +1345,7 @@ show %s""" % child
                 camera_state_org[current_scene][p] = middle_value
         if persistent._viewer_legacy_gui:
             renpy.show_screen("_action_editor")
-        else:
+        elif persistent._open_only_one_page:
             renpy.show_screen("_new_action_editor")
         renpy.restart_interaction()
 
@@ -1382,7 +1385,7 @@ show %s""" % child
                     camera_state_org[s][p] = middle_value
         if persistent._viewer_legacy_gui:
             renpy.show_screen("_action_editor")
-        else:
+        elif persistent._open_only_one_page:
             renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
@@ -1493,7 +1496,7 @@ show %s""" % child
         current_scene = scene_num
         if persistent._viewer_legacy_gui:
             renpy.show_screen("_action_editor")
-        else:
+        elif persistent._open_only_one_page:
             renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
@@ -1657,6 +1660,8 @@ show %s""" % child
             persistent._show_camera_icon = default_show_camera_icon
         if persistent._one_line_one_prop is None:
             persistent._one_line_one_prop = default_one_line_one_prop
+        if persistent._open_only_one_page is None:
+            persistent._open_only_one_page = default_open_only_one_page
         zorder_list = [{}]
         for l in config.layers:
             zorder_list[current_scene][l] = renpy.get_zorder_list(l)
