@@ -93,11 +93,11 @@ screen _new_action_editor(opened=None, time=0):
             textbutton _("scene editor") action [SensitiveIf(len(scene_keyframes) > 1), Show("_scene_editor")]
             hbox:
                 xalign 1.
-                textbutton _("remove keys") action [ \
-                    SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+                textbutton _("remove keys") action [
+                    SensitiveIf(current_time in sorted_keyframes[current_scene]), 
                     Function(_viewers.remove_all_keyframe, current_time), renpy.restart_interaction]
-                textbutton _("move keys") action [ \
-                    SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+                textbutton _("move keys") action [
+                    SensitiveIf(current_time in sorted_keyframes[current_scene]),
                     SelectedIf(False), SetField(_viewers, "moved_time", current_time), Show("_move_keyframes")]
             hbox:
                 xalign 1.
@@ -114,7 +114,10 @@ screen _new_action_editor(opened=None, time=0):
             hbox:
                 hbox:
                     style_group "new_action_editor_c"
-                    textbutton _("time: [current_time:>05.2f] s") action Function(_viewers.edit_time) xalign 1. size_group None
+                    textbutton _("time: [current_time:>05.2f] s"):
+                        action Function(_viewers.edit_time)
+                        xalign 1.
+                        size_group None
                 # fixed:
                 #     drag:
                 #         drag_name "time"
@@ -132,7 +135,8 @@ screen _new_action_editor(opened=None, time=0):
                         hbox:
                             hbox:
                                 style_group "new_action_editor_c"
-                                textbutton "+ "+"scene[s]" action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
+                                textbutton "+ "+"scene[s]":
+                                    action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
                             fixed:
                                 add _viewers.time_line_background
                                 $(v, t, w) = scene_keyframes[s]
@@ -146,7 +150,7 @@ screen _new_action_editor(opened=None, time=0):
                                         $p = key[2]
                                     else:
                                         $p = key
-                                    if (p not in props_groups["focusing"] or \
+                                    if (p not in props_groups["focusing"] or
                                         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                         for c in cs:
                                             $(v, t, w) = c
@@ -170,12 +174,12 @@ screen _new_action_editor(opened=None, time=0):
                                         $new_opened = opened.copy()
                                         $new_opened[s] = new_opened[s] + ["camera"]
                                     textbutton _(indent+"+ "+"camera"):
-                                        action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False), \
+                                        action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
                                         Show("_new_action_editor", opened=new_opened)]
                                 fixed:
                                     add _viewers.time_line_background
                                     for p, d in _viewers.camera_props:
-                                        if (p not in props_groups["focusing"] or \
+                                        if (p not in props_groups["focusing"] or
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                             for c in all_keyframes[s].get(p, []):
                                                 $(v, t, w) = c
@@ -197,7 +201,7 @@ screen _new_action_editor(opened=None, time=0):
                                     size_group None
                                     style_group "new_action_editor_b"
                             textbutton _(indent*2+"  perspective"):
-                                action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)), \
+                                action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
                                 Function(_viewers.toggle_perspective)]
                             for i, props_set_name in enumerate(props_set_names):
                                 if props_set_name in opened[s]:
@@ -271,7 +275,8 @@ screen _new_action_editor(opened=None, time=0):
                                         else:
                                             $new_opened = opened.copy()
                                             $new_opened[s] = new_opened[s] + [tag]
-                                        textbutton indent+"+ "+"{}".format(tag) action Show("_new_action_editor", opened=new_opened)
+                                        textbutton indent+"+ "+"{}".format(tag):
+                                            action Show("_new_action_editor", opened=new_opened)
                                     fixed:
                                         add _viewers.time_line_background
                                         for p, d in _viewers.transform_props:
@@ -288,10 +293,14 @@ screen _new_action_editor(opened=None, time=0):
                                     $new_opened = opened.copy()
                                     $new_opened[s] = opened[s].copy()
                                     $new_opened[s].remove(tag)
-                                    textbutton indent+"- "+"{}".format(tag) action Show("_new_action_editor", opened=new_opened)
-                                    textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tag, layer) style_group "new_action_editor_b" size_group None
+                                    textbutton indent+"- "+"{}".format(tag):
+                                        action Show("_new_action_editor", opened=new_opened)
+                                    textbutton _("clipboard"):
+                                        action Function(_viewers.put_image_clipboard, tag, layer)
+                                        style_group "new_action_editor_b"
+                                        size_group None
                                 textbutton _(indent*2+"  zzoom"):
-                                    action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)), \
+                                    action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
                                     Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
                                 for i, props_set_name in enumerate(props_set_names):
                                     if (tag, layer, props_set_name) not in opened[s]:
@@ -303,7 +312,8 @@ screen _new_action_editor(opened=None, time=0):
                                                 else:
                                                     $new_opened = opened.copy()
                                                     $new_opened[s] = new_opened[s] + [(tag, layer, props_set_name)]
-                                                textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened)
+                                                textbutton indent*2+"+ "+props_set_name:
+                                                    action Show("_new_action_editor", opened=new_opened)
                                             fixed:
                                                 add _viewers.time_line_background
                                                 for p in props_set[i]:
@@ -320,10 +330,11 @@ screen _new_action_editor(opened=None, time=0):
                                             $new_opened = opened.copy()
                                             $new_opened[s] = opened[s].copy()
                                             $new_opened[s].remove((tag, layer, props_set_name))
-                                            textbutton indent*2+"- " + props_set_names[i] action Show("_new_action_editor", opened=new_opened)
+                                            textbutton indent*2+"- " + props_set_names[i]:
+                                                action Show("_new_action_editor", opened=new_opened)
                                         for p in props_set[i]:
-                                            if (p not in props_groups["focusing"] and (((persistent._viewer_focusing \
-                                                and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur") \
+                                            if (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                                and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
                                                 or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
                                                 $key = (tag, layer, p)
                                                 $d = _viewers.get_default(p)
@@ -341,19 +352,22 @@ screen _new_action_editor(opened=None, time=0):
                                                             xfill False
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [value[0]]" action [\
-                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))), \
-                                                                    Function(_viewers.change_child, tag, layer, default=value[0])] size_group None
+                                                                textbutton indent*3+"  [value[0]]":
+                                                                    action [SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.change_child, tag, layer, default=value[0])]
+                                                                    size_group None
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  with [value[1]]" action [\
-                                                                    SensitiveIf(key in all_keyframes[s]), \
-                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))), \
-                                                                    Function(_viewers.edit_transition, tag, layer)] size_group None
+                                                                textbutton indent*3+"  with [value[1]]":
+                                                                    action [SensitiveIf(key in all_keyframes[s]),
+                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.edit_transition, tag, layer)]
+                                                                    size_group None
                                                     else:
                                                         hbox:
                                                             style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#CCC"
                                                             textbutton value_format.format(value):
                                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
                                                                 alternate Function(reset, key) style_group "new_action_editor_b"
@@ -373,12 +387,16 @@ screen _new_action_editor(opened=None, time=0):
                                 $new_opened[s] = opened[s].copy()
                                 $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
                                 textbutton _(indent*3+"  remove"):
-                                    action [SensitiveIf(tag in _viewers.image_state[s][layer]), \
-                                        Show("_new_action_editor", opened=new_opened), 
+                                    action [SensitiveIf(tag in _viewers.image_state[s][layer]),
+                                        Show("_new_action_editor", opened=new_opened),
                                         Function(_viewers.remove_image, layer, tag)]
                                     size_group None
-                        textbutton _(indent+"+(add image)") action Function(_viewers.add_image, layer) style_group "new_action_editor_c"
-                textbutton _("+(add scene)") action _viewers.add_scene style_group "new_action_editor_c"
+                        textbutton _(indent+"+(add image)"):
+                            action Function(_viewers.add_image, layer)
+                            style_group "new_action_editor_c"
+                textbutton _("+(add scene)"):
+                    action _viewers.add_scene
+                    style_group "new_action_editor_c"
 
 
 screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_func=None):
@@ -439,23 +457,32 @@ screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_f
             xfill False
             on "unhovered" action Hide("_keyframe_altername_menu")
             if p == "child":
-                textbutton "edit child: [v[0]]" action [Function(_viewers.change_child, n, l, time=t, default=v[0]), Hide("_keyframe_altername_menu")] size_group None
-                textbutton "edit transform: [v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
+                textbutton "edit child: [v[0]]":
+                    action [Function(_viewers.change_child, n, l, time=t, default=v[0]), Hide("_keyframe_altername_menu")]
+                    size_group None
+                textbutton "edit transform: [v[1]]":
+                    action Function(_viewers.edit_transition, n, l, time=t)
+                    size_group None
             else:
-                textbutton _("edit value: [v]") action [\
-                    Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t), \
+                textbutton _("edit value: [v]"):
+                    action [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
                     Function(change_time, t), Hide("_keyframe_altername_menu")]
-                textbutton _("open warper selecter: [w]") action [Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w), Hide("_keyframe_altername_menu")]
+                textbutton _("open warper selecter: [w]"):
+                    action [Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w), Hide("_keyframe_altername_menu")]
                 if p not in [prop for ps in props_groups.values() for prop in ps] and i > 0:
-                    textbutton _("spline editor") action [\
-                        SelectedIf(t in _viewers.splines[current_scene][key]), \
-                        Show("_spline_editor", change_func=change_func, \
-                            key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
+                    textbutton _("spline editor"):
+                        action [SelectedIf(t in _viewers.splines[current_scene][key]), 
+                        Show("_spline_editor", change_func=change_func, 
+                            key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
                             use_wide_range=use_wide_range, force_plus=p in force_plus, time=t), Hide("_keyframe_altername_menu")]
                 textbutton _("reset") action [Function(reset, key), Hide("_keyframe_altername_menu")]
             textbutton _("edit time: [t]") action [Function(_viewers.edit_move_keyframe, keys=k_list, old=t), Hide("_keyframe_altername_menu")]
-            textbutton _("remove") action [SensitiveIf(t > 0 or len(check_points) == 1), Function(_viewers.remove_keyframe, remove_time=t, key=k_list), Hide("_keyframe_altername_menu")] size_group None
-            textbutton _("toggle loop") action [loop_button_action, Hide("_keyframe_altername_menu")] size_group None
+            textbutton _("remove"):
+                action [SensitiveIf(t > 0 or len(check_points) == 1), Function(_viewers.remove_keyframe, remove_time=t, key=k_list), Hide("_keyframe_altername_menu")]
+                size_group None
+            textbutton _("toggle loop"):
+                action [loop_button_action, Hide("_keyframe_altername_menu")]
+                size_group None
 
 init -1599 python in _viewers:
     key_xsize = 22
@@ -631,11 +658,11 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         hbox:
             style_group "action_editor_a"
             textbutton _("option") action Show("_action_editor_option")
-            textbutton _("remove keyframes") action [ \
-                SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+            textbutton _("remove keyframes"):
+                action [SensitiveIf(current_time in sorted_keyframes[current_scene]), \
                 Function(_viewers.remove_all_keyframe, current_time), renpy.restart_interaction]
-            textbutton _("move keyframes") action [ \
-                SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+            textbutton _("move keyframes"):
+                action [SensitiveIf(current_time in sorted_keyframes[current_scene]), \
                 SelectedIf(False), SetField(_viewers, "moved_time", current_time), Show("_move_keyframes")]
             textbutton _("hide") action HideInterface()
             textbutton _("clipboard") action Function(_viewers.put_clipboard)
@@ -649,14 +676,18 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         hbox:
             style_group "action_editor_a"
             xfill False
-            textbutton _("<") action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
-            textbutton _("camera") action [\
-                SensitiveIf(get_value("perspective", scene_keyframes[current_scene][1], True) != False), \
+            textbutton _("<"):
+                action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
+            textbutton _("camera"):
+                action [SensitiveIf(get_value("perspective", scene_keyframes[current_scene][1], True) != False),
                 SelectedIf(tab == "camera"), Show("_action_editor", tab="camera")]
             for n in page_list[page]:
-                textbutton "{}".format(n) action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
-            textbutton _("+") action Function(_viewers.add_image, layer)
-            textbutton _(">") action [SensitiveIf(len(page_list) != page+1), Show("_action_editor", tab=tab, layer=layer, page=page+1), renpy.restart_interaction]
+                textbutton "{}".format(n):
+                    action [SelectedIf(n == tab), Show("_action_editor", tab=n, layer=layer, page=page)]
+            textbutton _("+"):
+                action Function(_viewers.add_image, layer)
+            textbutton _(">"):
+                action [SensitiveIf(len(page_list) != page+1), Show("_action_editor", tab=tab, layer=layer, page=page+1), renpy.restart_interaction]
 
         if tab == "camera":
             for i, props_set_name in enumerate(props_set_names):
@@ -665,7 +696,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
             textbutton "- " + props_set_names[opened] action [SelectedIf(True), NullAction()]
             for p, d in _viewers.camera_props:
-                if p in props_set[opened] and (p not in props_groups["focusing"] or \
+                if p in props_set[opened] and (p not in props_groups["focusing"] or 
                     (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True))):
                     $value = get_property(p)
                     $f = generate_changed(p)
@@ -686,8 +717,8 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     else:
                         $value_format = int_format
                     hbox:
-                        textbutton "  [p]" action [\
-                            SensitiveIf(p in all_keyframes[current_scene]), \
+                        textbutton "  [p]":
+                            action [SensitiveIf(p in all_keyframes[current_scene]),
                             SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
                         textbutton value_format.format(value):
                             action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
@@ -697,16 +728,18 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, props_set_name in enumerate(props_set_names):
                 if i > opened:
                     hbox:
-                        textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+                        textbutton "+ "+props_set_name:
+                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
         else:
             for i, props_set_name in enumerate(props_set_names):
                 if i < opened:
                     hbox:
-                        textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+                        textbutton "+ "+props_set_name:
+                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
             textbutton "- " + props_set_names[opened] action [SelectedIf(True), NullAction()]
             for p, d in _viewers.transform_props:
-                if p in props_set[opened] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing \
-                    and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") \
+                if p in props_set[opened] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
+                    and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") 
                     or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
                     $key = (tab, layer, p)
                     $value = get_property(key)
@@ -724,18 +757,20 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                         $value_format = int_format
                     hbox:
                         textbutton "  [p]":
-                            action [SensitiveIf(key in all_keyframes[current_scene]), \
-                            SelectedIf(keyframes_exist(key)), \
+                            action [SensitiveIf(key in all_keyframes[current_scene]), 
+                            SelectedIf(keyframes_exist(key)), 
                             Show("_edit_keyframe", key=key, use_wide_range=use_wide_range, change_func=f)]
                         if p == "child":
-                            textbutton "[value[0]]" action [\
-                                SelectedIf(keyframes_exist((tab, layer, "child"))), \
-                                Function(_viewers.change_child, tab, layer, default=value[0])] size_group None
+                            textbutton "[value[0]]":
+                                action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                Function(_viewers.change_child, tab, layer, default=value[0])]
+                                size_group None
                             textbutton "with" action None size_group None
-                            textbutton "[value[1]]" action [\
-                                SensitiveIf(key in all_keyframes[current_scene]), \
-                                SelectedIf(keyframes_exist((tab, layer, "child"))), \
-                                Function(_viewers.edit_transition, tab, layer)] size_group None
+                            textbutton "[value[1]]":
+                                action [SensitiveIf(key in all_keyframes[current_scene]), 
+                                SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                Function(_viewers.edit_transition, tab, layer)]
+                                size_group None
                         else:
                             if p in force_plus:
                                 $bar_value = value
@@ -755,20 +790,23 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             xfill False
             xalign 1.
             if tab == "camera":
-                textbutton _("perspective") action [\
-                    SelectedIf(get_value("perspective", scene_keyframes[current_scene][1], True)), \
-                    Function(_viewers.toggle_perspective)] size_group None
+                textbutton _("perspective"):
+                    action [SelectedIf(get_value("perspective", scene_keyframes[current_scene][1], True)), Function(_viewers.toggle_perspective)]
+                    size_group None
                 textbutton _("clipboard") action Function(_viewers.put_camera_clipboard) size_group None
                 # textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction] size_group None
             else:
-                textbutton _("remove") action [\
-                    SensitiveIf(tab in _viewers.image_state[current_scene][layer]), \
-                    Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), \
+                textbutton _("remove") action [
+                    SensitiveIf(tab in _viewers.image_state[current_scene][layer]), 
+                    Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), 
                     Function(_viewers.remove_image, layer, tab)] size_group None
-                textbutton _("zzoom") action [\
-                    SelectedIf(get_value((tab, layer, "zzoom"), scene_keyframes[current_scene][1], True)), \
-                    Function(_viewers.toggle_boolean_property, (tab, layer, "zzoom"))] size_group None
-                textbutton _("clipboard") action Function(_viewers.put_image_clipboard, tab, layer) size_group None
+                textbutton _("zzoom"):
+                    action [SelectedIf(get_value((tab, layer, "zzoom"), scene_keyframes[current_scene][1], True)), 
+                    Function(_viewers.toggle_boolean_property, (tab, layer, "zzoom"))]
+                    size_group None
+                textbutton _("clipboard"):
+                    action Function(_viewers.put_image_clipboard, tab, layer)
+                    size_group None
                 # textbutton _("reset") action [_viewers.image_reset, renpy.restart_interaction] size_group None
 
     if not time and persistent._show_camera_icon:
@@ -841,8 +879,8 @@ screen _action_editor_option():
             has vbox
             text _("Use Legacy ActionEditor Screen(recommend legacy gui for the 4:3 or small window)")
             textbutton _("legacy gui") action [SelectedIf(persistent._viewer_legacy_gui), ToggleField(persistent, "_viewer_legacy_gui"), If(persistent._viewer_legacy_gui, true=[Hide("_action_editor"), Show("_new_action_editor")], false=[Hide("_new_action_editor"), Show("_action_editor")]), Hide("_action_editor_option")]
-            text _("Open only one page at once(This has non effect for Legacy GUI and need to reopen Editor)")
-            textbutton _("open only one page") action [SelectedIf(persistent._open_only_one_page), ToggleField(persistent, "_open_only_one_page")]
+            text _("Open only one page at once(This has non effect for Legacy GUI)")
+            textbutton _("open only one page") action [SelectedIf(persistent._open_only_one_page), ToggleField(persistent, "_open_only_one_page"), If(not persistent._viewer_legacy_gui, true=Show("_new_action_editor"))]
             text _("Show/Hide rule of thirds lines")
             textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
             text _("Show/Hide window during animation in clipboard(window is forced to be hide when the action has multi scene)")

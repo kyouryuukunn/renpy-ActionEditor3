@@ -305,7 +305,7 @@ init -1598 python in _viewers:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
             default = get_default(prop, not isinstance(key, tuple))
-            if prop not in force_float and (prop in force_wide_range \
+            if prop not in force_float and (prop in force_wide_range
                 or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_property(key), float) and prop in force_wide_range:
                     if prop in force_plus:
@@ -366,11 +366,12 @@ init -1598 python in _viewers:
                 org = state[prop]
                 if org is None:
                     org = get_default(prop, not isinstance(key, tuple))
-                if prop == "child" and \
-                    ((current_scene == 0 and tag in image_state[current_scene][layer]) \
+                if prop == "child" and ((current_scene == 0 and tag in image_state[current_scene][layer])
                     or (current_scene != 0 and time > scene_keyframes[current_scene][1])):
                     org = (None, None)
-                all_keyframes[current_scene][key] = [(org, scene_keyframes[current_scene][1], persistent._viewer_warper), (value, time, persistent._viewer_warper)]
+                all_keyframes[current_scene][key] = [
+                    (org, scene_keyframes[current_scene][1], persistent._viewer_warper),
+                    (value, time, persistent._viewer_warper)]
         sort_keyframes()
         
         for gn, ps in props_groups.items():
@@ -502,12 +503,12 @@ init -1598 python in _viewers:
                     if p in css:
                         del css[p]
         if play:
-            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)( \
-             camera_check_points=camera_check_points, image_check_points=image_check_points, \
+            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
+             camera_check_points=camera_check_points, image_check_points=image_check_points,
              scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
         else:
-            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)( \
-             camera_check_points=camera_check_points, image_check_points=image_check_points, \
+            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
+             camera_check_points=camera_check_points, image_check_points=image_check_points,
              scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
 
 
@@ -520,27 +521,27 @@ init -1598 python in _viewers:
             if time >= checkpoint:
                 goal = scene_checkpoints[i]
                 if time - checkpoint >= get_transition_delay(goal[0]):
-                    child = FixedTimeDisplayable(Transform(function=renpy.curry( \
-                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
-                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
+                    child = FixedTimeDisplayable(Transform(function=renpy.curry(
+                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i],
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i],
                      subpixel=subpixel, time=time, scene_num=i)), time, at)
                 else:
-                    old_widget = FixedTimeDisplayable(Transform(function=renpy.curry( \
-                     camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1], \
-                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], \
+                    old_widget = FixedTimeDisplayable(Transform(function=renpy.curry(
+                     camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1],
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1],
                      subpixel=subpixel, time=time, scene_num=i-1)), time, at)
-                    new_widget = FixedTimeDisplayable(Transform(function=renpy.curry( \
-                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i], \
-                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i], \
+                    new_widget = FixedTimeDisplayable(Transform(function=renpy.curry(
+                     camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i],
+                     scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i],
                      subpixel=subpixel, time=time, scene_num=i)), time, at)
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
                     during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time - checkpoint, 0)
                     child = during_transition_displayable
                 break
         else:
-            child = Transform(function=renpy.curry(camera_transform)( \
-             camera_check_points=camera_check_points[0], image_check_points=image_check_points[0], \
-             scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0], \
+            child = Transform(function=renpy.curry(camera_transform)(
+             camera_check_points=camera_check_points[0], image_check_points=image_check_points[0],
+             scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0],
              subpixel=subpixel, time=time, scene_num=0))
         if not persistent._viewer_legacy_gui:
             if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
@@ -580,14 +581,14 @@ init -1598 python in _viewers:
                     for p in props_groups["focusing"]:
                         image_loop[p+"_loop"] = loops[scene_num][p]
                         image_spline[p+"_spline"] = splines[scene_num][p]
-                    image_box.add(Transform(function=renpy.curry(transform)( \
-                     check_points=image_check_points[layer][tag], \
-                     loop=image_loop, spline=image_spline, \
+                    image_box.add(Transform(function=renpy.curry(transform)(
+                     check_points=image_check_points[layer][tag],
+                     loop=image_loop, spline=image_spline,
                      subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
         camera_box = renpy.display.layout.MultiBox(layout='fixed')
         #camera position doesn't have effect whithout box
-        camera_box.add(Transform(function=renpy.curry(transform)( \
-         check_points=camera_check_points, loop=loop, spline=spline, \
+        camera_box.add(Transform(function=renpy.curry(transform)(
+         check_points=camera_check_points, loop=loop, spline=spline,
          subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints))(image_box))
         tran.set_child(camera_box)
         return 0
@@ -676,7 +677,7 @@ init -1598 python in _viewers:
                                                 image_zpos += tran.matrixtransform.zdw
                                             camera_zpos = 0
                                             if in_editor:
-                                                    camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
+                                                camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
                                             else:
                                                 if "master" in sle.camera_transform:
                                                     props = sle.camera_transform["master"]
@@ -728,7 +729,7 @@ init -1598 python in _viewers:
                                     image_zpos += tran.matrixtransform.zdw
                                 camera_zpos = 0
                                 if in_editor:
-                                        camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
+                                    camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
                                 else:
                                     if "master" in sle.camera_transform:
                                         props = sle.camera_transform["master"]
@@ -1522,7 +1523,7 @@ show %s""" % child
                 for (v, t, w) in all_keyframes[current_scene][k]:
                     if t == remove_time:
                         if remove_time != scene_keyframes[current_scene][1] \
-                            or (remove_time == scene_keyframes[current_scene][1] \
+                            or (remove_time == scene_keyframes[current_scene][1]
                              and len(all_keyframes[current_scene][k]) == 1):
                             remove_list.append((v, t, w))
             for c in remove_list:
@@ -1870,9 +1871,8 @@ show %s""" % child
 
     def put_clipboard():
         string = ""
-        if (persistent._viewer_hide_window and get_animation_delay() > 0 \
-            and len(scene_keyframes) == 1) \
-            or len(scene_keyframes) > 1:
+        if (persistent._viewer_hide_window and get_animation_delay() > 0
+            and len(scene_keyframes) == 1) or len(scene_keyframes) > 1:
             if renpy.store._window_auto:
                 window_mode = "window auto"
             else:
@@ -2102,12 +2102,10 @@ show %s""" % child
                     string += """
     with Pause({})""".format(pause_time)
 
-        if (persistent._viewer_hide_window and get_animation_delay() > 0) \
-            and len(scene_keyframes) == 1:
+        if (persistent._viewer_hide_window and get_animation_delay() > 0) and len(scene_keyframes) == 1:
             string += """
     with Pause({})""".format(get_animation_delay())
-        if (persistent._viewer_hide_window and get_animation_delay() > 0 \
-            and persistent._viewer_allow_skip) \
+        if (persistent._viewer_hide_window and get_animation_delay() > 0 and persistent._viewer_allow_skip) \
             or len(scene_keyframes) > 1:
 
             for i in range(-1, -len(scene_keyframes)-1, -1):
@@ -2302,8 +2300,7 @@ show %s""" % child
                         string += """
             repeat"""
 
-        if (persistent._viewer_hide_window and get_animation_delay() > 0 \
-            and len(scene_keyframes) == 1) \
+        if (persistent._viewer_hide_window and get_animation_delay() > 0 and len(scene_keyframes) == 1) \
             or len(scene_keyframes) > 1:
             string += """
     {} show""".format(window_mode)
