@@ -217,7 +217,7 @@ screen _new_action_editor(opened=None, time=0):
                                             $key = p
                                             $value = get_property(p)
                                             $d = _viewers.get_default(p, True)
-                                            $ f = generate_changed(p)
+                                            $f = generate_changed(p)
                                             $cs = all_keyframes[s].get(key, [])
                                             $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                                             if not use_wide_range or isinstance(value, float):
@@ -228,9 +228,10 @@ screen _new_action_editor(opened=None, time=0):
                                                 hbox:
                                                     style_group "new_action_editor_c"
                                                     textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                    add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC",
+                                                    add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                         clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
-                                                        alternate=Function(reset, p))
+                                                        alternate=Function(reset, p),
+                                                        text_size=16, text_color="#CCC", text_hover_underline=True)
                                                 fixed:
                                                     add _viewers.time_line_background
                                                     for c in cs:
@@ -368,9 +369,10 @@ screen _new_action_editor(opened=None, time=0):
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#CCC"
-                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC",
+                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                 clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
-                                                                alternate=Function(reset, p))
+                                                                alternate=Function(reset, p),
+                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     fixed:
                                                         add _viewers.time_line_background
                                                         for c in cs:
@@ -1230,8 +1232,12 @@ init -1598 python in _viewers:
             self.dragging = False
             self.kwargs = {}
             for k, v in properties.items():
-                if k.startswith("text_"):
+                if k.startswith("text_") and not k.startswith("text_hover_"):
                     self.kwargs[k[5:]] = v
+            self.hover_kwargs = dict(self.kwargs)
+            for k, v in properties.items():
+                if k.startswith("text_hover_"):
+                    self.hover_kwargs[k[11:]] = v
             if isinstance(key, tuple):
                 self.prop = key[2]
             else:
@@ -1242,6 +1248,7 @@ init -1598 python in _viewers:
             else:
                 self.change_per_pix = float(persistent._viewers_narow_dragg_speed)
             self.clicking = False
+            self.hovered = False
 
             self.MOUSEMOTION = MOUSEMOTION
             self.SLOW = 0.33
@@ -1252,7 +1259,6 @@ init -1598 python in _viewers:
             self.get_mods = get_mods
 
 
-            self.hovered = False
             self.speed = 1.0
 
 
@@ -1262,7 +1268,12 @@ init -1598 python in _viewers:
 
         def render(self, width, height, st, at):
             value = get_property(self.key)
-            d = Text(self.format.format(value), align=(.5, .5), **self.kwargs)
+            if self.hovered:
+                kwargs = self.hover_kwargs
+            else:
+                kwargs = self.kwargs
+            # kwargs = self.kwargs
+            d = Text(self.format.format(value), align=(.5, .5), **kwargs)
             box = Fixed()
             box.add(d)
             render = box.render(width, height, st, at)
