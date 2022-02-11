@@ -50,6 +50,12 @@ init -1600 python in _viewers:
     # the range of values of properties for float type(In legacy GUI)
     #エディターのバーに表示する浮動小数の範囲です(レガシーGUIのみ)。
     narrow_range = 7.0
+    # change per pix
+    #Set the amount of change per pixel when dragging the value of the float property(In new GUI)
+    narrow_drag_speed = 1./200
+    #Set the amount of change per pixel when dragging the value of the integer property(In new GUI)
+    #整数プロパティーの値をドラッグしたときの1pixelごとの変化量を設定します(新GUIのみ)。
+    wide_drag_speed = int(config.screen_width/200)
     # the range of time
     #エディターのバーに表示する時間の範囲です。
     time_range = 7.0
@@ -63,7 +69,7 @@ init -1600 python in _viewers:
             ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"),
             ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
             ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
-            ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")
+            ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing"),
             )
     props_set_names = (
             "Child/Pos    ", 
@@ -91,9 +97,9 @@ init -1600 python in _viewers:
     not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
 
     sort_ref_list = [
-    "alignaround"
+    "alignaround",
     "radius",
-    "angle"
+    "angle",
     "pos",
     "anchor",
     "offset",
@@ -162,7 +168,7 @@ init 1600 python in _viewers:
     ("saturate", 1.), 
     ("contrast", 1.), 
     ("invert", 0.), 
-    ("zzoom", False)
+    ("zzoom", False),
     )
 
     #perspetve competes crop
@@ -204,5 +210,5 @@ init 1600 python in _viewers:
     ("saturate", 1.), 
     ("contrast", 1.), 
     ("invert", 0.), 
-    ("perspective", None)
+    ("perspective", None),
     )

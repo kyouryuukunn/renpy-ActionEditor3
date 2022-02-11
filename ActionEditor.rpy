@@ -1117,7 +1117,13 @@ init -1598 python in _viewers:
 
 
     def put_camera_clipboard():
-        camera_keyframes = {k:[(round(get_value(k, current_time), 3), 0, None)] for k, v in all_keyframes[current_scene].items() if not isinstance(k, tuple)}
+        camera_keyframes = {}
+        for k, v in all_keyframes[current_scene].items():
+            if not isinstance(k, tuple):
+                value = get_value(k, current_time)
+                if isinstance(value, float):
+                    value = round(value, 3)
+                camera_keyframes[k] = [(value, 0, None)]
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
         for p, d in camera_props:
@@ -1153,7 +1159,13 @@ camera"""
 
 
     def put_image_clipboard(tag, layer):
-        image_keyframes = {k[2]:[(round(get_value(k, current_time), 3), 0, None)] for k, v in all_keyframes[current_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
+        image_keyframes = {}
+        for k, v in all_keyframes[current_scene].items():
+            if isinstance(k, tuple) and k[0] == tag and k[1] == layer:
+                value = get_value(k, current_time)
+                if isinstance(value, float):
+                    value = round(value, 3)
+                image_keyframes[k[2]] = [(value, 0, None)]
         image_keyframes = set_group_keyframes(image_keyframes)
         if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) \
             and "blur" in image_keyframes:
@@ -1655,6 +1667,10 @@ show %s""" % child
             persistent._wide_range = wide_range
         if persistent._narrow_range is None:
             persistent._narrow_range = narrow_range
+        if persistent._viewers_wide_dragg_speed is None:
+            persistent._viewers_wide_dragg_speed = wide_drag_speed
+        if persistent._viewers_narow_dragg_speed is None:
+            persistent._viewers_narow_dragg_speed = narrow_drag_speed
         if persistent._time_range is None:
             persistent._time_range = time_range
         if persistent._show_camera_icon is None:
@@ -1671,11 +1687,14 @@ show %s""" % child
         camera_icon.init(True, True)
         _window = renpy.store._window
         renpy.store._window = False
+        _skipping_org = renpy.store._skipping
+        renpy.store._skipping = False
         change_time(0)
         if persistent._viewer_legacy_gui:
             renpy.call_screen("_action_editor")
         else:
             renpy.call_screen("_new_action_editor")
+        renpy.store._skipping = _skipping_org
         renpy.store._window = _window
 
 
@@ -2098,7 +2117,7 @@ show %s""" % child
                     pause_time = get_scene_delay(s)
                 pause_time -= get_transition_delay(scene_tran)
                 pause_time = round(pause_time, 2)
-                if pause_time > 0:
+                if pause_time > 0 or s != len(scene_keyframes)-1:
                     string += """
     with Pause({})""".format(pause_time)
 
@@ -2202,6 +2221,8 @@ show %s""" % child
                         if len(cs) > 1 and (p != "child" or loops[last_scene][(tag, layer, "child")]):
                             break
                     else:
+                        string += """:
+        pass"""
                         continue
                     string += ":"
                     for p, cs in image_keyframes.items():

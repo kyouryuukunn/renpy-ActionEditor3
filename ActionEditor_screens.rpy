@@ -212,7 +212,7 @@ screen _new_action_editor(opened=None, time=0):
                                         $new_opened[s].remove(props_set_name)
                                         textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
                                     for p in props_set[i]:
-                                        if (p not in props_groups["focusing"] or \
+                                        if p != "child" and (p not in props_groups["focusing"] or \
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                             $key = p
                                             $value = get_property(p)
@@ -228,9 +228,9 @@ screen _new_action_editor(opened=None, time=0):
                                                 hbox:
                                                     style_group "new_action_editor_c"
                                                     textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                    # add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC", \
-                                                    #     clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus), \
-                                                    #     alternate=Function(reset, p))
+                                                    add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC",
+                                                        clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
+                                                        alternate=Function(reset, p))
                                                 fixed:
                                                     add _viewers.time_line_background
                                                     for c in cs:
@@ -368,9 +368,9 @@ screen _new_action_editor(opened=None, time=0):
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#CCC"
-                                                            textbutton value_format.format(value):
-                                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
-                                                                alternate Function(reset, key) style_group "new_action_editor_b"
+                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus, text_size=16, text_color="#CCC",
+                                                                clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
+                                                                alternate=Function(reset, p))
                                                     fixed:
                                                         add _viewers.time_line_background
                                                         for c in cs:
@@ -441,7 +441,6 @@ screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_f
                     $check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
                     $loop_button_action = [ToggleDict(_viewers.loops[current_scene], k2) for k2 in k_list+[gn]]
 
-    $renpy.store.test=(x, w)
     frame:
         background "#222"
         pos (x, y)
@@ -562,6 +561,7 @@ init -1597:
     style new_action_editor_c_hbox:
         size_group "new_action_editor_c"
         xsize _viewers.c_box_size
+        ysize _viewers.key_ysize
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -879,12 +879,10 @@ screen _action_editor_option():
             has vbox
             text _("Use Legacy ActionEditor Screen(recommend legacy gui for the 4:3 or small window)")
             textbutton _("legacy gui") action [SelectedIf(persistent._viewer_legacy_gui), ToggleField(persistent, "_viewer_legacy_gui"), If(persistent._viewer_legacy_gui, true=[Hide("_action_editor"), Show("_new_action_editor")], false=[Hide("_new_action_editor"), Show("_action_editor")]), Hide("_action_editor_option")]
-            text _("Open only one page at once(This has non effect for Legacy GUI)")
-            textbutton _("open only one page") action [SelectedIf(persistent._open_only_one_page), ToggleField(persistent, "_open_only_one_page"), If(not persistent._viewer_legacy_gui, true=Show("_new_action_editor"))]
             text _("Show/Hide rule of thirds lines")
-            textbutton _("rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot"), If(renpy.get_screen("_rot"), true=Hide("_rot"), false=Show("_rot"))]
+            textbutton _("show rot") action [SelectedIf(persistent._viewer_rot), ToggleField(persistent, "_viewer_rot")]
             text _("Show/Hide window during animation in clipboard(window is forced to be hide when the action has multi scene)")
-            textbutton _("hide") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
+            textbutton _("hide window") action [SelectedIf(persistent._viewer_hide_window), ToggleField(persistent, "_viewer_hide_window")]
             text _("Allow/Disallow skipping animation in clipboard(be forced to allow when the action has multi scene)")
             text _("(*This doesn't work correctly when the animation include loops and that tag is already shown)")
             textbutton _("skippable") action [SelectedIf(persistent._viewer_allow_skip), ToggleField(persistent, "_viewer_allow_skip")]
@@ -898,6 +896,15 @@ screen _action_editor_option():
             textbutton "[persistent._viewer_transition]" action _viewers.edit_default_transition
             text _("the time range of property bar(type float)")
             textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
+            text _("")
+            text _("Below options have effect for only New GUI")
+            text _("Open only one page at once")
+            textbutton _("open only one page") action [SelectedIf(persistent._open_only_one_page), ToggleField(persistent, "_open_only_one_page"), If(not persistent._viewer_legacy_gui, true=Show("_new_action_editor"))]
+            text _("Set the amount of change per pixel when dragging the value of the integer property(In new GUI)")
+            textbutton "[persistent._viewers_wide_dragg_speed]" action Function(_viewers.edit_range_value, persistent, "_viewers_wide_dragg_speed", True)
+            text _("Set the amount of change per pixel when dragging the value of the float property(In new GUI)")
+            textbutton "[persistent._viewers_narow_dragg_speed]" action Function(_viewers.edit_range_value, persistent, "_viewers_narow_dragg_speed", False)
+            text _("")
             text _("Below options have effect for only Legacy GUI")
             text _("Show/Hide camera icon")
             textbutton _("camera icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
@@ -1042,10 +1049,10 @@ screen _spline_editor(change_func, key, prop, pre, post, default, use_wide_range
     $cs = _viewers.all_keyframes[_viewers.current_scene][key]
     if use_wide_range:
         $value_range = persistent._wide_range
-        $_page = 0.05
+        $_page = 1
     else:
         $value_range = persistent._narrow_range
-        $_page = 1
+        $_page = 0.05
     if not force_plus:
         default old_v = post[0] + value_range
     else:
@@ -1072,12 +1079,11 @@ screen _spline_editor(change_func, key, prop, pre, post, default, use_wide_range
                     textbutton "Knot{}".format(i+1) action None
                     textbutton "{}".format(v) action [Function(_viewers.edit_value, renpy.curry(change_func)(time=time, knot_number=i), default=v, use_wide_range=use_wide_range, force_plus=force_plus, time=time)]
                     if force_plus:
-                        $value_range = value_range
                         $_v = v
                     else:
-                        $value_range = value_range*2
                         $_v = v + value_range
-                    bar adjustment ui.adjustment(range=value_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)):
+                        $_value_range = value_range*2
+                    bar adjustment ui.adjustment(range=_value_range, value=_v, page=_page, changed=renpy.curry(change_func)(time=time, knot_number=i)):
                         xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("+") action [Function(_viewers.add_knot, key, time, pre[0]), renpy.restart_interaction]
         hbox:
@@ -1211,7 +1217,8 @@ init -1598 python in _viewers:
 
         def __init__(self, format, key, changed, use_wide_range, force_plus, clicked=None, alternate=None, **properties):
             super(DraggableValue, self).__init__(**properties)
-            from pygame import MOUSEMOTION
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame.key import get_mods
             # The child.
             self.format = format
             self.key = key
@@ -1230,60 +1237,83 @@ init -1598 python in _viewers:
             else:
                 self.prop = key
 
-            self.change_per_pix = 0.01
+            if self.use_wide_range:
+                self.change_per_pix = int(persistent._viewers_wide_dragg_speed)
+            else:
+                self.change_per_pix = float(persistent._viewers_narow_dragg_speed)
             self.clicking = False
+
             self.MOUSEMOTION = MOUSEMOTION
+            self.SLOW = 0.33
+            self.NORMAL = 1.0
+            self.FAST = 3.0
+            self.KMOD_SHIFT = KMOD_SHIFT
+            self.KMOD_CTRL = KMOD_CTRL
+            self.get_mods = get_mods
+
+
+            self.hovered = False
+            self.speed = 1.0
+
+
+        def __eq__(self, other):
+            return True
 
 
         def render(self, width, height, st, at):
             value = get_property(self.key)
-            # box = Fixed()
-            # box.add(Text(self.format.format(value), anchor=(.5, .5), **self.kwargs))
-            # render = box.render(width, height, st, at)
-            render = Text(self.format.format(value), anchor=(.5, .5), **self.kwargs).render(width, height, st, at)
+            d = Text(self.format.format(value), align=(.5, .5), **self.kwargs)
+            box = Fixed()
+            box.add(d)
+            render = box.render(width, height, st, at)
             self.width, self.height = render.get_size()
             return render
 
 
         def event(self, ev, x, y, st):
-            
-            return None
-            if ev.type == self.MOUSEMOTION:
-                if self.clicking and (self.last_x != x or self.last_y != y):
-                    self.dragging = True
-                
-            if x >= 0 and x <= self.width and y >= 0 and y <= self.height:
+            if ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
+                if self.use_wide_range:
+                    v = int(v)
+                self.changed(convert_to_changed_value(v, self.force_plus, self.use_wide_range))
+
+            self.hovered = False
+            if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
+                self.hovered = True
                 if renpy.map_event(ev, "mousedown_1"):
+                    if self.get_mods() & self.KMOD_CTRL:
+                        self.speed = self.SLOW
+                    elif self.get_mods() & self.KMOD_SHIFT:
+                        self.speed = self.FAST
+                    else:
+                        self.speed = self.NORMAL
                     self.clicking = True
                     self.last_x = x
                     self.last_y = y
-                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
-                    self.clicking = False
-                    self.dragging = False
-                    if self.clicked is not None:
-                        rv = renpy.run(self.clicked)
-                    if rv is not None:
-                        return rv
+                    self.value = get_property(self.key)
                     raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    self.dragging = False
+                    if self.clicking == True:
+                        self.clicking = False
+                        if self.clicked is not None:
+                            rv = renpy.run(self.clicked)
+                        if rv is not None:
+                            return rv
+                        raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
                     if self.alternate is not None:
                         rv = renpy.run(self.alternate)
                     if rv is not None:
                         return rv
                     raise renpy.display.core.IgnoreEvent()
-
-            if renpy.map_event(ev, "mouseup_1"):
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
                 self.clicking = False
                 self.last_x = None
                 self.last_y = None
                 raise renpy.display.core.IgnoreEvent()
-
-            if self.dragging:
-                value = get_property(self.key)
-                v = (x - self.last_x)*self.change_per_pix+value
-                self.changed(convert_to_changed_value(v, self.force_plus, self.use_wide_range))
-                
             renpy.redraw(self, 0)
 
 

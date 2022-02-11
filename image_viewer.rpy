@@ -54,7 +54,10 @@ init -2000 python in _viewers:
     def open_image_viewer():
         if not renpy.config.developer:
             return
+        _skipping_org = renpy.store._skipping
+        renpy.store._skipping = False
         renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter")
+        renpy.store._skipping = _skipping_org
 
     def filter_image_name(filter_string):
         filtered_list = []
