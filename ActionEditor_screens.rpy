@@ -72,7 +72,10 @@ screen _new_action_editor(opened=None, time=0):
         key "game_menu" action Confirm("Close Editor?", Return())
 
     $state=_viewers.get_image_state(layer)
-
+    $tag_list =  []
+    for tag, z in _viewers.zorder_list[s][layer]:
+        if tag in state:
+            $tag_list.append(tag)
     frame:
         style_group "new_action_editor"
         align (1., 0.)
@@ -142,9 +145,11 @@ screen _new_action_editor(opened=None, time=0):
                                 $(v, t, w) = scene_keyframes[s]
                                 drag:
                                     child _viewers.insensitive_key_child
+                                    hover_child _viewers.insensitive_key_hovere_child
                                     xpos to_drag_pos(t)
                                     droppable False
                                     draggable False
+                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                 for key, cs in all_keyframes[s].items():
                                     if isinstance(key, tuple):
                                         $p = key[2]
@@ -156,9 +161,11 @@ screen _new_action_editor(opened=None, time=0):
                                             $(v, t, w) = c
                                             drag:
                                                 child _viewers.insensitive_key_child
+                                                hover_child _viewers.insensitive_key_hovere_child
                                                 xpos to_drag_pos(t)
                                                 droppable False
                                                 draggable False
+                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                     else:
                         hbox:
                             style_group "new_action_editor_c"
@@ -185,9 +192,11 @@ screen _new_action_editor(opened=None, time=0):
                                                 $(v, t, w) = c
                                                 drag:
                                                     child _viewers.insensitive_key_child
+                                                    hover_child _viewers.insensitive_key_hovere_child
                                                     xpos to_drag_pos(t)
                                                     droppable False
                                                     draggable False
+                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                         else:
                             hbox:
                                 style_group "new_action_editor_c"
@@ -242,7 +251,7 @@ screen _new_action_editor(opened=None, time=0):
                                                             xpos to_drag_pos(t)
                                                             droppable False
                                                             dragged generate_key_drag(key, t)
-                                                            clicked Function(change_time, t)
+                                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                                             alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
                                 else:
                                     hbox:
@@ -263,10 +272,12 @@ screen _new_action_editor(opened=None, time=0):
                                                         $(v, t, w) = c
                                                         drag:
                                                             child _viewers.insensitive_key_child
+                                                            hover_child _viewers.insensitive_key_hovere_child
                                                             xpos to_drag_pos(t)
                                                             droppable False
                                                             draggable False
-                        for tag, z in _viewers.zorder_list[s][layer]:
+                                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                        for tag in tag_list:
                             if tag not in opened[s]:
                                 hbox:
                                     hbox:
@@ -285,9 +296,11 @@ screen _new_action_editor(opened=None, time=0):
                                                 $(v, t, w) = c
                                                 drag:
                                                     child _viewers.insensitive_key_child
+                                                    hover_child _viewers.insensitive_key_hovere_child
                                                     xpos to_drag_pos(t)
                                                     droppable False
                                                     draggable False
+                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                             else:
                                 hbox:
                                     style_group "new_action_editor_c"
@@ -322,9 +335,11 @@ screen _new_action_editor(opened=None, time=0):
                                                         $(v, t, w) = c
                                                         drag:
                                                             child _viewers.insensitive_key_child
+                                                            hover_child _viewers.insensitive_key_hovere_child
                                                             xpos to_drag_pos(t)
                                                             droppable False
                                                             draggable False
+                                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                     else:
                                         hbox:
                                             style_group "new_action_editor_c"
@@ -371,7 +386,7 @@ screen _new_action_editor(opened=None, time=0):
                                                                 action None text_color "#CCC"
                                                             add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                 clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
-                                                                alternate=Function(reset, p),
+                                                                alternate=Function(reset, key),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     fixed:
                                                         add _viewers.time_line_background
@@ -383,7 +398,7 @@ screen _new_action_editor(opened=None, time=0):
                                                                 xpos to_drag_pos(t)
                                                                 droppable False
                                                                 dragged generate_key_drag(key, t)
-                                                                clicked Function(change_time, t)
+                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                                                 alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
                                 $new_opened = opened.copy()
                                 $new_opened[s] = opened[s].copy()
@@ -495,14 +510,22 @@ init -1599 python in _viewers:
     box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
     box.add(Transform(rotate=45)(Solid("#77A", xsize=16, ysize=16)))
     key_child = box
+
     box = Fixed(xsize=key_xsize, ysize=key_ysize)
     box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#AAE", xsize=16, ysize=16)))
+    box.add(Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16)))
     key_hovere_child = box
+
     box = Fixed(xsize=key_xsize, ysize=key_ysize)
     box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
     box.add(Transform(rotate=45)(Solid("#447", xsize=16, ysize=16)))
     insensitive_key_child = box
+
+    box = Fixed(xsize=key_xsize, ysize=key_ysize)
+    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
+    box.add(Transform(rotate=45)(Solid("#669", xsize=16, ysize=16)))
+    insensitive_key_hovere_child = box
+
     c_box_size = 320
     timeline_ysize = 27
     time_line_background = Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize)

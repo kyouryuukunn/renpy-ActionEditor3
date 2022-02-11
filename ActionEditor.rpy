@@ -167,6 +167,7 @@ init -1598 python in _viewers:
                     if p2 is not None:
                         for p, v in zip(ps, p2):
                             image_state_org[current_scene][layer][tag][p] = v
+
         renpy.scene()
         kwargs = {}
         for p, d in camera_props:
@@ -916,7 +917,7 @@ init -1598 python in _viewers:
                         if current_scene == 0 or current_time > scene_keyframes[current_scene][1]:
                             set_keyframe((added_tag, layer, p), (image_name, persistent._viewer_transition))
                     else:
-                        image_state[current_scene][layer][added_tag][p] = get_property((added_tag, layer, p), False)
+                        image_state[current_scene][layer][added_tag][p] = getattr(renpy.store.default, p, None)
                 change_time(current_time)
                 if persistent._viewer_legacy_gui:
                     renpy.show_screen("_action_editor")

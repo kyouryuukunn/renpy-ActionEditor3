@@ -31,7 +31,7 @@ init -1600 python in _viewers:
     default_legacy_gui = False
     # If True, set camera keymap FPS(wasd), otherwise vim(hjkl)
     #Trueなら、カメラはWASD, wasdで、Falseならhjkl, HJKLで移動します。
-    default_open_only_one_page = True
+    default_open_only_one_page = False
     # If True, only one page is opened at once. this has no effect for legacy gui
     #Trueなら、一度に１つの項目のみ開きます。これはレガシーGUIでは無効です。
     fps_keymap = False
@@ -131,15 +131,15 @@ init -1600 python in _viewers:
 init 1600 python in _viewers:
     transform_props = (
     ("child", (None, None)), 
-    ("xpos", 0.5), 
-    ("ypos", 1.), 
+    ("xpos", 0), 
+    ("ypos", 0), 
     ("zpos", 0.), 
     # ("xalignaround", 0.),
     # ("yalignaround", 0.),
     # ("radius", 0),
     # ("angle", 0),
-    ("xanchor", 0.5), 
-    ("yanchor", 1.), 
+    ("xanchor", 0), 
+    ("yanchor", 0), 
     ("matrixanchorX", 0.5), 
     ("matrixanchorY", 0.5), 
     ("xoffset", 0), 
