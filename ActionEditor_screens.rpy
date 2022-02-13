@@ -1330,7 +1330,7 @@ init -1598 python in _viewers:
                             return rv
                         raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
-                    alternate=renpy.store.Function(reset, self.prop),
+                    alternate=renpy.store.Function(reset, self.key),
                     rv = renpy.run(alternate)
                     if rv is not None:
                         return rv
