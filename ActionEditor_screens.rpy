@@ -221,7 +221,7 @@ screen _new_action_editor(opened=None, time=0):
                                         $new_opened[s].remove(props_set_name)
                                         textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
                                     for p in props_set[i]:
-                                        if p != "child" and (p not in props_groups["focusing"] or \
+                                        if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                             $key = p
                                             $value = get_property(p)
@@ -349,7 +349,7 @@ screen _new_action_editor(opened=None, time=0):
                                             textbutton indent*2+"- " + props_set_names[i]:
                                                 action Show("_new_action_editor", opened=new_opened)
                                         for p in props_set[i]:
-                                            if (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                            if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                 and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
                                                 or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
                                                 $key = (tag, layer, p)
@@ -1295,7 +1295,6 @@ init -1598 python in _viewers:
                 kwargs = self.hover_kwargs
             else:
                 kwargs = self.kwargs
-            # kwargs = self.kwargs
             d = Text(self.format.format(value), align=(.5, .5), **kwargs)
             box = Fixed()
             box.add(d)

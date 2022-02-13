@@ -65,7 +65,7 @@ init -1600 python in _viewers:
 
 
     props_set = (
-            ("child", "xpos", "ypos", "zpos", "rotate"), 
+            ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate"), 
             ("offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"),
             ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
             ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
