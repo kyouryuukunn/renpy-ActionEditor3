@@ -238,8 +238,6 @@ screen _new_action_editor(opened=None, time=0):
                                                     style_group "new_action_editor_c"
                                                     textbutton indent*3+"  [p]" action None text_color "#CCC"
                                                     add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                        clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
-                                                        alternate=Function(reset, p),
                                                         text_size=16, text_color="#CCC", text_hover_underline=True)
                                                 fixed:
                                                     add _viewers.time_line_background
@@ -385,8 +383,6 @@ screen _new_action_editor(opened=None, time=0):
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#CCC"
                                                             add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                                clicked=Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus),
-                                                                alternate=Function(reset, key),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     fixed:
                                                         add _viewers.time_line_background
@@ -1250,8 +1246,6 @@ init -1598 python in _viewers:
             self.changed = changed
             self.use_wide_range = use_wide_range
             self.force_plus = force_plus
-            self.clicked = clicked
-            self.alternate = alternate
             self.dragging = False
             self.kwargs = {}
             for k, v in properties.items():
@@ -1330,14 +1324,14 @@ init -1598 python in _viewers:
                     self.dragging = False
                     if self.clicking == True:
                         self.clicking = False
-                        if self.clicked is not None:
-                            rv = renpy.run(self.clicked)
+                        action=renpy.store.Function(edit_value, self.changed, self.use_wide_range, self.value, self.force_plus),
+                        rv = renpy.run(action)
                         if rv is not None:
                             return rv
                         raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
-                    if self.alternate is not None:
-                        rv = renpy.run(self.alternate)
+                    alternate=renpy.store.Function(reset, self.prop),
+                    rv = renpy.run(alternate)
                     if rv is not None:
                         return rv
                     raise renpy.display.core.IgnoreEvent()
