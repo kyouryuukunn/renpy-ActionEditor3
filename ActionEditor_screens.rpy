@@ -32,8 +32,8 @@ screen _new_action_editor(opened=None, time=0):
             $opened[s] = []
 
     $indent = "  "
-    $play_action = [SensitiveIf(sorted_keyframes[current_scene] or len(scene_keyframes) > 1), \
-        SelectedIf(False), Function(_viewers.play, play=True), \
+    $play_action = [SensitiveIf(sorted_keyframes[current_scene] or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+        [If(sorted_keyframes[current_scene] or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
         Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay())]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
