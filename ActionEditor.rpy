@@ -627,7 +627,7 @@ init -1598 python in _viewers:
                             else:
                                 start_v = start[0]
                             knots = []
-                            if checkpoint in spline[p+"_spline"]:
+                            if spline is not None and checkpoint in spline[p+"_spline"]:
                                 knots = spline[p+"_spline"][checkpoint]
                                 if knots:
                                     knots = [start_v] + knots + [goal[0]]
