@@ -20,6 +20,10 @@
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
 #極座標表示対応
+#ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
+#posも同時に動かせるが基準が不明(未定義?) Editorではalignaroundを動かしている間radiusかangleを動かし続けるか
+#functionプロパティーでalignaroundを動かしても反映されない。最小構成では動く、最初の一回は反映されている
+#グループにせず直接編集しても効果なし boxの影響?
 
 init -1098 python:
     # Added keymap
@@ -30,7 +34,7 @@ init -1098 python:
 
 
 init -1600 python in _viewers:
-    from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Text
+    from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Text, Movie
     from renpy import config
 init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
@@ -39,6 +43,7 @@ init -1598 python in _viewers:
     from copy import deepcopy
     from math import sin, asin, cos, acos, atan, pi, sqrt
     from collections import defaultdict
+    from renpy.display.image import images
 
     moved_time = 0
     loops = [defaultdict(lambda:False)]
@@ -97,7 +102,7 @@ init -1598 python in _viewers:
 
 
     def action_editor_init():
-        global image_state, image_state_org, camera_state_org
+        global image_state, image_state_org, camera_state_org, movie_cache
         if not config.developer:
             return
         sle = renpy.game.context().scene_lists
@@ -108,6 +113,7 @@ init -1598 python in _viewers:
         image_state_org.append({})
         image_state.append({})
         camera_state_org.append({})
+        movie_cache = {}
         props = sle.camera_transform["master"]
         for p, d in camera_props:
             camera_state_org[current_scene][p] = getattr(props, p, None)
@@ -397,13 +403,8 @@ init -1598 python in _viewers:
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
             camera_is_used = False
-            polar_coordinate = False
-            for prop in ("xalignaround", "yalignaround", "radius", "angle"):
-                if prop in all_keyframes[s]:
-                    polar_coordinate = True
-                    break
             for prop, d in camera_props:
-                if polar_coordinate and prop in ("xpos", "ypos"):
+                if not exclusive_check(prop, s):
                     continue
                 if prop in all_keyframes[s]:
                     check_points[prop] = all_keyframes[s][prop]
@@ -444,13 +445,8 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
-                    polar_coordinate = False
-                    for prop in ("xalignaround", "yalignaround", "radius", "angle"):
-                        if (tag, layer, prop) in all_keyframes[s]:
-                            polar_coordinate = True
-                            break
                     for prop, d in transform_props:
-                        if polar_coordinate and prop in ("xpos", "ypos"):
+                        if not exclusive_check((tag, layer, prop), s):
                             continue
                         if (tag, layer, prop) in all_keyframes[s]:
                             check_points[layer][tag][prop] = all_keyframes[s][(tag, layer, prop)]
@@ -751,16 +747,16 @@ init -1598 python in _viewers:
                         tran.set_child(Null())
                         break
                     elif start[0][0] is None:
-                        new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
+                        new_widget = get_widget(goal[0][0], time, at)
                         w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                         old_widget = Null(w, h)
                     elif goal[0][0] is None:
-                        old_widget = FixedTimeDisplayable(renpy.easy.displayable(start[0][0]), time, at)
+                        old_widget = get_widget(start[0][0], time, at)
                         w, h = renpy.render(old_widget, 0, 0, 0, 0).get_size()
                         new_widget = Null(w, h)
                     else:
-                        old_widget = FixedTimeDisplayable(renpy.easy.displayable(start[0][0]), time, at)
-                        new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
+                        old_widget = get_widget(start[0][0], time, at)
+                        new_widget = get_widget(goal[0][0], time, at)
                     if time - checkpoint >= get_transition_delay(goal[0][1]):
                         child = new_widget
                     else:
@@ -779,7 +775,7 @@ init -1598 python in _viewers:
                     fixed_time = time-checkpoint
                     if fixed_time < 0:
                         fixed_time = 0
-                    new_widget = FixedTimeDisplayable(renpy.easy.displayable(goal[0][0]), time, at)
+                    new_widget = get_widget(goal[0][0], time, at)
                     w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                     old_widget = Null(w, h)
                     if fixed_time >= get_transition_delay(goal[0][1]):
@@ -788,7 +784,100 @@ init -1598 python in _viewers:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                         child = DuringTransitionDisplayble(transition(old_widget, new_widget), fixed_time, 0)
                 tran.set_child(child)
+        # if not camera:
+        #     tran.alignaround = (0.5+time*0.1, 0.5)
+        #     tran.angle = 0
+        #     tran.alignaround = (0.5, 0.5)
+        #     tran.angle = 315
+        #     tran.radius=0.71
+        #     renpy.store.test = tran.alignaround
         return 0
+
+
+    def get_widget(name, time, at):
+        name_tuple = tuple(name.split())
+        if name_tuple in images and isinstance(images[name_tuple], Movie):
+            d_org = images[name_tuple]
+            file_name = d_org._play
+            mask_file_name = d_org.mask
+
+            prefix_org = ""
+            if file_name.find(">") > 0:
+                prefix_org = file_name[:file_name.find(">")+1]
+                file_name = file_name[file_name.find(">")+1:]
+
+            if mask_file_name:
+                mask_prefix_org = ""
+                if mask_file_name.find(">") > 0:
+                    mask_prefix_org = file_name[:mask_file_name.find(">")+1]
+                    mask_file_name = file_name[mask_file_name.find(">")+1:]
+
+            prefix = "<from {} to {}>".format(time, time)
+            if mask_file_name:
+                mask_prefix = "<from {} to {}>".format(time, time)
+
+            if name_tuple in movie_cache:
+                d = movie_cache[name_tuple]
+            else:
+                d = deepcopy(d_org)
+                movie_cache[name_tuple] = d
+
+            d._play = prefix + file_name
+            if mask_file_name:
+                d.mask = mask_prefix + mask_file_name
+            d.loop = True
+            widget = d
+            # raise Exception((d._play, d.mask))
+        else:
+            widget = FixedTimeDisplayable(renpy.easy.displayable(name), time, at)
+        return widget
+
+
+    def exclusive_check(key, scene_num=None):
+        if scene_num is None:
+            scene_num = current_scene
+        if isinstance(key, tuple):
+            tag, layer, prop = key
+            state = get_image_state(layer, scene_num)
+            camera = False
+        else:
+            prop = key
+            state = camera_state_org[scene_num]
+            camera = True
+
+        for set1, set2 in exclusive:
+            if prop in set1 or prop in set2:
+                if prop in set1:
+                    one_set = set1
+                    other_set = set2
+                else:
+                    one_set = set2
+                    other_set = set1
+                for p in one_set:
+                    if camera:
+                        key2 = p
+                    else:
+                        key2 = (tag, layer, p)
+                    if key2 in all_keyframes[scene_num]:
+                        return True
+                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p, camera)):
+                        return True
+                for p in other_set:
+                    if camera:
+                        key2 = p
+                    else:
+                        key2 = (tag, layer, p)
+                    if key2 in all_keyframes[scene_num]:
+                        return False
+                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p, camera)):
+                        return False
+                else:
+                    if prop in set1:
+                        return True
+                    else:
+                        return False
+        else:
+            return True
 
 
     def get_property(key, default=True, scene_num=None):
@@ -924,7 +1013,7 @@ init -1598 python in _viewers:
     def get_image_name_candidates():
         from itertools import combinations
         result = []
-        for n, d in renpy.display.image.images.items():
+        for n, d in images.items():
             if isinstance(d, renpy.store.Live2D):
                 name = n[0]
                 expression = d.common.expressions
@@ -965,7 +1054,7 @@ init -1598 python in _viewers:
         new_image = renpy.invoke_in_new_context(renpy.call_screen, "_image_selecter", default=default)
         if not isinstance(new_image, tuple): #press button
             new_image = tuple(new_image.split())
-        for n in renpy.display.image.images:
+        for n in images:
             if set(n) == set(new_image) and n[0] == new_image[0]:
                 if org is not None and set(new_image) == set(org.split()):
                     return

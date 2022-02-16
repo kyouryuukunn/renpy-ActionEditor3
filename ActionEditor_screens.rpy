@@ -1255,10 +1255,6 @@ init -1598 python in _viewers:
             for k, v in properties.items():
                 if k.startswith("text_hover_"):
                     self.hover_kwargs[k[11:]] = v
-            if isinstance(key, tuple):
-                self.prop = key[2]
-            else:
-                self.prop = key
 
             if self.use_wide_range:
                 self.change_per_pix = int(persistent._viewers_wide_dragg_speed)

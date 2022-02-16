@@ -70,6 +70,7 @@ init -1600 python in _viewers:
             ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset"), 
             ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH"), 
             ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing"),
+            ("xpan", "ypan", "xtile", "ytile"),
             )
     props_set_names = (
             "Child/Pos    ", 
@@ -77,6 +78,7 @@ init -1600 python in _viewers:
             "Anchor/Offset", 
             "Zoom/Crop    ", 
             "Effect       ",
+            "Misc         ",
             )
 
     props_groups = {
@@ -91,15 +93,16 @@ init -1600 python in _viewers:
     special_props = ["child"]
 
     force_float = ["zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround"]
-    force_wide_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle"]
-    force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing"]
+    force_wide_range = ["rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan"]
+    force_plus = ["additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile"]
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
-    not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH"]
+    not_used_by_default = ["rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan"]
+    exclusive = (
+            ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
+            ({"xtile", "ytile"}, {"xpan", "ypan"}), 
+        )
 
     sort_ref_list = [
-    "alignaround",
-    "radius",
-    "angle",
     "pos",
     "anchor",
     "offset",
@@ -124,6 +127,10 @@ init -1600 python in _viewers:
     "additive", 
     "blur", 
     "matrixcolor", 
+    "xpan", 
+    "ypan", 
+    "xtile", 
+    "ytile", 
     ]
 
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
@@ -169,6 +176,10 @@ init 1600 python in _viewers:
     ("contrast", 1.), 
     ("invert", 0.), 
     ("zzoom", False),
+    ("xpan", 0.), 
+    ("ypan", 0.), 
+    ("xtile", 1), 
+    ("ytile", 1), 
     )
 
     #perspetve competes crop
@@ -210,5 +221,9 @@ init 1600 python in _viewers:
     ("saturate", 1.), 
     ("contrast", 1.), 
     ("invert", 0.), 
+    ("xpan", 0.), 
+    ("ypan", 0.), 
+    ("xtile", 1), 
+    ("ytile", 1), 
     ("perspective", None),
     )
