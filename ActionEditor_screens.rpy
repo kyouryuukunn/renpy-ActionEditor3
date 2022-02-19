@@ -9,9 +9,10 @@ screen _new_action_editor(opened=None, time=0):
     $get_value = _viewers.get_value
     $current_scene = _viewers.current_scene
     $scene_keyframes = _viewers.scene_keyframes
+    $sound_keyframes = _viewers.sound_keyframes
     $all_keyframes = _viewers.all_keyframes
     $change_time = _viewers.change_time
-    $sorted_keyframes = _viewers.sorted_keyframes
+    $get_sorted_keyframes = _viewers.get_sorted_keyframes
     $current_time = _viewers.current_time
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
@@ -32,8 +33,8 @@ screen _new_action_editor(opened=None, time=0):
             $opened[s] = []
 
     $indent = "  "
-    $play_action = [SensitiveIf(sorted_keyframes[current_scene] or len(scene_keyframes) > 1), SelectedIf(time > 0), \
-        [If(sorted_keyframes[current_scene] or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
+    $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+        [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
         Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay())]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
@@ -97,10 +98,10 @@ screen _new_action_editor(opened=None, time=0):
             hbox:
                 xalign 1.
                 textbutton _("remove keys") action [
-                    SensitiveIf(current_time in sorted_keyframes[current_scene]), 
+                    SensitiveIf(current_time in get_sorted_keyframes(current_scene)), 
                     Function(_viewers.remove_all_keyframe, current_time), renpy.restart_interaction]
                 textbutton _("move keys") action [
-                    SensitiveIf(current_time in sorted_keyframes[current_scene]),
+                    SensitiveIf(current_time in get_sorted_keyframes(current_scene)),
                     SelectedIf(False), SetField(_viewers, "moved_time", current_time), Show("_move_keyframes")]
             hbox:
                 xalign 1.
@@ -410,6 +411,69 @@ screen _new_action_editor(opened=None, time=0):
                 textbutton _("+(add scene)"):
                     action _viewers.add_scene
                     style_group "new_action_editor_c"
+                if "sounds" not in opened:
+                    hbox:
+                        hbox:
+                            style_group "new_action_editor_c"
+                            if persistent._open_only_one_page:
+                                $new_opened = {"sounds":True}
+                            else:
+                                $new_opened = opened.copy()
+                                $new_opened["sounds"] = True
+                            textbutton _("+ "+"sounds"):
+                                action [SensitiveIf(persistent._viewer_channel_list),
+                                Show("_new_action_editor", opened=new_opened)]
+                        fixed:
+                            add _viewers.time_line_background
+                            for channel, play_times in _viewers.sound_keyframes.items():
+                                for t in play_times:
+                                    drag:
+                                        child _viewers.insensitive_key_child
+                                        hover_child _viewers.insensitive_key_hovere_child
+                                        xpos to_drag_pos(t)
+                                        droppable False
+                                        draggable False
+                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                else:
+                    hbox:
+                        style_group "new_action_editor_c"
+                        $new_opened = opened.copy()
+                        $del new_opened["sounds"]
+                        textbutton _(indent+"- "+"sounds"):
+                            action Show("_new_action_editor", opened=new_opened)
+                        textbutton _("clipboard"):
+                            action Function(_viewers.put_sound_clipboard)
+                            size_group None
+                            style_group "new_action_editor_b"
+                    for channel, play_times in sound_keyframes.items():
+                        hbox:
+                            hbox:
+                                style_group "new_action_editor_c"
+                                textbutton indent*1+"  [channel]":
+                                    action None text_color "#CCC"
+                                    size_group None
+                            fixed:
+                                add _viewers.time_line_background
+                                for t in play_times:
+                                    drag:
+                                        child _viewers.key_child
+                                        hover_child _viewers.key_hovere_child
+                                        xpos to_drag_pos(t)
+                                        droppable False
+                                        dragged generate_key_drag(channel, t, True)
+                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                        alternate Show("_sound_keyframe_altername_menu", channel=channel, time=t)
+                        hbox:
+                            $value = "None"
+                            $sorted_play_times = sound_keyframes[channel].keys()
+                            $sorted_play_times.sort()
+                            for t in sorted_play_times:
+                                if current_time >= t:
+                                    $value = sound_keyframes[channel][t]
+                            textbutton indent*2+"  [value]":
+                                action [SelectedIf(keyframes_exist(channel, is_sound=True)),
+                                    Function(_viewers.edit_playing_file, channel, current_time)]
+                                size_group None
 
 
 screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_func=None):
@@ -495,6 +559,40 @@ screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_f
             textbutton _("toggle loop"):
                 action [loop_button_action, Hide("_keyframe_altername_menu")]
                 size_group None
+
+
+screen _sound_keyframe_altername_menu(channel, time):
+    key ["game_menu", "dismiss"] action Hide("_sound_keyframe_altername_menu")
+    modal True
+
+    $(x, y) = renpy.get_mouse_pos()
+    $(width, height) = (config.screen_width, config.screen_height)
+    $v = _viewers.sound_keyframes[channel][time]
+
+    style_group "new_action_editor"
+
+    frame:
+        background "#222"
+        pos (x, y)
+        if x + 300 > width:
+            xanchor 1.0
+        else:
+            xanchor 0.0
+        if y + 200 > height:
+            yanchor 1.0
+        else:
+            yanchor 0.0
+        vbox:
+            xfill False
+            on "unhovered" action Hide("_sound_keyframe_altername_menu")
+            textbutton _("edit value: [v]"):
+                action [Function(_viewers.edit_playing_file, channel, time=time),
+                Function(_viewers.change_time, time), Hide("_sound_keyframe_altername_menu")]
+            textbutton _("edit time: [time]") action [Function(_viewers.edit_move_keyframe, keys=channel, old=time, is_sound=True), Hide("_sound_keyframe_altername_menu")]
+            textbutton _("remove"):
+                action [Function(_viewers.remove_keyframe, remove_time=time, key=channel, is_sound=True), Hide("_sound_keyframe_altername_menu")]
+                size_group None
+
 
 init -1599 python in _viewers:
     key_xsize = 22
@@ -595,7 +693,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $scene_keyframes = _viewers.scene_keyframes
     $all_keyframes = _viewers.all_keyframes
     $change_time = _viewers.change_time
-    $sorted_keyframes = _viewers.sorted_keyframes
+    $get_sorted_keyframes = _viewers.get_sorted_keyframes
     $current_time = _viewers.current_time
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
@@ -607,7 +705,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
 
-    $play_action = [SensitiveIf(sorted_keyframes[current_scene] or len(scene_keyframes) > 1), \
+    $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
         SelectedIf(False), Function(_viewers.play, play=True), \
         Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
     if get_value("perspective", scene_keyframes[current_scene][1], True):
@@ -680,10 +778,10 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             style_group "action_editor_a"
             textbutton _("option") action Show("_action_editor_option")
             textbutton _("remove keyframes"):
-                action [SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+                action [SensitiveIf(current_time in get_sorted_keyframes(current_scene)), \
                 Function(_viewers.remove_all_keyframe, current_time), renpy.restart_interaction]
             textbutton _("move keyframes"):
-                action [SensitiveIf(current_time in sorted_keyframes[current_scene]), \
+                action [SensitiveIf(current_time in get_sorted_keyframes(current_scene)), \
                 SelectedIf(False), SetField(_viewers, "moved_time", current_time), Show("_move_keyframes")]
             textbutton _("hide") action HideInterface()
             textbutton _("clipboard") action Function(_viewers.put_clipboard)
@@ -884,7 +982,7 @@ screen _input_screen(message="type value", default=""):
         label message
 
         hbox:
-            input default default
+            input default default copypaste True
 
 screen _action_editor_option():
     modal True
@@ -918,15 +1016,17 @@ screen _action_editor_option():
             text _("the time range of property bar(type float)")
             textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
             text _("")
-            text _("Below options have effect for only New GUI")
+            text _("following options have effect for only New GUI")
             text _("Open only one page at once")
             textbutton _("open only one page") action [SelectedIf(persistent._open_only_one_page), ToggleField(persistent, "_open_only_one_page"), If(not persistent._viewer_legacy_gui, true=Show("_new_action_editor"))]
-            text _("Set the amount of change per pixel when dragging the value of the integer property(In new GUI)")
+            text _("Set the amount of change per pixel when dragging the value of the integer property")
             textbutton "[persistent._viewers_wide_dragg_speed]" action Function(_viewers.edit_range_value, persistent, "_viewers_wide_dragg_speed", True)
-            text _("Set the amount of change per pixel when dragging the value of the float property(In new GUI)")
+            text _("Set the amount of change per pixel when dragging the value of the float property")
             textbutton "[persistent._viewers_narow_dragg_speed]" action Function(_viewers.edit_range_value, persistent, "_viewers_narow_dragg_speed", False)
+            text _("Set the list of channels for playing in ActionEditor")
+            textbutton "[persistent._viewer_channel_list]" action _viewers.edit_channel_list
             text _("")
-            text _("Below options have effect for only Legacy GUI")
+            text _("following options have effect for only Legacy GUI")
             text _("Show/Hide camera icon")
             textbutton _("camera icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
             text _("the wide range of property bar which is mainly used for int values(type int)")
@@ -1179,19 +1279,20 @@ init -1598 python in _viewers:
         return None
 
 
-    def generate_key_drag(key, t):
+    def generate_key_drag(key, t, is_sound=False):
         key_list = [key]
-        if isinstance(key, tuple):
-            n, l, p = key
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    key_list = [(n, l, p) for p in props_groups[gn]]
-        else:
-            p = key
-            for gn, ps in props_groups.items():
-                if key in ps:
-                    if gn != "focusing":
-                        key_list = props_groups[gn]
+        if not is_sound:
+            if isinstance(key, tuple):
+                n, l, p = key
+                for gn, ps in props_groups.items():
+                    if p in ps:
+                        key_list = [(n, l, p) for p in props_groups[gn]]
+            else:
+                p = key
+                for gn, ps in props_groups.items():
+                    if key in ps:
+                        if gn != "focusing":
+                            key_list = props_groups[gn]
 
         def changed(drags, drops):
             x = drags[0].x
@@ -1199,7 +1300,7 @@ init -1598 python in _viewers:
             barsize = config.screen_width - c_box_size-50 + key_half_xsize
             frac = float(x)/(barsize-key_xsize)
             goal = frac*renpy.store.persistent._time_range
-            if not move_keyframe(new=goal, old=t, keys=key_list):
+            if not move_keyframe(new=goal, old=t, keys=key_list, is_sound=is_sound):
                 drags[0].snap(to_drag_pos(t), y)
 
         return changed

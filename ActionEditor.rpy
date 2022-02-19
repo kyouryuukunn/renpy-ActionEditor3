@@ -15,6 +15,7 @@
 #childのみならばparallelなくてよい
 #perspectiveで数値を指定されていたらどうする?
 #colormatrix, transformmatrixは十分再現できない
+#get_file_durationは本体にpull requestする
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -49,7 +50,6 @@ init -1598 python in _viewers:
     loops = [defaultdict(lambda:False)]
     splines = [defaultdict(lambda:{})]
     all_keyframes = [{}]
-    sorted_keyframes = [[]]
     scene_keyframes = []
 
 
@@ -371,7 +371,6 @@ init -1598 python in _viewers:
                 all_keyframes[current_scene][key] = [
                     (org, scene_keyframes[current_scene][1], persistent._viewer_warper),
                     (value, time, persistent._viewer_warper)]
-        sort_keyframes()
         
         for gn, ps in props_groups.items():
             ps_set = set(ps)
@@ -397,6 +396,26 @@ init -1598 python in _viewers:
 
 
     def play(play):
+        if play:
+            for channel, times in sound_keyframes.items():
+                time = 0
+                files = []
+                if times:
+                    for t, fs in times.items():
+                        duration = t - time
+                        if duration > 0:
+                            files.append("<silence {}>".format(duration))
+                        file = renpy.python.py_eval(fs)
+                        files += file
+                        time = t
+                        for f in file:
+                            time += get_file_duration(f)
+                    renpy.music.play(files, channel, loop=False)
+        else:
+            for channel, times in sound_keyframes.items():
+                if current_time in times:
+                    files = renpy.python.py_eval(times[current_time])
+                    renpy.music.play(files, channel, loop=False)
         camera_check_points = []
         loop = []
         spline = []
@@ -816,17 +835,24 @@ init -1598 python in _viewers:
             if mask_file_name:
                 mask_prefix = "<from {} to {}>".format(time, time)
 
+            play = prefix + file_name
+            if mask_file_name:
+                mask = mask_prefix + mask_file_name
+            else:
+                mask = None
+
             if name_tuple in movie_cache:
                 d = movie_cache[name_tuple]
             else:
                 d = deepcopy(d_org)
                 movie_cache[name_tuple] = d
 
-            d._play = prefix + file_name
-            if mask_file_name:
-                d.mask = mask_prefix + mask_file_name
-            d.loop = True
+            d._play = play
+            d.mask = None
+            d.loop = False
+            # d = FixedTimeDisplayable(Movie(play=prefix+file_name, mask=None, loop=False), time, at)
             widget = d
+            renpy.store.test = prefix
             # raise Exception((d._play, d.mask))
         else:
             widget = FixedTimeDisplayable(renpy.easy.displayable(name), time, at)
@@ -960,6 +986,35 @@ init -1598 python in _viewers:
             change_time(time)
             return
         renpy.notify(_("Please Input Transition"))
+
+
+    def edit_channel_list():
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=persistent._viewer_channel_list , message="Please type the list of channel names(ex [['sound', 'sound2'])")
+        message1 = _("Please type the list of channel names(ex ['sound', 'sound2'])")
+        try:
+            v = renpy.python.py_eval(v)
+        except:
+            renpy.notify(message1)
+            return
+        if v and isinstance(v, list):
+            for c in v:
+                try:
+                    renpy.audio.music.get_channel(c)
+                except:
+                    break
+                if c == "audio":
+                    renpy.notify(_("can't include audio channel"))
+                    
+            else:
+                for c in v:
+                    if c not in persistent._viewer_channel_list:
+                        sound_keyframes[c] = {}
+                for c in persistent._viewer_channel_list:
+                    if c not in v:
+                        del sound_keyframes[c]
+                persistent._viewer_channel_list = v
+                return
+        renpy.notify(message1)
 
 
     def add_image(layer):
@@ -1106,7 +1161,6 @@ init -1598 python in _viewers:
         renpy.hide(tag, layer)
         del image_state[current_scene][layer][tag]
         remove_keyframes(tag, layer)
-        sort_keyframes()
         zorder_list[current_scene][layer] = [(ztag, z) for (ztag, z) in zorder_list[current_scene][layer] if ztag != tag]
 
 
@@ -1304,6 +1358,34 @@ show %s""" % child
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
 
+    def put_sound_clipboard():
+
+        string = ""
+        for channel, times in sound_keyframes.items():
+            time = 0
+            files = []
+            if times:
+                for t, fs in times.items():
+                    duration = t - time
+                    if duration > 0:
+                        files.append("<silence {}>".format(duration))
+                    file = renpy.python.py_eval(fs)
+                    files += file
+                    time = t
+                    for f in file:
+                        time += get_file_duration(f)
+                string += "\n    play {} {}".format(channel, files)
+
+        string = string.replace("u'", "'", 999)
+        try:
+            from pygame import scrap, locals
+            scrap.put(locals.SCRAP_TEXT, string)
+        except:
+            renpy.notify(_("Can't open clipboard"))
+        else:
+            renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
+
+
     def edit_warper(check_points, old, value_org):
         warper = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter", current_warper=value_org)
         if warper:
@@ -1317,7 +1399,7 @@ show %s""" % child
         renpy.restart_interaction()
 
 
-    def edit_move_keyframe(keys, old):
+    def edit_move_keyframe(keys, old, is_sound=False):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=old)
         if v:
             try:
@@ -1326,7 +1408,7 @@ show %s""" % child
                     return
                 if not isinstance(keys, list):
                     keys = [keys]
-                move_keyframe(v, old, keys)
+                move_keyframe(v, old, keys, is_sound)
             except:
                 renpy.notify(_("Please type value"))
 
@@ -1375,11 +1457,11 @@ show %s""" % child
 
 
     def next_time():
-        if not sorted_keyframes[current_scene]:
+        if not get_sorted_keyframes(current_scene):
             change_time(scene_keyframes[current_scene][1])
             return
         else:
-            for t in sorted_keyframes[current_scene]:
+            for t in get_sorted_keyframes(current_scene):
                 if current_time < t:
                     change_time(t)
                     return
@@ -1387,17 +1469,17 @@ show %s""" % child
 
 
     def prev_time():
-        if not sorted_keyframes[current_scene]:
+        if not get_sorted_keyframes(current_scene):
             change_time(scene_keyframes[current_scene][1])
             return
         else:
-            for t in reversed(sorted_keyframes[current_scene]):
+            for t in reversed(get_sorted_keyframes(current_scene)):
                 if t < current_time and scene_keyframes[current_scene][1] <= t:
                     change_time(t)
                     return
             else:
                 if current_time == scene_keyframes[current_scene][1]:
-                    change_time(sorted_keyframes[current_scene][-1])
+                    change_time(get_sorted_keyframes(current_scene)[-1])
                 else:
                     change_time(scene_keyframes[current_scene][1])
 
@@ -1422,7 +1504,6 @@ show %s""" % child
         camera_state_org.insert(current_scene, {})
         zorder_list.insert(current_scene, {})
         all_keyframes.insert(current_scene, {})
-        sorted_keyframes.insert(current_scene, [])
         for l in config.layers:
             image_state[current_scene][l] = {}
             image_state_org[current_scene][l] = {}
@@ -1465,7 +1546,6 @@ show %s""" % child
         del camera_state_org[scene_num]
         del zorder_list[scene_num]
         del all_keyframes[scene_num]
-        del sorted_keyframes[scene_num]
         del loops[scene_num]
         del splines[scene_num]
         for s in range(scene_num, len(scene_keyframes)):
@@ -1492,7 +1572,6 @@ show %s""" % child
         scene_num_camera_state_org = camera_state_org.pop(scene_num)
         scene_num_zorder_list = zorder_list.pop(scene_num)
         scene_num_all_keyframes = all_keyframes.pop(scene_num)
-        scene_num_sorted_keyframes = sorted_keyframes.pop(scene_num)
         scene_num_loops = loops.pop(scene_num)
         scene_num_splines = splines.pop(scene_num)
         for i, s in enumerate(scene_keyframes):
@@ -1503,7 +1582,6 @@ show %s""" % child
                 camera_state_org.insert(i, scene_num_camera_state_org)
                 zorder_list.insert(i, scene_num_zorder_list)
                 all_keyframes.insert(i, scene_num_all_keyframes)
-                sorted_keyframes.insert(i, scene_num_sorted_keyframes)
                 loops.insert(i, scene_num_loops)
                 splines.insert(i, scene_num_splines)
                 new_scene_num = i
@@ -1515,7 +1593,6 @@ show %s""" % child
                 camera_state_org.insert(scene_num, scene_num_camera_state_org)
                 zorder_list.insert(scene_num, scene_num_zorder_list)
                 all_keyframes.insert(scene_num, scene_num_all_keyframes)
-                sorted_keyframes.insert(scene_num, scene_num_sorted_keyframes)
                 loops.insert(scene_num, scene_num_loops)
                 splines.insert(scene_num, scene_num_splines)
                 return
@@ -1526,7 +1603,6 @@ show %s""" % child
             camera_state_org.append(scene_num_camera_state_org)
             zorder_list.append(scene_num_zorder_list)
             all_keyframes.append(scene_num_all_keyframes)
-            sorted_keyframes.append(scene_num_sorted_keyframes)
             loops.append(scene_num_loops)
             splines.append(scene_num_splines)
             new_scene_num = len(scene_keyframes)-1
@@ -1551,7 +1627,6 @@ show %s""" % child
                     for t in splines[new_scene_num][k]:
                         knots = splines[new_scene_num][k].pop(t)
                         splines[new_scene_num][k][t - (old - new)] = knots
-        sorted_keyframes[new_scene_num] = [t-(old-new) for t in sorted_keyframes[new_scene_num]]
         
         if persistent._viewer_legacy_gui:
             renpy.show_screen("_action_editor")
@@ -1586,6 +1661,37 @@ show %s""" % child
         renpy.notify(_("Please Input Transition"))
 
 
+    def edit_playing_file(channel, time=None):
+        if time is None:
+            time = current_time
+        if is_playing(channel, time, time):
+            renpy.notify(_("This channel is already used in this time"))
+            return
+        default = ""
+        if time in sound_keyframes[channel]:
+            default = sound_keyframes[channel][time]
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default , message="type filenames(ex: 'hoge.ogg' or [['hoge.ogg', variable])")
+        if v:
+            try:
+                evaled = renpy.python.py_eval(v)
+                if not evaled:
+                    renpy.notify(_("Please Input filenames"))
+                    return
+            except:
+                renpy.notify(_("Please Input filenames"))
+                return
+            if not isinstance(evaled, list):
+                evaled = [evaled]
+                v = "[" + v + "]"
+            for f in evaled:
+                if not renpy.loadable(f) and not "<silence" in f:
+                    break
+            else:
+                sound_keyframes[channel][time] = v
+                return
+        renpy.notify(_("Please Input filenames"))
+
+
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
@@ -1602,46 +1708,50 @@ show %s""" % child
             persistent._viewer_warper = v
 
 
-    def clear_keyframes():
-        global all_keyframes, sorted_keyframes
-        all_keyframes = [{}]
-        sorted_keyframes = [[]]
-
-
-    def remove_keyframe(remove_time, key):
+    def remove_keyframe(remove_time, key, is_sound=False):
         if not isinstance(key, list):
             key = [key]
         for k in key:
-            remove_list = []
-            if k in all_keyframes[current_scene]:
-                for (v, t, w) in all_keyframes[current_scene][k]:
-                    if t == remove_time:
-                        if remove_time != scene_keyframes[current_scene][1] \
-                            or (remove_time == scene_keyframes[current_scene][1]
-                             and len(all_keyframes[current_scene][k]) == 1):
-                            remove_list.append((v, t, w))
-            for c in remove_list:
-                if c[1] in splines[current_scene][k]:
-                    del splines[current_scene][k][c[1]]
-                all_keyframes[current_scene][k].remove(c)
-                if not all_keyframes[current_scene][k]:
-                    del all_keyframes[current_scene][k]
-        sort_keyframes()
+            if is_sound:
+                if remove_time in sound_keyframes[k]:
+                    del sound_keyframes[k][remove_time]
+            else:
+                remove_list = []
+                if k in all_keyframes[current_scene]:
+                    for (v, t, w) in all_keyframes[current_scene][k]:
+                        if t == remove_time:
+                            if remove_time != scene_keyframes[current_scene][1] \
+                                or (remove_time == scene_keyframes[current_scene][1]
+                                 and len(all_keyframes[current_scene][k]) == 1):
+                                remove_list.append((v, t, w))
+                for c in remove_list:
+                    if c[1] in splines[current_scene][k]:
+                        del splines[current_scene][k][c[1]]
+                    all_keyframes[current_scene][k].remove(c)
+                    if not all_keyframes[current_scene][k]:
+                        del all_keyframes[current_scene][k]
         change_time(current_time)
 
 
     def remove_all_keyframe(time):
         keylist = [k for k in all_keyframes[current_scene]]
         remove_keyframe(time, keylist)
+        keylist = sound_keyframes.keys()
+        remove_keyframe(time, keylist, True)
 
 
-    def sort_keyframes():
-        sorted_keyframes[current_scene][:] = []
-        for keyframes in all_keyframes[current_scene].values():
+    def get_sorted_keyframes(scene_num):
+        sorted_keyframes = []
+        for keyframes in all_keyframes[scene_num].values():
             for (v, t, w) in keyframes:
-                if t not in sorted_keyframes[current_scene]:
-                    sorted_keyframes[current_scene].append(t)
-        sorted_keyframes[current_scene].sort()
+                if t not in sorted_keyframes:
+                    sorted_keyframes.append(t)
+        for c, cs in sound_keyframes.items():
+            for t in cs:
+                if t not in sorted_keyframes:
+                    sorted_keyframes.append(t)
+        sorted_keyframes.sort()
+        return sorted_keyframes
 
 
     def move_all_keyframe(new, old):
@@ -1651,11 +1761,14 @@ show %s""" % child
         moved_time = round(new, 2)
         k_list = [k for k in all_keyframes[current_scene].keys()]
         move_keyframe(new, old, k_list)
+        k_list = sound_keyframes.keys()
+        move_keyframe(new, old, k_list, True)
 
 
-    def move_keyframe(new, old, keys):
-        if new < scene_keyframes[current_scene][1]:
-            new = scene_keyframes[current_scene][1]
+    def move_keyframe(new, old, keys, is_sound=False):
+        if not is_sound:
+            if new < scene_keyframes[current_scene][1]:
+                new = scene_keyframes[current_scene][1]
         new = round(new, 2)
         if new == old:
             renpy.restart_interaction()
@@ -1663,38 +1776,52 @@ show %s""" % child
         if not isinstance(keys, list):
             keys = [keys]
         for k in keys:
-            if keyframes_exist(k, new):
+            if keyframes_exist(k, new, is_sound):
                 return False
-            cs = all_keyframes[current_scene][k]
-            for i, c in enumerate(cs):
-                if c[1] == old:
-                    (value, time, warper) = cs.pop(i)
-                    for n, (v, t, w) in enumerate(cs):
-                        if new < t:
-                            cs.insert(n, (value, new, warper))
-                            break
-                    else:
-                        cs.append((value, new, warper))
-                    if old == scene_keyframes[current_scene][1] and new != scene_keyframes[current_scene][1]:
-                        cs.insert(0, (value, scene_keyframes[current_scene][1], persistent._viewer_warper))
-                    if old in splines[current_scene][k]:
-                        knots = splines[current_scene][k][old]
-                        splines[current_scene][k][new] = knots
-                        del splines[current_scene][k][old]
-        sort_keyframes()
+            if is_sound:
+                if is_playing(k, new, old):
+                    continue
+                if old in sound_keyframes[k]:
+                    files = sound_keyframes[k][old]
+                    sound_keyframes[k][new] = files
+                    del sound_keyframes[k][old]
+            else:
+                cs = all_keyframes[current_scene][k]
+                for i, c in enumerate(cs):
+                    if c[1] == old:
+                        (value, time, warper) = cs.pop(i)
+                        for n, (v, t, w) in enumerate(cs):
+                            if new < t:
+                                cs.insert(n, (value, new, warper))
+                                break
+                        else:
+                            cs.append((value, new, warper))
+                        if old == scene_keyframes[current_scene][1] and new != scene_keyframes[current_scene][1]:
+                            cs.insert(0, (value, scene_keyframes[current_scene][1], persistent._viewer_warper))
+                        if old in splines[current_scene][k]:
+                            knots = splines[current_scene][k][old]
+                            splines[current_scene][k][new] = knots
+                            del splines[current_scene][k][old]
         renpy.restart_interaction()
 
 
-    def keyframes_exist(k, time=None):
+    def keyframes_exist(k, time=None, is_sound=False):
         if time is None:
             time = current_time
-        if k not in all_keyframes[current_scene]:
-            return False
-        check_points = all_keyframes[current_scene][k]
-        for c in check_points:
-            if c[1] == time:
+
+        if is_sound:
+            if time in sound_keyframes[k]:
                 return True
-        return False
+            else:
+                return False
+        else:
+            if k not in all_keyframes[current_scene]:
+                return False
+            check_points = all_keyframes[current_scene][k]
+            for c in check_points:
+                if c[1] == time:
+                    return True
+            return False
 
 
     def add_knot(key, time, default, knot_number=None):
@@ -1717,12 +1844,45 @@ show %s""" % child
     def change_time(v):
         global current_time
         current_time = round(v, 2)
+        for c in persistent._viewer_channel_list:
+            renpy.music.stop(c, False)
         play(False)
         renpy.restart_interaction()
 
 
+    def get_file_duration(filename):
+        if filename.startswith("<silence "):
+            return renpy.python.py_eval(filename.split()[1][:-1])
+        else:
+            #互換性で残っている未使用のチャンネルで再生
+            renpy.music.play(filename, channel=1, fadeout=0, loop=False)
+            duration = None
+            while duration is None:
+                renpy.audio.audio.interact()
+                if renpy.music.is_playing(1) and renpy.music.get_duration(1) != 0:
+                    duration = renpy.music.get_duration(1)
+            renpy.music.stop(1)
+            return duration
+
+
+    def is_playing(channel, time, self_time):
+        times = sound_keyframes[channel].keys()
+        times.sort()
+        times.reverse()
+        for t in times:
+            if t <= time and self_time != t:
+                duration = 0
+                files = renpy.python.py_eval(sound_keyframes[channel][t])
+                for f in files:
+                    duration += get_file_duration(f)
+                if t+duration >= time:
+                    return True
+                break
+        return False
+
+
     def open_action_editor():
-        global current_time, current_scene, scene_keyframes, zorder_list
+        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes
         if not config.developer:
             return
         current_time = 0
@@ -1730,7 +1890,12 @@ show %s""" % child
         moved_time = 0
         loops = [defaultdict(lambda:False)]
         splines = [defaultdict(lambda:{})]
-        clear_keyframes()
+        sound_keyframes = {}
+        all_keyframes = [{}]
+        zorder_list = [{}]
+        for l in config.layers:
+            zorder_list[current_scene][l] = renpy.get_zorder_list(l)
+        scene_keyframes = [(None, 0, None)]
         if persistent._viewer_legacy_gui is None:
             persistent._viewer_legacy_gui = default_legacy_gui
         if persistent._viewer_transition is None:
@@ -1761,10 +1926,10 @@ show %s""" % child
             persistent._one_line_one_prop = default_one_line_one_prop
         if persistent._open_only_one_page is None:
             persistent._open_only_one_page = default_open_only_one_page
-        zorder_list = [{}]
-        for l in config.layers:
-            zorder_list[current_scene][l] = renpy.get_zorder_list(l)
-        scene_keyframes = [(None, 0, None)]
+        if persistent._viewer_channel_list is None:
+            persistent._viewer_channel_list = default_channel_list
+        for c in persistent._viewer_channel_list:
+            sound_keyframes[c] = {}
         action_editor_init()
         camera_icon.init(True, True)
         _window = renpy.store._window
@@ -1806,6 +1971,12 @@ show %s""" % child
                         t += delay
                     if t > animation_time:
                         animation_time = t
+        for channel, times in sound_keyframes.items():
+            for time, files in times.items():
+                if time > animation_time:
+                    animation_time = time
+#TODO
+
         return animation_time
 
 
@@ -1980,6 +2151,20 @@ show %s""" % child
                 window_mode = "window"
             string += """
     {} hide""".format(window_mode)
+        for channel, times in sound_keyframes.items():
+            time = 0
+            files = []
+            if times:
+                for t, fs in times.items():
+                    duration = t - time
+                    if duration > 0:
+                        files.append("<silence {}>".format(duration))
+                    file = renpy.python.py_eval(fs)
+                    files += file
+                    time = t
+                    for f in file:
+                        time += get_file_duration(f)
+                string += "\n    play {} {}".format(channel, files)
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
             camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
             camera_keyframes = set_group_keyframes(camera_keyframes)
@@ -2208,6 +2393,9 @@ show %s""" % child
     with Pause({})""".format(get_animation_delay())
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and persistent._viewer_allow_skip) \
             or len(scene_keyframes) > 1:
+            for channel, times in sound_keyframes.items():
+                if times:
+                    string += "\n    stop {}".format(channel)
 
             for i in range(-1, -len(scene_keyframes)-1, -1):
                 if camera_keyframes_exist(i):

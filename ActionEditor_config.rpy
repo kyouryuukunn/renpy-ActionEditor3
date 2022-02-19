@@ -59,6 +59,9 @@ init -1600 python in _viewers:
     # the range of time
     #エディターのバーに表示する時間の範囲です。
     time_range = 7.0
+    # the list of channel for playing
+    # ActionEditorで使用するチャンネルのリストです
+    default_channel_list = ["sound"]
 
     preview_size=0.6
     preview_background_color="#111"
