@@ -962,8 +962,12 @@ init -1598 python in _viewers:
         if v:
             if v == "None":
                 v = None
-            persistent._viewer_transition = v
-            return
+            try:
+                renpy.python.py_eval(v)
+                persistent._viewer_transition = v
+                return
+            except:
+                pass
         renpy.notify(_("Please Input Transition"))
 
 
@@ -982,9 +986,13 @@ init -1598 python in _viewers:
                 if time >= cs[i][1]:
                     (n, tran), t, w = cs[i]
                     break
-            set_keyframe((tag, layer, "child"), (n, v), time=time)
-            change_time(time)
-            return
+            try:
+                renpy.python.py_eval(v)
+                set_keyframe((tag, layer, "child"), (n, v), time=time)
+                change_time(time)
+                return
+            except:
+                pass
         renpy.notify(_("Please Input Transition"))
 
 
