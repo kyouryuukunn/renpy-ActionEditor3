@@ -852,7 +852,6 @@ init -1598 python in _viewers:
             d.loop = False
             # d = FixedTimeDisplayable(Movie(play=prefix+file_name, mask=None, loop=False), time, at)
             widget = d
-            renpy.store.test = prefix
             # raise Exception((d._play, d.mask))
         else:
             widget = FixedTimeDisplayable(renpy.easy.displayable(name), time, at)
@@ -1063,10 +1062,10 @@ init -1598 python in _viewers:
                     else:
                         image_state[current_scene][layer][added_tag][p] = getattr(renpy.store.default, p, None)
                 change_time(current_time)
-                if persistent._viewer_legacy_gui:
-                    renpy.show_screen("_action_editor")
-                else:
-                    renpy.show_screen("_new_action_editor")
+                # if persistent._viewer_legacy_gui:
+                #     renpy.show_screen("_action_editor")
+                # else:
+                #     renpy.show_screen("_new_action_editor")
                 return
         else:
             renpy.notify(_("Please type image name"))
@@ -1527,10 +1526,10 @@ show %s""" % child
                 camera_state_org[current_scene][p] = round(middle_value, 3)
             else:
                 camera_state_org[current_scene][p] = middle_value
-        if persistent._viewer_legacy_gui:
-            renpy.show_screen("_action_editor")
-        elif persistent._open_only_one_page:
-            renpy.show_screen("_new_action_editor")
+        # if persistent._viewer_legacy_gui:
+        #     renpy.show_screen("_action_editor")
+        # elif persistent._open_only_one_page:
+        #     renpy.show_screen("_new_action_editor")
         renpy.restart_interaction()
 
 
@@ -1547,7 +1546,8 @@ show %s""" % child
         global current_scene
         if scene_num == 0:
             return
-        current_scene -= 1
+        if current_scene >= scene_num:
+            current_scene -= 1
         del scene_keyframes[scene_num]
         del image_state[scene_num]
         del image_state_org[scene_num]
@@ -1566,10 +1566,10 @@ show %s""" % child
                     camera_state_org[s][p] = round(middle_value, 3)
                 else:
                     camera_state_org[s][p] = middle_value
-        if persistent._viewer_legacy_gui:
-            renpy.show_screen("_action_editor")
-        elif persistent._open_only_one_page:
-            renpy.show_screen("_new_action_editor")
+        # if persistent._viewer_legacy_gui:
+        #     renpy.show_screen("_action_editor")
+        # elif persistent._open_only_one_page:
+        #     renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
 
@@ -1636,10 +1636,10 @@ show %s""" % child
                         knots = splines[new_scene_num][k].pop(t)
                         splines[new_scene_num][k][t - (old - new)] = knots
         
-        if persistent._viewer_legacy_gui:
-            renpy.show_screen("_action_editor")
-        else:
-            renpy.show_screen("_new_action_editor")
+        # if persistent._viewer_legacy_gui:
+        #     renpy.show_screen("_action_editor")
+        # else:
+        #     renpy.show_screen("_new_action_editor")
         change_time(current_time)
         return
 
@@ -1703,10 +1703,10 @@ show %s""" % child
     def change_scene(scene_num):
         global current_scene, current_time
         current_scene = scene_num
-        if persistent._viewer_legacy_gui:
-            renpy.show_screen("_action_editor")
-        elif persistent._open_only_one_page:
-            renpy.show_screen("_new_action_editor")
+        # if persistent._viewer_legacy_gui:
+        #     renpy.show_screen("_action_editor")
+        # elif persistent._open_only_one_page:
+        #     renpy.show_screen("_new_action_editor")
         change_time(current_time)
 
 
@@ -1980,10 +1980,15 @@ show %s""" % child
                     if t > animation_time:
                         animation_time = t
         for channel, times in sound_keyframes.items():
-            for time, files in times.items():
-                if time > animation_time:
-                    animation_time = time
-#TODO
+            if times:
+                time_list = times.keys()
+                time_list.sort()
+                start_time = time_list[-1]
+                files = times[start_time]
+                for f in renpy.python.py_eval(files):
+                    start_time += get_file_duration(f)
+                if start_time > animation_time:
+                    animation_time = start_time
 
         return animation_time
 
@@ -2388,17 +2393,21 @@ show %s""" % child
             if len(scene_keyframes) > 1:
                 if s < len(scene_keyframes)-1:
                     pause_time = scene_keyframes[s+1][1] - scene_start
-                else:
+                elif (get_scene_delay(s) + scene_start) >= get_animation_delay():
+                    renpy.store.test=(get_scene_delay(s), scene_start, get_animation_delay())
                     pause_time = get_scene_delay(s)
+                else:
+                    renpy.store.test=True
+                    pause_time = get_animation_delay() - scene_start
                 pause_time -= get_transition_delay(scene_tran)
-                pause_time = round(pause_time, 2)
+                pause_time = round(pause_time + 0.1, 2)
                 if pause_time > 0 or s != len(scene_keyframes)-1:
                     string += """
     with Pause({})""".format(pause_time)
 
         if (persistent._viewer_hide_window and get_animation_delay() > 0) and len(scene_keyframes) == 1:
             string += """
-    with Pause({})""".format(get_animation_delay())
+    with Pause({})""".format(round(get_animation_delay()+0.1), 2)
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and persistent._viewer_allow_skip) \
             or len(scene_keyframes) > 1:
             for channel, times in sound_keyframes.items():

@@ -74,7 +74,7 @@ screen _new_action_editor(opened=None, time=0):
 
     $state=_viewers.get_image_state(layer)
     $tag_list =  []
-    for tag, z in _viewers.zorder_list[s][layer]:
+    for tag, z in _viewers.zorder_list[current_scene][layer]:
         if tag in state:
             $tag_list.append(tag)
     frame:
@@ -169,8 +169,35 @@ screen _new_action_editor(opened=None, time=0):
                                                 clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                     else:
                         hbox:
-                            style_group "new_action_editor_c"
-                            textbutton "- "+"scene[s]" action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
+                            hbox:
+                                style_group "new_action_editor_c"
+                                textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
+                            fixed:
+                                add _viewers.time_line_background
+                                $(v, t, w) = scene_keyframes[s]
+                                drag:
+                                    child _viewers.insensitive_key_child
+                                    hover_child _viewers.insensitive_key_hovere_child
+                                    xpos to_drag_pos(t)
+                                    droppable False
+                                    draggable False
+                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                for key, cs in all_keyframes[s].items():
+                                    if isinstance(key, tuple):
+                                        $p = key[2]
+                                    else:
+                                        $p = key
+                                    if (p not in props_groups["focusing"] or
+                                        (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                        for c in cs:
+                                            $(v, t, w) = c
+                                            drag:
+                                                child _viewers.insensitive_key_child
+                                                hover_child _viewers.insensitive_key_hovere_child
+                                                xpos to_drag_pos(t)
+                                                droppable False
+                                                draggable False
+                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
 
                         if "camera" not in opened[s]:
                             hbox:
@@ -200,27 +227,57 @@ screen _new_action_editor(opened=None, time=0):
                                                     clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                         else:
                             hbox:
-                                style_group "new_action_editor_c"
-                                $new_opened = opened.copy()
-                                $new_opened[s] = opened[s].copy()
-                                $new_opened[s].remove("camera")
-                                textbutton _(indent+"- "+"camera"):
-                                    action Show("_new_action_editor", opened=new_opened)
-                                textbutton _("clipboard"):
-                                    action Function(_viewers.put_camera_clipboard)
-                                    size_group None
-                                    style_group "new_action_editor_b"
+                                hbox:
+                                    style_group "new_action_editor_c"
+                                    $new_opened = opened.copy()
+                                    $new_opened[s] = opened[s].copy()
+                                    $new_opened[s].remove("camera")
+                                    textbutton _(indent+"- "+"camera"):
+                                        action Show("_new_action_editor", opened=new_opened)
+                                    textbutton _("clipboard"):
+                                        action Function(_viewers.put_camera_clipboard)
+                                        size_group None
+                                        style_group "new_action_editor_b"
+                                fixed:
+                                    add _viewers.time_line_background
+                                    for p, d in _viewers.camera_props:
+                                        if (p not in props_groups["focusing"] or
+                                            (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                            for c in all_keyframes[s].get(p, []):
+                                                $(v, t, w) = c
+                                                drag:
+                                                    child _viewers.insensitive_key_child
+                                                    hover_child _viewers.insensitive_key_hovere_child
+                                                    xpos to_drag_pos(t)
+                                                    droppable False
+                                                    draggable False
+                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                             textbutton _(indent*2+"  perspective"):
                                 action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
                                 Function(_viewers.toggle_perspective)]
                             for i, props_set_name in enumerate(props_set_names):
                                 if props_set_name in opened[s]:
                                     hbox:
-                                        style_group "new_action_editor_c"
-                                        $new_opened = opened.copy()
-                                        $new_opened[s] = opened[s].copy()
-                                        $new_opened[s].remove(props_set_name)
-                                        textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
+                                        hbox:
+                                            style_group "new_action_editor_c"
+                                            $new_opened = opened.copy()
+                                            $new_opened[s] = opened[s].copy()
+                                            $new_opened[s].remove(props_set_name)
+                                            textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
+                                        fixed:
+                                            add _viewers.time_line_background
+                                            for p in props_set[i]:
+                                                if (p not in props_groups["focusing"] or \
+                                                    (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                                    for c in all_keyframes[s].get(p, []):
+                                                        $(v, t, w) = c
+                                                        drag:
+                                                            child _viewers.insensitive_key_child
+                                                            hover_child _viewers.insensitive_key_hovere_child
+                                                            xpos to_drag_pos(t)
+                                                            droppable False
+                                                            draggable False
+                                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                     for p in props_set[i]:
                                         if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
@@ -302,16 +359,29 @@ screen _new_action_editor(opened=None, time=0):
                                                     clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                             else:
                                 hbox:
-                                    style_group "new_action_editor_c"
-                                    $new_opened = opened.copy()
-                                    $new_opened[s] = opened[s].copy()
-                                    $new_opened[s].remove(tag)
-                                    textbutton indent+"- "+"{}".format(tag):
-                                        action Show("_new_action_editor", opened=new_opened)
-                                    textbutton _("clipboard"):
-                                        action Function(_viewers.put_image_clipboard, tag, layer)
-                                        style_group "new_action_editor_b"
-                                        size_group None
+                                    hbox:
+                                        style_group "new_action_editor_c"
+                                        $new_opened = opened.copy()
+                                        $new_opened[s] = opened[s].copy()
+                                        $new_opened[s].remove(tag)
+                                        textbutton indent+"- "+"{}".format(tag):
+                                            action Show("_new_action_editor", opened=new_opened)
+                                        textbutton _("clipboard"):
+                                            action Function(_viewers.put_image_clipboard, tag, layer)
+                                            style_group "new_action_editor_b"
+                                            size_group None
+                                    fixed:
+                                        add _viewers.time_line_background
+                                        for p, d in _viewers.transform_props:
+                                            for c in all_keyframes[s].get((tag, layer, p), []):
+                                                $(v, t, w) = c
+                                                drag:
+                                                    child _viewers.insensitive_key_child
+                                                    hover_child _viewers.insensitive_key_hovere_child
+                                                    xpos to_drag_pos(t)
+                                                    droppable False
+                                                    draggable False
+                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                 textbutton _(indent*2+"  zzoom"):
                                     action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
                                     Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
@@ -341,12 +411,25 @@ screen _new_action_editor(opened=None, time=0):
                                                             clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                     else:
                                         hbox:
-                                            style_group "new_action_editor_c"
-                                            $new_opened = opened.copy()
-                                            $new_opened[s] = opened[s].copy()
-                                            $new_opened[s].remove((tag, layer, props_set_name))
-                                            textbutton indent*2+"- " + props_set_names[i]:
-                                                action Show("_new_action_editor", opened=new_opened)
+                                            hbox:
+                                                style_group "new_action_editor_c"
+                                                $new_opened = opened.copy()
+                                                $new_opened[s] = opened[s].copy()
+                                                $new_opened[s].remove((tag, layer, props_set_name))
+                                                textbutton indent*2+"- " + props_set_names[i]:
+                                                    action Show("_new_action_editor", opened=new_opened)
+                                            fixed:
+                                                add _viewers.time_line_background
+                                                for p in props_set[i]:
+                                                    for c in all_keyframes[s].get((tag, layer, p), []):
+                                                        $(v, t, w) = c
+                                                        drag:
+                                                            child _viewers.insensitive_key_child
+                                                            hover_child _viewers.insensitive_key_hovere_child
+                                                            xpos to_drag_pos(t)
+                                                            droppable False
+                                                            draggable False
+                                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
                                         for p in props_set[i]:
                                             if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                 and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
@@ -790,7 +873,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             style_group "action_editor_a"
             textbutton _("scene") action [SensitiveIf(len(scene_keyframes) > 1), Show("_scene_editor")]
             for i, ks in enumerate(all_keyframes):
-                textbutton "[i]" action [SelectedIf(current_scene == i), Function(_viewers.change_scene, i)]
+                textbutton "[i]" action [SelectedIf(current_scene == i), Function(_viewers.change_scene, i), Show("_action_editor")]
             textbutton _("+") action _viewers.add_scene
         hbox:
             style_group "action_editor_a"
