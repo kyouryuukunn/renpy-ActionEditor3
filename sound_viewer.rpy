@@ -18,8 +18,11 @@ screen _sound_selector(default=""):
                 scrollbars "vertical"
                 vbox:
                     for sound_name in filtered_list:
-                        $file = renpy.python.py_eval("renpy.store.audio." + sound_name)
-                        textbutton sound_name action Return(tuple(sound_name.split())) hovered Play("music", file) unhovered Stop("music")
+                        if "<" not in sound_name:
+                            $file = renpy.python.py_eval(sound_name, locals=renpy.python.store_dicts["store.audio"])
+                        else:
+                            $file = "<silence 0.>"
+                        textbutton sound_name action Function(_viewers.return_sound, filter_string, sound_name) hovered Play("music", file) unhovered Stop("music")
             textbutton _("clipboard") action [SensitiveIf(filter_string), Function(_viewers.put_clipboard_text, filter_string)] xalign 1.0 idle_background None insensitive_background None
     key "K_TAB" action Function(_viewers.completion, filter_string, filtered_list)
 
@@ -59,9 +62,12 @@ init -2000 python in _viewers:
             last_element = filter_string[1:]
         else:
             last_element = filter_string
-        for name in dir(renpy.store.audio):
+        if "<" in last_element:
+            filtered_list.append("<silence ")
+            return filtered_list
+        for name in renpy.python.store_dicts["store.audio"].keys():
             if name.startswith(last_element):
-                file = renpy.python.py_eval("renpy.store.audio." + name)
+                file = renpy.python.py_eval(name, locals=renpy.python.store_dicts["store.audio"])
                 if isinstance(file, str) and renpy.loadable(file):
                     filtered_list.append(name)
         return filtered_list
@@ -80,11 +86,35 @@ init -2000 python in _viewers:
             last_element = filter_string
         if last_element:
             candidate = []
-            for name in dir(renpy.store.audio):
-                if name.startswith(last_element):
-                    file = renpy.python.py_eval("renpy.store.audio." + name)
-                    if isinstance(file, str) and renpy.loadable(file):
-                        candidate.append(name)
+            if "<" in last_element:
+                candidate.append("'<silence ")
+            else:
+                for name in renpy.python.store_dicts["store.audio"].keys():
+                    if name.startswith(last_element):
+                        file = renpy.python.py_eval(name, locals=renpy.python.store_dicts["store.audio"])
+                        if isinstance(file, str) and renpy.loadable(file):
+                            candidate.append(name)
             if candidate:
                 cs = renpy.current_screen()
                 cs.scope["filter_string"] += candidate[0][len(last_element):]
+
+
+    def return_sound(filter_string, sound_name):
+        if "," in filter_string:
+            prefix = "["
+            other_element = filter_string[:filter_string.rfind(",")+1]
+            if "[" in other_element:
+                other_element = other_element[1:]
+            last_element = filter_string[filter_string.rfind(",")+1:]
+            suffix = "]"
+        elif "[" in filter_string:  #]"
+            prefix = "["
+            other_element = ""
+            last_element = filter_string[1:]
+            suffix = "]"
+        else:
+            prefix = "["
+            last_element = filter_string
+            other_element = ""
+            suffix = "]"
+        return prefix + other_element + sound_name + suffix

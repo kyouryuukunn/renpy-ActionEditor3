@@ -408,7 +408,7 @@ init -1598 python in _viewers:
                         duration = t - time
                         if duration > 0:
                             files.append("<silence {}>".format(duration))
-                        file = renpy.python.py_eval(fs)
+                        file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
                         files += file
                         time = t
                         for f in file:
@@ -417,7 +417,7 @@ init -1598 python in _viewers:
         else:
             for channel, times in sound_keyframes.items():
                 if current_time in times:
-                    files = renpy.python.py_eval(times[current_time])
+                    files = renpy.python.py_eval(times[current_time], locals=renpy.python.store_dicts["store.audio"])
                     renpy.music.play(files, channel, loop=False)
         camera_check_points = []
         loop = []
@@ -1373,17 +1373,19 @@ show %s""" % child
         string = ""
         for channel, times in sound_keyframes.items():
             time = 0
-            files = []
+            files = "[\n        " #]"
             if times:
                 for t, fs in times.items():
                     duration = t - time
                     if duration > 0:
-                        files.append("<silence {}>".format(duration))
-                    file = renpy.python.py_eval(fs)
-                    files += file
+                        files += "'<silence {}>',\n        ".format(round(duration, 3))
+                    files += fs[1:-1] + ",\n        "
+
+                    file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
                     time = t
                     for f in file:
                         time += get_file_duration(f)
+                files = files[:-4] + "]\n"
                 string += "\n    play {} {}".format(channel, files)
 
         string = string.replace("u'", "'", 999)
@@ -1682,25 +1684,26 @@ show %s""" % child
         if time in sound_keyframes[channel]:
             default = sound_keyframes[channel][time]
         v = renpy.invoke_in_new_context(renpy.call_screen, "_sound_selector", default=default)
-        if v:
-            try:
-                evaled = renpy.python.py_eval(v)
-                if not evaled:
-                    renpy.notify(_("Please Input filenames"))
-                    return
-            except:
-                renpy.notify(_("Please Input filenames"))
-                return
-            if not isinstance(evaled, list):
-                evaled = [evaled]
-                v = "[" + v + "]"
-            for f in evaled:
-                if not renpy.loadable(f) and not "<silence" in f:
-                    break
-            else:
-                sound_keyframes[channel][time] = v
-                return
-        renpy.notify(_("Please Input filenames"))
+        if v == "None":
+            sound_keyframes[channel][time] = v
+            return
+        if "[" not in v:  #]"
+            v = "[" + v   #]"
+        if "]" not in v:
+            v += "]"
+        try:
+            for f in v[1:-1].split(","):
+                f = f.strip()
+                if "<silence" not in f:
+                    evaled = renpy.python.py_eval(f, locals=renpy.python.store_dicts["store.audio"])
+                    if not renpy.loadable(evaled):
+                        raise
+        except:
+            # raise Exception(f)
+            renpy.notify(_("Please Input filenames"))
+            return
+        sound_keyframes[channel][time] = v
+        return
 
 
     def change_scene(scene_num):
@@ -1883,7 +1886,7 @@ show %s""" % child
         for t in times:
             if t <= time and self_time != t:
                 duration = 0
-                files = renpy.python.py_eval(sound_keyframes[channel][t])
+                files = renpy.python.py_eval(sound_keyframes[channel][t], locals=renpy.python.store_dicts["store.audio"])
                 for f in files:
                     duration += get_file_duration(f)
                 if t+duration >= time:
@@ -1990,8 +1993,11 @@ show %s""" % child
                 time_list.sort()
                 start_time = time_list[-1]
                 files = times[start_time]
-                for f in renpy.python.py_eval(files):
-                    start_time += get_file_duration(f)
+                try:
+                    for f in renpy.python.py_eval(files, locals=renpy.python.store_dicts["store.audio"]):
+                        start_time += get_file_duration(f)
+                except:
+                    raise Exception(files)
                 if start_time > animation_time:
                     animation_time = start_time
 
@@ -2171,17 +2177,19 @@ show %s""" % child
     {} hide""".format(window_mode)
         for channel, times in sound_keyframes.items():
             time = 0
-            files = []
+            files = "[\n        " #]"
             if times:
                 for t, fs in times.items():
                     duration = t - time
                     if duration > 0:
-                        files.append("<silence {}>".format(duration))
-                    file = renpy.python.py_eval(fs)
-                    files += file
+                        files += "'<silence {}>',\n        ".format(round(duration, 3))
+                    files += fs[1:-1] + ",\n        "
+
+                    file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
                     time = t
                     for f in file:
                         time += get_file_duration(f)
+                files = files[:-4] + "]\n"
                 string += "\n    play {} {}".format(channel, files)
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
             camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
