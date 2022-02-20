@@ -516,16 +516,19 @@ init -1598 python in _viewers:
         if play:
             renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
              camera_check_points=camera_check_points, image_check_points=image_check_points,
-             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline)))
+             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, start_time=0, end_time=get_animation_delay())))
         else:
             renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
              camera_check_points=camera_check_points, image_check_points=image_check_points,
              scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
 
 
-    def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None):
+    def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None, start_time=None, end_time=None):
+        global current_time
         if time is None:
             time = st
+            if st <= end_time:
+                current_time = st + start_time
         box = renpy.display.layout.MultiBox(layout='fixed')
         for i in range(-1, -len(scene_checkpoints), -1):
             checkpoint = scene_checkpoints[i][1]

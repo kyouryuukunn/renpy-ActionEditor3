@@ -69,6 +69,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                             Function(change_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened), \
                             Function(change_time, previous_time)]
+        timer 0.01 action  renpy.restart_interaction repeat True
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
 
