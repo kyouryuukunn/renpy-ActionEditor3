@@ -1,5 +1,5 @@
 
-screen _new_action_editor(opened=None, time=0):
+screen _new_action_editor(opened=None, time=0, previous_time=None):
     default layer = "master"
     $int_format = "{:> }" 
     $float_format = "{:> .2f}"
@@ -35,7 +35,7 @@ screen _new_action_editor(opened=None, time=0):
     $indent = "  "
     $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
         [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
-        Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay())]
+        Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time)]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
     key "hide_windows" action NullAction()
@@ -66,9 +66,9 @@ screen _new_action_editor(opened=None, time=0):
 
     if time:
         timer time+1 action [Show("_new_action_editor", opened=opened), \
-                            Function(change_time, current_time)]
+                            Function(change_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened), \
-                            Function(change_time, current_time)]
+                            Function(change_time, previous_time)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
 
@@ -128,7 +128,7 @@ screen _new_action_editor(opened=None, time=0):
                 #         child _viewers.key_child
                 #         xpos to_drag_pos(current_time)
                 #         dragged _viewers.drag_change_time
-                bar adjustment ui.adjustment(range=persistent._time_range, value=current_time, changed=change_time):
+                bar value FieldValue(_viewers, "current_time", range=persistent._time_range, action=_viewers.change_to_current_time, step=0.01):
                     xalign 1. yalign .5 style "new_action_editor_bar"
             viewport:
                 mousewheel True

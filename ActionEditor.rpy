@@ -16,7 +16,7 @@
 #childのみならばparallelなくてよい
 #perspectiveで数値を指定されていたらどうする?
 #colormatrix, transformmatrixは十分再現できない
-#get_file_durationは本体にpull requestする
+#get_file_durationは本体にpull requestする, AudioPositionValueも
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -1862,6 +1862,10 @@ show %s""" % child
             renpy.music.stop(c, False)
         play(False)
         renpy.restart_interaction()
+
+
+    def change_to_current_time():
+        change_time(current_time)
 
 
     def get_file_duration(filename):
