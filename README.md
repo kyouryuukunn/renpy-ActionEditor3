@@ -1,4 +1,5 @@
  youtube sample
+<https://www.youtube.com/watch?v=h2Zdhugiho>
 <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
 <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
 
@@ -7,10 +8,12 @@ lemma forum
 
  日本語マニュアルはドキュメント後半にあります。
 
- This script adds the ability to adjust and view transform properties of images
- and camera by in-game Action Editor and Image Viewer GUI.
+ This script adds Ren'py the ability to adjust and view transform properties of images
+ and camera by in-game Action Editor and Image Viewer and Sound Viewer.
 
  Ren'Py <http://www.renpy.org/>
+
+https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png
 
  This is available in v7.4.5 later.
  To use in older version, use old version ActionEditor.
@@ -69,6 +72,12 @@ lemma forum
  
  Press Shift+U to open Image Viewer and view all currently generated displayables.
 
+ Sound Viewer
+================
+ Showing auto defined sounds in game/audio and filtering.
+ The completion feature is availabe by tab
+ 
+ Press Shift+S to open Sound Viewer and view all currently generated displayables.
 
 
 
@@ -76,7 +85,8 @@ lemma forum
 
 
 
- 本ライブラリでは3Dステージ対応のGUI上で設定できる演出エディター、画像ビューワー、さらに便利なワーパー関数を追加します。
+
+ 本ライブラリでは3Dステージ対応のGUI上で設定できる演出エディター、画像ビューワー、サウンドビューワーさらに便利なワーパー関数を追加します。
  Ren'Py v7.4.5から追加された3Dステージ機能により、旧版にあった自作の3Dカメラ再現関数は不要になりました。
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
@@ -140,4 +150,12 @@ lemma forum
  タブでの補間も可能です。
 
  config.developer が True なら、Shift+Uで起動します。
+
+
+ サウンドビューワー
+================
+ game/audioディレクトリーで自動定義された変数一覧を縛り込んで表示します。
+ タブでの補間も可能です。
+
+ config.developer が True なら、Shift+Sで起動します。
 

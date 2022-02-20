@@ -1,4 +1,4 @@
-#画像ビューワー
+#Image Viewer
 #Shift+U: Open Image Viewer
 #2016 1/22 v6.99
 

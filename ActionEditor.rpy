@@ -5,7 +5,8 @@
 #ホイールが片側動作しない, warper選択画面でのスクロールもできなかった
 
 #新機能
-
+#サウンド再生に対応
+#pan, tile追加
 #変更
 
 #修正
@@ -20,6 +21,7 @@
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
+
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
 #posも同時に動かせるが基準が不明(未定義?) Editorではalignaroundを動かしている間radiusかangleを動かし続けるか
@@ -31,6 +33,7 @@ init -1098 python:
     config.underlay.append(renpy.Keymap(
         action_editor = renpy.curry(renpy.invoke_in_new_context)(_viewers.open_action_editor),
         image_viewer = _viewers.open_image_viewer,
+        sound_viewer = _viewers.open_sound_viewer,
         ))
 
 
@@ -1678,7 +1681,7 @@ show %s""" % child
         default = ""
         if time in sound_keyframes[channel]:
             default = sound_keyframes[channel][time]
-        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default , message="type filenames(ex: 'hoge.ogg' or [['hoge.ogg', variable])")
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_sound_selector", default=default)
         if v:
             try:
                 evaled = renpy.python.py_eval(v)
@@ -1938,6 +1941,8 @@ show %s""" % child
             persistent._viewer_channel_list = default_channel_list
         for c in persistent._viewer_channel_list:
             sound_keyframes[c] = {}
+        for c in renpy.audio.audio.channels:
+            renpy.music.stop(c)
         action_editor_init()
         camera_icon.init(True, True)
         _window = renpy.store._window
@@ -2394,10 +2399,8 @@ show %s""" % child
                 if s < len(scene_keyframes)-1:
                     pause_time = scene_keyframes[s+1][1] - scene_start
                 elif (get_scene_delay(s) + scene_start) >= get_animation_delay():
-                    renpy.store.test=(get_scene_delay(s), scene_start, get_animation_delay())
                     pause_time = get_scene_delay(s)
                 else:
-                    renpy.store.test=True
                     pause_time = get_animation_delay() - scene_start
                 pause_time -= get_transition_delay(scene_tran)
                 pause_time = round(pause_time + 0.1, 2)
