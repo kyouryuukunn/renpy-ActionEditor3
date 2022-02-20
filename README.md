@@ -4,7 +4,7 @@
 <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
 
 lemma forum
-![Demo]<https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
+![Demo](https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778)
 
  日本語マニュアルはドキュメント後半にあります。
 
