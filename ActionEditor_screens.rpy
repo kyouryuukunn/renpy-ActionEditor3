@@ -69,7 +69,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                             Function(change_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened), \
                             Function(change_time, previous_time)]
-        timer 0.01 action  renpy.restart_interaction repeat True
+        $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+            [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
+            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=previous_time)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
 
@@ -119,7 +121,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
             hbox:
                 hbox:
                     style_group "new_action_editor_c"
-                    textbutton _("time: [current_time:>05.2f] s"):
+                    imagebutton:
+                        idle DynamicDisplayable(_viewers.show_current_time)
+                        hover DynamicDisplayable(_viewers.show_current_time)
                         action Function(_viewers.edit_time)
                         xalign 1.
                         size_group None
@@ -129,7 +133,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                 #         child _viewers.key_child
                 #         xpos to_drag_pos(current_time)
                 #         dragged _viewers.drag_change_time
-                bar value FieldValue(_viewers, "current_time", range=persistent._time_range, action=_viewers.change_to_current_time, step=0.01):
+                bar value _viewers.CurrentTime(persistent._time_range):
                     xalign 1. yalign .5 style "new_action_editor_bar"
             viewport:
                 mousewheel True
@@ -1412,6 +1416,10 @@ init -1598 python in _viewers:
         return Text("({:>.3}, {:>.3})".format(rx, ry), size=16), 0.1
 
 
+    def show_current_time(st, at):
+        return Text(_("time: {:>05.2f} s").format(current_time), style="new_action_editor_text"), 0.01
+
+
     def to_drag_pos(time):
         pos = time/renpy.store.persistent._time_range
         barsize = config.screen_width-c_box_size-50+key_half_xsize
@@ -1522,11 +1530,13 @@ init -1598 python in _viewers:
                 self.last_x = None
                 self.last_y = None
                 raise renpy.display.core.IgnoreEvent()
-            renpy.redraw(self, 0)
+            if not playing:
+                renpy.redraw(self, 0)
 
 
         def per_interact(self):
-            renpy.redraw(self, 0)
+            if not playing:
+                renpy.redraw(self, 0)
 
 
     class CameraIcon(renpy.Displayable):
@@ -1603,3 +1613,32 @@ init -1598 python in _viewers:
         def visit(self):
             return [ self.child ]
     camera_icon = CameraIcon("camera.png")
+
+
+init 0 python in _viewers:
+    @renpy.pure
+    class CurrentTime(renpy.store.BarValue, renpy.store.DictEquality):
+
+        def __init__(self, range):
+            self.range = range
+            self.adjustment = None
+            self.lock = False
+
+
+        def get_adjustment(self):
+            self.adjustment = ui.adjustment(value=current_time, range=self.range, adjustable=True, changed=self.changed)
+            return self.adjustment
+
+
+        def changed(self, v):
+            if not self.lock:
+                change_time(v)
+
+
+        def periodic(self, st):
+
+            self.lock = True
+            self.adjustment.change(current_time)
+            self.lock = False
+
+            return 0.01

@@ -524,11 +524,16 @@ init -1598 python in _viewers:
 
 
     def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None, start_time=None, end_time=None):
-        global current_time
+        global current_time, playing
         if time is None:
             time = st
             if st <= end_time:
+                playing = True
                 current_time = st + start_time
+            else:
+                playing = False
+        else:
+            playing = False
         box = renpy.display.layout.MultiBox(layout='fixed')
         for i in range(-1, -len(scene_checkpoints), -1):
             checkpoint = scene_checkpoints[i][1]
@@ -1696,7 +1701,6 @@ show %s""" % child
             v += "]"
         try:
             for f in v[1:-1].split(","):
-                f = f.strip()
                 if "<silence" not in f:
                     evaled = renpy.python.py_eval(f, locals=renpy.python.store_dicts["store.audio"])
                     if not renpy.loadable(evaled):
@@ -1705,6 +1709,13 @@ show %s""" % child
             # raise Exception(f)
             renpy.notify(_("Please Input filenames"))
             return
+        duration = 0
+        for f in renpy.python.py_eval(v, locals=renpy.python.store_dicts["store.audio"]):
+            duration += get_file_duration(f)
+        for t in sound_keyframes[channel].keys():
+            if t <= time + duration and t >= time:
+                renpy.notify(_("This channel is already used in this time"))
+                return
         sound_keyframes[channel][time] = v
         return
 
@@ -1903,9 +1914,10 @@ show %s""" % child
 
 
     def open_action_editor():
-        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes
+        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing
         if not config.developer:
             return
+        playing = False
         current_time = 0
         current_scene = 0
         moved_time = 0
