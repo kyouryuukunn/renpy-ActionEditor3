@@ -4,7 +4,7 @@
 <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
 
 lemma forum
-![Demo](https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778)
+<https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
 
  日本語マニュアルはドキュメント後半にあります。
 
@@ -13,7 +13,7 @@ lemma forum
 
  Ren'Py <http://www.renpy.org/>
 
-https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png
+![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
 
  This is available in v7.4.5 later.
  To use in older version, use old version ActionEditor.
