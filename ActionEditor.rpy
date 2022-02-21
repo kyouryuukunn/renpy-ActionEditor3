@@ -16,11 +16,11 @@
 #childのみならばparallelなくてよい
 #perspectiveで数値を指定されていたらどうする?
 #colormatrix, transformmatrixは十分再現できない
-#get_file_durationは本体にpull requestする, AudioPositionValueも
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
+#画像のドラグ対応
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -2430,14 +2430,14 @@ show %s""" % child
                 else:
                     pause_time = get_animation_delay() - scene_start
                 pause_time -= get_transition_delay(scene_tran)
-                pause_time = round(pause_time + 0.1, 2)
+                pause_time = round(pause_time + 0.1, 3)
                 if pause_time > 0 or s != len(scene_keyframes)-1:
                     string += """
     with Pause({})""".format(pause_time)
 
         if (persistent._viewer_hide_window and get_animation_delay() > 0) and len(scene_keyframes) == 1:
             string += """
-    with Pause({})""".format(round(get_animation_delay()+0.1), 2)
+    with Pause({})""".format(round(get_animation_delay()+0.1, 3))
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and persistent._viewer_allow_skip) \
             or len(scene_keyframes) > 1:
             for channel, times in sound_keyframes.items():

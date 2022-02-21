@@ -25,6 +25,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
     $keyframes_exist = _viewers.keyframes_exist
     $to_drag_pos = _viewers.to_drag_pos
     $generate_key_drag = _viewers.generate_key_drag
+    $generate_sound_menu = _viewers.generate_sound_menu
+    $generate_menu = _viewers.generate_menu
 
     if opened is None:
         $opened = {}
@@ -65,7 +67,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
 
     if time:
-        timer time+1 action [Show("_new_action_editor", opened=opened), \
+        timer time+.5 action [Show("_new_action_editor", opened=opened), \
                             Function(change_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened), \
                             Function(change_time, previous_time)]
@@ -313,7 +315,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                                                             droppable False
                                                             dragged generate_key_drag(key, t)
                                                             clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                                            alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
+                                                            alternate ShowAlternateMenu(generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f), style_prefix="_viewers_alternate_menu")
                                 else:
                                     hbox:
                                         hbox:
@@ -484,7 +486,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                                                                 droppable False
                                                                 dragged generate_key_drag(key, t)
                                                                 clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                                                alternate Show("_keyframe_altername_menu", key=key, check_point=c, use_wide_range=use_wide_range, change_func=f)
+                                                                alternate ShowAlternateMenu(generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f), style_prefix="_viewers_alternate_menu")
                                 $new_opened = opened.copy()
                                 $new_opened[s] = opened[s].copy()
                                 $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
@@ -550,7 +552,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                                         droppable False
                                         dragged generate_key_drag(channel, t, True)
                                         clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                        alternate Show("_sound_keyframe_altername_menu", channel=channel, time=t)
+                                        alternate ShowAlternateMenu(generate_sound_menu(channel=channel, time=t), style_prefix="_viewers_alternate_menu")
                         hbox:
                             $value = "None"
                             $sorted_play_times = sound_keyframes[channel].keys()
@@ -562,124 +564,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None):
                                 action [SelectedIf(keyframes_exist(channel, is_sound=True)),
                                     Function(_viewers.edit_playing_file, channel, current_time)]
                                 size_group None
-
-
-screen _keyframe_altername_menu(key, check_point, use_wide_range=False, change_func=None):
-    key ["game_menu", "dismiss"] action Hide("_keyframe_altername_menu")
-    modal True
-
-    $current_scene = _viewers.current_scene
-    $all_keyframes = _viewers.all_keyframes
-    $change_time = _viewers.change_time
-    $edit_value = _viewers.edit_value
-    $reset = _viewers.reset
-    $force_plus = _viewers.force_plus
-    $props_set = _viewers.props_set
-    $props_groups = _viewers.props_groups
-
-    $(x, y) = renpy.get_mouse_pos()
-    $(width, height) = (config.screen_width, config.screen_height)
-
-    style_group "new_action_editor"
-    $check_points = all_keyframes[current_scene][key]
-    $i = check_points.index(check_point)
-    $(v, t, w) = check_point
-    if isinstance(key, tuple):
-        $n, l, p = key
-        $k_list = [key]
-        $check_points_list = [check_points]
-        $loop_button_action = [ToggleDict(_viewers.loops[current_scene], key)]
-        for gn, ps in props_groups.items():
-            if p in ps:
-                $k_list = [(n, l, p) for p in props_groups[gn]]
-                $check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                $loop_button_action = [ToggleDict(_viewers.loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
-    else:
-        $k_list = [key]
-        $p = key
-        $check_points_list = [check_points]
-        $loop_button_action = [ToggleDict(_viewers.loops[current_scene], key)]
-        for gn, ps in props_groups.items():
-            if p in ps:
-                if gn != "focusing":
-                    $k_list = props_groups[gn]
-                    $check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                    $loop_button_action = [ToggleDict(_viewers.loops[current_scene], k2) for k2 in k_list+[gn]]
-
-    frame:
-        background "#222"
-        pos (x, y)
-        if x + 300 > width:
-            xanchor 1.0
-        else:
-            xanchor 0.0
-        if y + 200 > height:
-            yanchor 1.0
-        else:
-            yanchor 0.0
-        vbox:
-            xfill False
-            on "unhovered" action Hide("_keyframe_altername_menu")
-            if p == "child":
-                textbutton "edit child: [v[0]]":
-                    action [Function(_viewers.change_child, n, l, time=t, default=v[0]), Hide("_keyframe_altername_menu")]
-                    size_group None
-                textbutton "edit transform: [v[1]]":
-                    action Function(_viewers.edit_transition, n, l, time=t)
-                    size_group None
-            else:
-                textbutton _("edit value: [v]"):
-                    action [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
-                    Function(change_time, t), Hide("_keyframe_altername_menu")]
-                textbutton _("open warper selecter: [w]"):
-                    action [Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w), Hide("_keyframe_altername_menu")]
-                if p not in [prop for ps in props_groups.values() for prop in ps] and i > 0:
-                    textbutton _("spline editor"):
-                        action [SelectedIf(t in _viewers.splines[current_scene][key]), 
-                        Show("_spline_editor", change_func=change_func, 
-                            key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
-                            use_wide_range=use_wide_range, force_plus=p in force_plus, time=t), Hide("_keyframe_altername_menu")]
-                textbutton _("reset") action [Function(reset, key), Hide("_keyframe_altername_menu")]
-            textbutton _("edit time: [t]") action [Function(_viewers.edit_move_keyframe, keys=k_list, old=t), Hide("_keyframe_altername_menu")]
-            textbutton _("remove"):
-                action [SensitiveIf(t > 0 or len(check_points) == 1), Function(_viewers.remove_keyframe, remove_time=t, key=k_list), Hide("_keyframe_altername_menu")]
-                size_group None
-            textbutton _("toggle loop"):
-                action [loop_button_action, Hide("_keyframe_altername_menu")]
-                size_group None
-
-
-screen _sound_keyframe_altername_menu(channel, time):
-    key ["game_menu", "dismiss"] action Hide("_sound_keyframe_altername_menu")
-    modal True
-
-    $(x, y) = renpy.get_mouse_pos()
-    $(width, height) = (config.screen_width, config.screen_height)
-    $v = _viewers.sound_keyframes[channel][time]
-
-    style_group "new_action_editor"
-
-    frame:
-        background "#222"
-        pos (x, y)
-        if x + 300 > width:
-            xanchor 1.0
-        else:
-            xanchor 0.0
-        if y + 200 > height:
-            yanchor 1.0
-        else:
-            yanchor 0.0
-        vbox:
-            xfill False
-            on "unhovered" action Hide("_sound_keyframe_altername_menu")
-            textbutton _("edit value: [v]"):
-                action [Function(_viewers.edit_playing_file, channel, time=time),
-                Function(_viewers.change_time, time), Hide("_sound_keyframe_altername_menu")]
-            textbutton _("edit time: [time]") action [Function(_viewers.edit_move_keyframe, keys=channel, old=time, is_sound=True), Hide("_sound_keyframe_altername_menu")]
-            textbutton _("remove"):
-                action [Function(_viewers.remove_keyframe, remove_time=time, key=channel, is_sound=True), Hide("_sound_keyframe_altername_menu")]
-                size_group None
 
 
 init -1599 python in _viewers:
@@ -769,6 +653,12 @@ init -1597:
         size_group "new_action_editor_c"
         xsize _viewers.c_box_size
         ysize _viewers.key_ysize
+
+
+    style _viewers_alternate_menu_frame:
+        background "#222"
+    style _viewers_alternate_menu_button is new_action_editor_button
+    style _viewers_alternate_menu_button_text is new_action_editor_button_text
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -1613,6 +1503,75 @@ init -1598 python in _viewers:
         def visit(self):
             return [ self.child ]
     camera_icon = CameraIcon("camera.png")
+
+
+    def generate_sound_menu(channel, time):
+        from renpy.store import Function, _
+        v = sound_keyframes[channel][time]
+        button_list = [
+            (_("edit value: [{}".format(v)),  #]"
+             [Function(edit_playing_file, channel, time=time), Function(change_time, time)]),
+            (_("edit time: {}".format(time)),
+             Function(edit_move_keyframe, keys=channel, old=time, is_sound=True)),
+            (_("remove"),
+             Function(remove_keyframe, remove_time=time, key=channel, is_sound=True)),
+            ]
+        return button_list
+
+
+    def generate_menu(key, check_point, use_wide_range=False, change_func=None):
+        from renpy.store import ToggleDict, Function, SelectedIf, SensitiveIf, Show
+        check_points = all_keyframes[current_scene][key]
+        i = check_points.index(check_point)
+        (v, t, w) = check_point
+        if isinstance(key, tuple):
+            n, l, p = key
+            k_list = [key]
+            check_points_list = [check_points]
+            loop_button_action = [ToggleDict(loops[current_scene], key)]
+            for gn, ps in props_groups.items():
+                if p in ps:
+                    k_list = [(n, l, p) for p in props_groups[gn]]
+                    check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
+                    loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+        else:
+            k_list = [key]
+            p = key
+            check_points_list = [check_points]
+            loop_button_action = [ToggleDict(loops[current_scene], key)]
+            for gn, ps in props_groups.items():
+                if p in ps:
+                    if gn != "focusing":
+                        k_list = props_groups[gn]
+                        check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
+                        loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
+
+        button_list = []
+
+        if p == "child":
+            button_list.append(("edit child: {}".format(v[0])), 
+                Function(change_child, n, l, time=t, default=v[0]))
+            button_list.append(("edit transform: {}".format(v[1])), 
+                Function(edit_transition, n, l, time=t))
+        else:
+            button_list.append(( _("edit value: {}".format(v)),
+                [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
+                Function(change_time, t)]))
+            button_list.append(( _("open warper selecter: {}".format(w)),
+                [Function(edit_warper, check_points=check_points_list, old=t, value_org=w)]))
+            if p not in [prop for ps in props_groups.values() for prop in ps] and i > 0:
+                button_list.append(( _("spline editor"),
+                    [SelectedIf(t in splines[current_scene][key]), 
+                    Show("_spline_editor", change_func=change_func, 
+                        key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
+                        use_wide_range=use_wide_range, force_plus=p in force_plus, time=t)]))
+            button_list.append(( _("reset"), Function(reset, key)))
+
+        button_list.append(( _("edit time: {}".format(t)), Function(edit_move_keyframe, keys=k_list, old=t)))
+        button_list.append(( _("remove"),
+            [SensitiveIf(t > 0 or len(check_points) == 1), Function(remove_keyframe, remove_time=t, key=k_list)]))
+        button_list.append(( _("toggle loop"), loop_button_action))
+        return button_list
 
 
 init 0 python in _viewers:
