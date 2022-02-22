@@ -1965,6 +1965,10 @@ show %s""" % child
             persistent._one_line_one_prop = default_one_line_one_prop
         if persistent._open_only_one_page is None:
             persistent._open_only_one_page = default_open_only_one_page
+        if persistent._graphic_editor_wide_range is None:
+            persistent._graphic_editor_wide_range = default_graphic_editor_wide_range
+        if persistent._graphic_editor_narrow_range is None:
+            persistent._graphic_editor_narrow_range = default_graphic_editor_narrow_range
         if persistent._viewer_channel_list is None:
             persistent._viewer_channel_list = default_channel_list
         for c in persistent._viewer_channel_list:

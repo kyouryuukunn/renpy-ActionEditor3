@@ -63,6 +63,9 @@ init -1600 python in _viewers:
     # ActionEditorで使用するチャンネルのリストです
     default_channel_list = ["sound"]
 
+    default_graphic_editor_narrow_range = 2.
+    default_graphic_editor_wide_range = 2000
+
     preview_size=0.6
     preview_background_color="#111"
 

@@ -1068,6 +1068,10 @@ screen _action_editor_option():
             textbutton "[persistent._viewers_narow_dragg_speed]" action Function(_viewers.edit_range_value, persistent, "_viewers_narow_dragg_speed", False)
             text _("Set the list of channels for playing in ActionEditor")
             textbutton "[persistent._viewer_channel_list]" action _viewers.edit_channel_list
+            text _("the wide range of property in Graphic Editor(type int)")
+            textbutton "[persistent._graphic_editor_wide_range]" action Function(_viewers.edit_range_value, persistent, "_graphic_editor_wide_range", True)
+            text _("the narrow range of property in Graphic Editor(type float)")
+            textbutton "[persistent._graphic_editor_narrow_range]" action Function(_viewers.edit_range_value, persistent, "_graphic_editor_narrow_range", False)
             text _("")
             text _("following options have effect for only Legacy GUI")
             text _("Show/Hide camera icon")
@@ -1339,9 +1343,9 @@ init -1598 python in _viewers:
             if in_graphic_mode:
                 use_wide_range = is_wide_range(key)
                 if use_wide_range:
-                    range = persistent._wide_range
+                    range = persistent._graphic_editor_wide_range
                 else:
-                    range = persistent._narrow_range
+                    range = persistent._graphic_editor_narrow_range
                 vchanged = generate_changed(key)
 
         def changed(drags, drops):
@@ -1407,9 +1411,9 @@ init -1598 python in _viewers:
             key = graphic_mode
             value = get_value(key, time)
             if is_wide_range(key):
-                range = persistent._wide_range
+                range = persistent._graphic_editor_wide_range
             else:
-                range = persistent._narrow_range
+                range = persistent._graphic_editor_narrow_range
             ypos = value/float(range)*0.5 + 0.5
             ypos = ypos*float(barheight-key_xsize)/barheight
             return (xpos, ypos)
