@@ -323,7 +323,13 @@ init -1598 python in _viewers:
                 else:
                     v = round(v -persistent._narrow_range, 2)
 
+            default_warper_org = persistent._viewer_warper
+            if key in all_keyframes[current_scene]:
+                for _, t, w in all_keyframes[current_scene][key]:
+                    if t == time:
+                        persistent._viewer_warper = w
             set_keyframe(key, v, time=time)
+            persistent._viewer_warper = default_warper_org
             if knot_number is not None:
                 splines[current_scene][key][time][knot_number] = v
             change_time(time)
