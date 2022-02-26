@@ -258,8 +258,10 @@ init -1598 python in _viewers:
             return None
 
 
-    def reset(key_list):
-        if current_time < scene_keyframes[current_scene][1]:
+    def reset(key_list, time=None):
+        if time is None:
+            time = current_time
+        if time < scene_keyframes[current_scene][1]:
             renpy.notify(_("can't change values before the start tiem of the current scene"))
             return
         if not isinstance(key_list, list):
@@ -280,8 +282,8 @@ init -1598 python in _viewers:
                     else:
                         v = d
             #もともとNoneでNoneとデフォルトで結果が違うPropertyはリセット時にずれるが、デフォルの値で入力すると考えてキーフレーム設定した方が自然
-            set_keyframe(key, v)
-        change_time(current_time)
+            set_keyframe(key, v, time=time)
+        change_time(time)
 
 
     def image_reset():
@@ -336,7 +338,7 @@ init -1598 python in _viewers:
         return changed
 
 
-    def convert_to_changed_value(value, force_plus, use_wide_range):
+    def to_changed_value(value, force_plus, use_wide_range):
         if use_wide_range:
             range = persistent._wide_range
         else:
@@ -1806,15 +1808,28 @@ show %s""" % child
         new = round(new, 2)
         if new == old:
             renpy.restart_interaction()
-            return
+            if persistent._viewer_legacy_gui:
+                return
+            else:
+                return False
         if not isinstance(keys, list):
             keys = [keys]
+        if is_sound:
+            for k in keys:
+                if is_playing(k, new, old):
+                    renpy.notify(_("This channel is already used in this time"))
+                    if persistent._viewer_legacy_gui:
+                        return
+                    else:
+                        return False
         for k in keys:
             if keyframes_exist(k, new, is_sound):
-                return False
+                if persistent._viewer_legacy_gui:
+                    return
+                else:
+                    return False
+        for k in keys:
             if is_sound:
-                if is_playing(k, new, old):
-                    continue
                 if old in sound_keyframes[k]:
                     files = sound_keyframes[k][old]
                     sound_keyframes[k][new] = files
@@ -1837,6 +1852,8 @@ show %s""" % child
                             splines[current_scene][k][new] = knots
                             del splines[current_scene][k][old]
         renpy.restart_interaction()
+        if not persistent._viewer_legacy_gui:
+            return True
 
 
     def keyframes_exist(k, time=None, is_sound=False):
@@ -1888,6 +1905,11 @@ show %s""" % child
         change_time(current_time)
 
 
+    def backto_start_time(start_time):
+        if playing:
+            change_time(start_time)
+
+
     def get_file_duration(filename):
         if filename.startswith("<silence "):
             return renpy.python.py_eval(filename.split()[1][:-1])
@@ -1903,17 +1925,30 @@ show %s""" % child
             return duration
 
 
-    def is_playing(channel, time, self_time):
+    def is_playing(channel, new_time, old_time):
         times = sound_keyframes[channel].keys()
         times.sort()
+        if new_time in times:
+            return True
+        if old_time in times:
+            times.remove(old_time)
+            for t in times:
+                if t > new_time:
+                    duration = 0
+                    files = renpy.python.py_eval(sound_keyframes[channel][old_time], locals=renpy.python.store_dicts["store.audio"])
+                    for f in files:
+                        duration += get_file_duration(f)
+                    if new_time+duration >= t:
+                        return True
+                    break
         times.reverse()
         for t in times:
-            if t <= time and self_time != t:
+            if t < new_time:
                 duration = 0
                 files = renpy.python.py_eval(sound_keyframes[channel][t], locals=renpy.python.store_dicts["store.audio"])
                 for f in files:
                     duration += get_file_duration(f)
-                if t+duration >= time:
+                if t+duration >= new_time:
                     return True
                 break
         return False

@@ -10,7 +10,7 @@ screen _sound_selector(default=""):
     frame:
         style_group "sound_selecter"
         vbox:
-            label _("type filenames(ex: variable or [[variable, variable])") style "sound_selecter_input"
+            label _("type filenames(ex: variable, '<silence 2.>' or [[variable, variable])") style "sound_selecter_input"
             input value ScreenVariableInputValue("filter_string", default=True, returnable=True) copypaste True style "sound_selecter_input" #changed _tag_input
             $filtered_list = _viewers.filter_sound_name(filter_string)
             viewport:

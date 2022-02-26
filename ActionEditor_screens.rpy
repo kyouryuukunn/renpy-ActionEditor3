@@ -24,11 +24,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
     $props_set_names = _viewers.props_set_names
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
-    $to_drag_pos = _viewers.to_drag_pos
-    $generate_key_drag = _viewers.generate_key_drag
+    $time_to_pos = _viewers.time_to_pos
+    $value_to_pos = _viewers.value_to_pos
     $generate_sound_menu = _viewers.generate_sound_menu
     $generate_menu = _viewers.generate_menu
     $is_wide_range = _viewers.is_wide_range
+    $KeyFrame = _viewers.KeyFrame
+    $TimeLineBackground = _viewers.TimeLineBackground
+    $backto_start_time = _viewers.backto_start_time
 
     if opened is None:
         $opened = {}
@@ -137,7 +140,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                 #     drag:
                 #         drag_name "time"
                 #         child _viewers.key_child
-                #         xpos to_drag_pos(current_time)
+                #         xpos time_to_pos(current_time)
                 #         dragged _viewers.drag_change_time
                 bar value _viewers.CurrentTime(persistent._time_range):
                     xalign 1. yalign .5 style "new_action_editor_bar"
@@ -168,7 +171,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                             text_size=16, text_color="#CCC", text_hover_underline=True)
                     fixed:
                         ysize None
-                        add _viewers.graphic_mode_time_line_background
+                        add TimeLineBackground(key, True)
                         $(v, t, w) = scene_keyframes[s]
                         $last_v, last_t = None, None
                         for c in cs:
@@ -180,21 +183,17 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                 for t2 in range(1, mark_num):
                                     drag:
                                         child _viewers.interpolate_key_child
-                                        pos to_drag_pos(last_t + t_diff*t2/mark_num, graphic_mode=key)
+                                        xpos time_to_pos(last_t + t_diff*t2/mark_num)
+                                        ypos value_to_pos(last_t + t_diff*t2/mark_num, key, in_graphic_mode=True)
                                         droppable False
                                         draggable False
                             $last_v, last_t = v, t
 
-                            drag:
-                                child _viewers.key_child
-                                hover_child _viewers.key_hovere_child
-                                pos to_drag_pos(t, graphic_mode=key)
-                                droppable False
-                                dragged generate_key_drag(key, t, in_graphic_mode=True)
-                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                alternate ShowAlternateMenu(
+                            add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
+                                clicked=Function(change_time, t),
+                                alternate=ShowAlternateMenu(
                                     generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=True),
-                                    style_prefix="_viewers_alternate_menu")
+                                    style_prefix="_viewers_alternate_menu"))
             else:
                 viewport:
                     mousewheel True
@@ -208,15 +207,10 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                     textbutton "+ "+"scene[s]":
                                         action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
                                 fixed:
-                                    add _viewers.time_line_background
+                                    add TimeLineBackground()
                                     $(v, t, w) = scene_keyframes[s]
-                                    drag:
-                                        child _viewers.insensitive_key_child
-                                        hover_child _viewers.insensitive_key_hovere_child
-                                        xpos to_drag_pos(t)
-                                        droppable False
-                                        draggable False
-                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                        clicked=Function(change_time, t))
                                     for key, cs in all_keyframes[s].items():
                                         if isinstance(key, tuple):
                                             $p = key[2]
@@ -226,28 +220,18 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                             for c in cs:
                                                 $(v, t, w) = c
-                                                drag:
-                                                    child _viewers.insensitive_key_child
-                                                    hover_child _viewers.insensitive_key_hovere_child
-                                                    xpos to_drag_pos(t)
-                                                    droppable False
-                                                    draggable False
-                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                    clicked=Function(change_time, t))
                         else:
                             hbox:
                                 hbox:
                                     style_group "new_action_editor_c"
                                     textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
                                 fixed:
-                                    add _viewers.time_line_background
+                                    add TimeLineBackground()
                                     $(v, t, w) = scene_keyframes[s]
-                                    drag:
-                                        child _viewers.insensitive_key_child
-                                        hover_child _viewers.insensitive_key_hovere_child
-                                        xpos to_drag_pos(t)
-                                        droppable False
-                                        draggable False
-                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                        clicked=Function(change_time, t))
                                     for key, cs in all_keyframes[s].items():
                                         if isinstance(key, tuple):
                                             $p = key[2]
@@ -257,13 +241,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                             for c in cs:
                                                 $(v, t, w) = c
-                                                drag:
-                                                    child _viewers.insensitive_key_child
-                                                    hover_child _viewers.insensitive_key_hovere_child
-                                                    xpos to_drag_pos(t)
-                                                    droppable False
-                                                    draggable False
-                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                    clicked=Function(change_time, t))
 
                             if "camera" not in opened[s]:
                                 hbox:
@@ -278,19 +257,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                             action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
                                             Show("_new_action_editor", opened=new_opened)]
                                     fixed:
-                                        add _viewers.time_line_background
+                                        add TimeLineBackground()
                                         for p, d in _viewers.camera_props:
                                             if (p not in props_groups["focusing"] or
                                                 (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                                 for c in all_keyframes[s].get(p, []):
                                                     $(v, t, w) = c
-                                                    drag:
-                                                        child _viewers.insensitive_key_child
-                                                        hover_child _viewers.insensitive_key_hovere_child
-                                                        xpos to_drag_pos(t)
-                                                        droppable False
-                                                        draggable False
-                                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                        clicked=Function(change_time, t))
                             else:
                                 hbox:
                                     hbox:
@@ -305,19 +279,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                             size_group None
                                             style_group "new_action_editor_b"
                                     fixed:
-                                        add _viewers.time_line_background
+                                        add TimeLineBackground()
                                         for p, d in _viewers.camera_props:
                                             if (p not in props_groups["focusing"] or
                                                 (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                                 for c in all_keyframes[s].get(p, []):
                                                     $(v, t, w) = c
-                                                    drag:
-                                                        child _viewers.insensitive_key_child
-                                                        hover_child _viewers.insensitive_key_hovere_child
-                                                        xpos to_drag_pos(t)
-                                                        droppable False
-                                                        draggable False
-                                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                        clicked=Function(change_time, t))
                                 textbutton _(indent*2+"  perspective"):
                                     action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
                                     Function(_viewers.toggle_perspective)]
@@ -331,19 +300,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                 $new_opened[s].remove(props_set_name)
                                                 textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
                                             fixed:
-                                                add _viewers.time_line_background
+                                                add TimeLineBackground()
                                                 for p in props_set[i]:
                                                     if (p not in props_groups["focusing"] or \
                                                         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                                         for c in all_keyframes[s].get(p, []):
                                                             $(v, t, w) = c
-                                                            drag:
-                                                                child _viewers.insensitive_key_child
-                                                                hover_child _viewers.insensitive_key_hovere_child
-                                                                xpos to_drag_pos(t)
-                                                                droppable False
-                                                                draggable False
-                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                                clicked=Function(change_time, t))
                                         for p in props_set[i]:
                                             if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                                 (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
@@ -364,17 +328,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                         add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                             text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     fixed:
-                                                        add _viewers.time_line_background
+                                                        add TimeLineBackground(key)
                                                         for c in cs:
                                                             $(v, t, w) = c
-                                                            drag:
-                                                                child _viewers.key_child
-                                                                hover_child _viewers.key_hovere_child
-                                                                xpos to_drag_pos(t)
-                                                                droppable False
-                                                                dragged generate_key_drag(key, t)
-                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                                                alternate ShowAlternateMenu(generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened), style_prefix="_viewers_alternate_menu")
+                                                            add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
+                                                                clicked=Function(change_time, t),
+                                                                alternate=ShowAlternateMenu(
+                                                                    generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened),
+                                                                    style_prefix="_viewers_alternate_menu"))
                                     else:
                                         hbox:
                                             hbox:
@@ -386,19 +347,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                     $new_opened[s] = new_opened[s] + [props_set_name]
                                                 textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened)
                                             fixed:
-                                                add _viewers.time_line_background
+                                                add TimeLineBackground()
                                                 for p in props_set[i]:
                                                     if (p not in props_groups["focusing"] or \
                                                         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                                         for c in all_keyframes[s].get(p, []):
                                                             $(v, t, w) = c
-                                                            drag:
-                                                                child _viewers.insensitive_key_child
-                                                                hover_child _viewers.insensitive_key_hovere_child
-                                                                xpos to_drag_pos(t)
-                                                                droppable False
-                                                                draggable False
-                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                                clicked=Function(change_time, t))
                             for tag in tag_list:
                                 if tag not in opened[s]:
                                     hbox:
@@ -412,17 +368,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                             textbutton indent+"+ "+"{}".format(tag):
                                                 action Show("_new_action_editor", opened=new_opened)
                                         fixed:
-                                            add _viewers.time_line_background
+                                            add TimeLineBackground()
                                             for p, d in _viewers.transform_props:
                                                 for c in all_keyframes[s].get((tag, layer, p), []):
                                                     $(v, t, w) = c
-                                                    drag:
-                                                        child _viewers.insensitive_key_child
-                                                        hover_child _viewers.insensitive_key_hovere_child
-                                                        xpos to_drag_pos(t)
-                                                        droppable False
-                                                        draggable False
-                                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                        clicked=Function(change_time, t))
                                 else:
                                     hbox:
                                         hbox:
@@ -437,17 +388,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                 style_group "new_action_editor_b"
                                                 size_group None
                                         fixed:
-                                            add _viewers.time_line_background
+                                            add TimeLineBackground()
                                             for p, d in _viewers.transform_props:
                                                 for c in all_keyframes[s].get((tag, layer, p), []):
                                                     $(v, t, w) = c
-                                                    drag:
-                                                        child _viewers.insensitive_key_child
-                                                        hover_child _viewers.insensitive_key_hovere_child
-                                                        xpos to_drag_pos(t)
-                                                        droppable False
-                                                        draggable False
-                                                        clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                        clicked=Function(change_time, t))
                                     textbutton _(indent*2+"  zzoom"):
                                         action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
                                         Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
@@ -464,17 +410,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                     textbutton indent*2+"+ "+props_set_name:
                                                         action Show("_new_action_editor", opened=new_opened)
                                                 fixed:
-                                                    add _viewers.time_line_background
+                                                    add TimeLineBackground()
                                                     for p in props_set[i]:
                                                         for c in all_keyframes[s].get((tag, layer, p), []):
                                                             $(v, t, w) = c
-                                                            drag:
-                                                                child _viewers.insensitive_key_child
-                                                                hover_child _viewers.insensitive_key_hovere_child
-                                                                xpos to_drag_pos(t)
-                                                                droppable False
-                                                                draggable False
-                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                                clicked=Function(change_time, t))
                                         else:
                                             hbox:
                                                 hbox:
@@ -485,17 +426,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                     textbutton indent*2+"- " + props_set_names[i]:
                                                         action Show("_new_action_editor", opened=new_opened)
                                                 fixed:
-                                                    add _viewers.time_line_background
+                                                    add TimeLineBackground()
                                                     for p in props_set[i]:
                                                         for c in all_keyframes[s].get((tag, layer, p), []):
                                                             $(v, t, w) = c
-                                                            drag:
-                                                                child _viewers.insensitive_key_child
-                                                                hover_child _viewers.insensitive_key_hovere_child
-                                                                xpos to_drag_pos(t)
-                                                                droppable False
-                                                                draggable False
-                                                                clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                                clicked=Function(change_time, t))
                                             for p in props_set[i]:
                                                 if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                     and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
@@ -535,17 +471,14 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                                                 add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
                                                         fixed:
-                                                            add _viewers.time_line_background
+                                                            add TimeLineBackground(key)
                                                             for c in cs:
                                                                 $(v, t, w) = c
-                                                                drag:
-                                                                    child _viewers.key_child
-                                                                    hover_child _viewers.key_hovere_child
-                                                                    xpos to_drag_pos(t)
-                                                                    droppable False
-                                                                    dragged generate_key_drag(key, t)
-                                                                    clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                                                    alternate ShowAlternateMenu(generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened), style_prefix="_viewers_alternate_menu")
+                                                                add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
+                                                                    clicked=Function(change_time, t),
+                                                                    alternate=ShowAlternateMenu(
+                                                                        generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened),
+                                                                        style_prefix="_viewers_alternate_menu"))
                                     $new_opened = opened.copy()
                                     $new_opened[s] = opened[s].copy()
                                     $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
@@ -573,16 +506,11 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                     action [SensitiveIf(persistent._viewer_channel_list),
                                     Show("_new_action_editor", opened=new_opened)]
                             fixed:
-                                add _viewers.time_line_background
+                                add TimeLineBackground()
                                 for channel, play_times in _viewers.sound_keyframes.items():
                                     for t in play_times:
-                                        drag:
-                                            child _viewers.insensitive_key_child
-                                            hover_child _viewers.insensitive_key_hovere_child
-                                            xpos to_drag_pos(t)
-                                            droppable False
-                                            draggable False
-                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
+                                        add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=channel,
+                                            clicked=Function(change_time, t))
                     else:
                         hbox:
                             style_group "new_action_editor_c"
@@ -602,16 +530,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                                         action None text_color "#CCC"
                                         size_group None
                                 fixed:
-                                    add _viewers.time_line_background
+                                    add TimeLineBackground()
                                     for t in play_times:
-                                        drag:
-                                            child _viewers.key_child
-                                            hover_child _viewers.key_hovere_child
-                                            xpos to_drag_pos(t)
-                                            droppable False
-                                            dragged generate_key_drag(channel, t, True)
-                                            clicked [Function(change_time, t), QueueEvent("mouseup_1")]
-                                            alternate ShowAlternateMenu(generate_sound_menu(channel=channel, time=t), style_prefix="_viewers_alternate_menu")
+                                        add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=channel, is_sound=True, 
+                                            clicked=Function(change_time, t),
+                                            alternate=ShowAlternateMenu(
+                                                generate_sound_menu(channel=channel, time=t),
+                                                style_prefix="_viewers_alternate_menu"))
                             hbox:
                                 $value = "None"
                                 $sorted_play_times = sound_keyframes[channel].keys()
@@ -658,8 +583,6 @@ init -1599 python in _viewers:
 
     c_box_size = 320
     timeline_ysize = 27
-    time_line_background = Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize)
-    graphic_mode_time_line_background = Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=int(config.screen_height*(1-preview_size)-time_column_height-2*key_half_xsize),  xoffset=key_half_xsize, yoffset=key_half_ysize)
 
 init -1597:
     style new_action_editor_frame:
@@ -1318,15 +1241,43 @@ init -1598:
 
 
 init -1598 python in _viewers:
-    def drag_change_time(drags, drops):
-        barsize = config.screen_width-c_box_size-50+key_half_xsize
-        frac = drags[0].x/float(barsize)
-        goal_frac = (frac - float(key_half_xsize)/barsize)*float(barsize)/(barsize-2*key_half_xsize)
-        change_time(goal_frac*renpy.store.persistent._time_range)
-        return None
+    # def drag_change_time(drags, drops):
+    #     barsize = config.screen_width-c_box_size-50+key_half_xsize
+    #     frac = drags[0].x/float(barsize)
+    #     goal_frac = (frac - float(key_half_xsize)/barsize)*float(barsize)/(barsize-2*key_half_xsize)
+    #     change_time(goal_frac*renpy.store.persistent._time_range)
+    #     return None
 
 
-    def generate_key_drag(key, t, is_sound=False, in_graphic_mode=None):
+    def pos_to_time(x):
+        barwidth = config.screen_width - c_box_size-50 + key_half_xsize
+        frac = float(x)/(barwidth-key_xsize)
+        goal = round(frac*persistent._time_range, 2)
+        return goal
+
+
+    def time_to_pos(time):
+        xpos = time/renpy.store.persistent._time_range
+        barwidth = config.screen_width-c_box_size-50+key_half_xsize
+        return xpos*float(barwidth-key_xsize)/barwidth
+
+
+    def value_to_pos(time, key=None, in_graphic_mode=None):
+        barheight = config.screen_height*(1-preview_size)-time_column_height
+        value = get_value(key, time)
+        if is_wide_range(key):
+            range = persistent._graphic_editor_wide_range
+        else:
+            range = persistent._graphic_editor_narrow_range
+        ypos = value/float(range)*0.5 + 0.5
+        return ypos*float(barheight-key_ysize)/barheight
+
+
+    def key_drag_changed(pos, key, time, is_sound=False, in_graphic_mode=None):
+        if in_graphic_mode:
+            x, y = pos
+        else:
+            x = pos
         key_list = [key]
         if not is_sound:
             if isinstance(key, tuple):
@@ -1340,38 +1291,30 @@ init -1598 python in _viewers:
                     if key in ps:
                         if gn != "focusing":
                             key_list = props_groups[gn]
-            if in_graphic_mode:
-                use_wide_range = is_wide_range(key)
-                if use_wide_range:
-                    range = persistent._graphic_editor_wide_range
-                else:
-                    range = persistent._graphic_editor_narrow_range
-                vchanged = generate_changed(key)
 
-        def changed(drags, drops):
-            x = drags[0].x
-            y = drags[0].y
-            snap_x = False
-            barwidth = config.screen_width - c_box_size-50 + key_half_xsize
-            frac = float(x)/(barwidth-key_xsize)
-            goal = round(frac*renpy.store.persistent._time_range, 2)
-            if not move_keyframe(new=goal, old=t, keys=key_list, is_sound=is_sound):
-                snap_x = True
-            if in_graphic_mode:
-                barheight = config.screen_height*(1-preview_size)-time_column_height
-                frac = (float(y)/(barheight-key_xsize)-0.5)*2
-                value = frac*range
-                if use_wide_range:
-                    value = int(value)
-                if snap_x:
-                    time = goal
-                else:
-                    time = t
-                vchanged(convert_to_changed_value(value, p in force_plus, use_wide_range), time)
-            if snap_x:
-                drags[0].snap(to_drag_pos(t), y)
+        goal = pos_to_time(x)
+        if move_keyframe(new=goal, old=time, keys=key_list, is_sound=is_sound):
+            time = goal
+        if in_graphic_mode:
+            use_wide_range = is_wide_range(key)
+            value = pos_to_value(y, use_wide_range)
+            vchanged = generate_changed(key)
+            vchanged(to_changed_value(value, p in force_plus, use_wide_range), time)
+        return time
 
-        return changed
+
+    def pos_to_value(y, use_wide_range):
+        if use_wide_range:
+            range = persistent._graphic_editor_wide_range
+        else:
+            range = persistent._graphic_editor_narrow_range
+
+        barheight = config.screen_height*(1-preview_size)-time_column_height
+        frac = (float(y)/(barheight-key_xsize)-0.5)*2
+        value = frac*range
+        if use_wide_range:
+            value = int(value)
+        return value
 
 
     def absolute_pos(st, at):
@@ -1398,25 +1341,6 @@ init -1598 python in _viewers:
 
     def show_current_time(st, at):
         return Text(_("time: {:>05.2f} s").format(current_time), style="new_action_editor_text"), 0.01
-
-
-    def to_drag_pos(time, graphic_mode=None):
-        xpos = time/renpy.store.persistent._time_range
-        barwidth = config.screen_width-c_box_size-50+key_half_xsize
-        xpos = xpos*float(barwidth-key_xsize)/barwidth
-        if not graphic_mode:
-            return xpos
-        else:
-            barheight = config.screen_height*(1-preview_size)-time_column_height
-            key = graphic_mode
-            value = get_value(key, time)
-            if is_wide_range(key):
-                range = persistent._graphic_editor_wide_range
-            else:
-                range = persistent._graphic_editor_narrow_range
-            ypos = value/float(range)*0.5 + 0.5
-            ypos = ypos*float(barheight-key_xsize)/barheight
-            return (xpos, ypos)
 
 
     def is_wide_range(key):
@@ -1474,6 +1398,8 @@ init -1598 python in _viewers:
 
 
         def __eq__(self, other):
+            if not isinstance(other, DraggableValue):
+                return False
             return True
 
 
@@ -1497,7 +1423,7 @@ init -1598 python in _viewers:
                 v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
                 if self.use_wide_range:
                     v = int(v)
-                self.changed(convert_to_changed_value(v, self.force_plus, self.use_wide_range))
+                self.changed(to_changed_value(v, self.force_plus, self.use_wide_range))
 
             self.hovered = False
             if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
@@ -1511,11 +1437,9 @@ init -1598 python in _viewers:
                         self.speed = self.NORMAL
                     self.clicking = True
                     self.last_x = x
-                    self.last_y = y
                     self.value = get_property(self.key)
                     raise renpy.display.core.IgnoreEvent()
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
-                    self.dragging = False
                     if self.clicking == True:
                         self.clicking = False
                         action=renpy.store.Function(edit_value, self.changed, self.use_wide_range, self.value, self.force_plus),
@@ -1533,6 +1457,171 @@ init -1598 python in _viewers:
                 self.dragging = False
                 self.clicking = False
                 self.last_x = None
+                raise renpy.display.core.IgnoreEvent()
+            if not playing:
+                renpy.redraw(self, 0)
+
+
+        def per_interact(self):
+            if not playing:
+                renpy.redraw(self, 0)
+
+
+    class KeyFrame(renpy.Displayable):
+
+
+        def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, dot=False, is_sound=False):
+            super(KeyFrame, self).__init__()
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame.key import get_mods
+            self.child = child
+            self.hover_child = hover_child
+            self.time = time
+            self.draggable = draggable
+            self.key = key
+            if not isinstance(clicked, list):
+                clicked = [clicked]
+            self.clicked = clicked + [renpy.store.QueueEvent("mouseup_1")]
+            self.alternate = alternate
+            self.in_graphic_mode = in_graphic_mode
+            self.dot = dot
+            self.is_sound = is_sound
+
+            self.dragging = False
+            self.clicking = False
+            self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+            self.speed = 1.0
+            self.SLOW = 0.33
+            self.NORMAL = 1.0
+            self.FAST = 3.0
+            self.KMOD_SHIFT = KMOD_SHIFT
+            self.KMOD_CTRL = KMOD_CTRL
+            self.get_mods = get_mods
+
+            self.barwidth = config.screen_width - c_box_size-50 + key_half_xsize
+            if in_graphic_mode:
+                self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            else:
+                self.barheight = key_ysize
+
+
+        def __eq__(self, other):
+            if not isinstance(other, KeyFrame):
+                return False
+            if self.child != other.child:
+                return False
+            if self.hover_child != other.hover_child:
+                return False
+            if self.draggable != other.draggable:
+                return False
+            if self.key != other.key:
+                return False
+            if self.in_graphic_mode != other.in_graphic_mode:
+                return False
+            if self.dot != other.dot:
+                return False
+            if self.is_sound != other.is_sound:
+                return False
+            if self.time != other.time:
+                return False
+            # if not other.dragging:
+            #     return False
+            # if not self.dragging and not other.dragging:
+            # if self.dragging and not other.dragging:
+            #     return False
+
+            # otherの方が表示済でselfが新しい方のよう
+            other.clicked   = self.clicked
+            other.alternate = self.alternate
+            return True
+
+
+        def render(self, width, height, st, at):
+            if self.in_graphic_mode:
+                self.xpos = time_to_pos(self.time)
+                self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
+            else:
+                self.xpos = time_to_pos(self.time)
+                self.ypos = 0.
+            self.xpos *= self.barwidth
+            self.ypos *= self.barheight
+            if self.hovered:
+                child = self.hover_child
+            else:
+                child = self.child
+
+            child_render = renpy.render(child, width, height, st, at)
+            self.width, self.height = child_render.get_size()
+            render = renpy.Render(self.barwidth, self.barheight)
+            render.blit(child_render, (self.xpos, self.ypos))
+
+            return render
+
+
+        def event(self, ev, x, y, st):
+            if self.dot:
+                if not playing:
+                    renpy.redraw(self, 0)
+                return
+
+            if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                to_x = (x - self.last_x)*self.speed + self.last_xpos
+                if to_x <= 0:
+                    to_x = 0
+                if to_x >= self.barwidth - key_xsize:
+                    to_x = self.barwidth - key_xsize
+                pos = to_x
+                if self.in_graphic_mode:
+                    to_y = (y - self.last_y)*self.speed + self.last_ypos
+                    if to_y <= 0:
+                        to_y = 0
+                    if to_y >= self.barheight - key_ysize:
+                        to_y = self.barheight - key_ysize
+                    pos = (to_x, to_y)
+                last_time = self.time
+                self.time = key_drag_changed(pos, self.key, self.time, \
+                    is_sound=self.is_sound, in_graphic_mode=self.in_graphic_mode)
+                renpy.store.test = (self.time, last_time, pos, self.is_sound)
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos and x <= self.width+self.xpos and \
+                y >= self.ypos and y <= self.height+self.ypos:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    if self.get_mods() & self.KMOD_CTRL:
+                        self.speed = self.SLOW
+                    elif self.get_mods() & self.KMOD_SHIFT:
+                        self.speed = self.FAST
+                    else:
+                        self.speed = self.NORMAL
+                    self.clicking = True
+                    self.last_xpos = self.xpos
+                    self.last_ypos = self.ypos
+                    self.last_x = x
+                    self.last_y = y
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    if self.clicking == True:
+                        self.clicking = False
+                        rv = renpy.run(self.clicked)
+                        if rv is not None:
+                            return rv
+                        raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    rv = renpy.run(self.alternate)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                self.last_xpos = self.xpos
+                self.last_ypos = self.ypos
+                self.last_x = None
                 self.last_y = None
                 raise renpy.display.core.IgnoreEvent()
             if not playing:
@@ -1542,6 +1631,83 @@ init -1598 python in _viewers:
         def per_interact(self):
             if not playing:
                 renpy.redraw(self, 0)
+
+
+
+    class TimeLineBackground(renpy.Displayable):
+
+
+        def __init__(self, key=None, in_graphic_mode=False):
+            super(TimeLineBackground, self).__init__()
+            from pygame import MOUSEMOTION
+            from renpy.store import Function, Solid, Fixed
+            self.key = key
+            self.in_graphic_mode = in_graphic_mode
+
+            self.key_list = [key]
+            if isinstance(key, tuple):
+                n, l, p = key
+                for gn, ps in props_groups.items():
+                    if p in ps:
+                        self.key_list = [(n, l, p) for p in props_groups[gn]]
+            else:
+                for gn, ps in props_groups.items():
+                    if key in ps:
+                        if gn != "focusing":
+                            self.key_list = props_groups[gn]
+
+            box = Fixed()
+            if in_graphic_mode:
+                box.add(Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=int(config.screen_height*(1-preview_size)-time_column_height-2*key_half_xsize),  xoffset=key_half_xsize, yoffset=key_half_ysize))
+            else:
+                box.add(Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize))
+            self.child = box
+
+            self.MOUSEMOTION = MOUSEMOTION
+
+            self.dragging = False
+            self.clicking = False
+            self.hovered = False
+
+
+        def __eq__(self, other):
+            if not isinstance(other, TimeLineBackground):
+                return False
+            if self.key == other.key and self.in_graphic_mode == other.in_graphic_mode:
+                return True
+
+
+        def render(self, width, height, st, at):
+            render = self.child.render(width, height, st, at)
+            self.width, self.height = render.get_size()
+            return render
+
+
+        def event(self, ev, x, y, st):
+            if ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+
+            self.hovered = False
+            if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    self.clicking = True
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    if self.clicking == True:
+                        self.clicking = False
+                        time = pos_to_time(x)
+                        change_time(time)
+                        renpy.store.QueueEvent("mouseup_1")()
+                        raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    if self.key:
+                        time = pos_to_time(x)
+                        reset(self.key_list, time)
+                        raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
 
 
     class CameraIcon(renpy.Displayable):
