@@ -38,7 +38,7 @@ init -1098 python:
 
 
 init -1600 python in _viewers:
-    from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Text, Movie
+    from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Movie
     from renpy import config
 init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 

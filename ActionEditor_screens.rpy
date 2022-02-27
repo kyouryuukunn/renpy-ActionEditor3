@@ -1,7 +1,6 @@
 
-screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=False):
+screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mode=[]):
     default layer = "master"
-    default mark_num = 100
     $int_format = "{:> }" 
     $float_format = "{:> .2f}"
 
@@ -32,6 +31,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
     $KeyFrame = _viewers.KeyFrame
     $TimeLineBackground = _viewers.TimeLineBackground
     $backto_start_time = _viewers.backto_start_time
+    $TimeLine = _viewers.TimeLine
 
     if opened is None:
         $opened = {}
@@ -42,7 +42,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
     $indent = "  "
     $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
         [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
-        Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, graphic_mode=graphic_mode)]
+        Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
     key "hide_windows" action NullAction()
@@ -72,13 +72,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
 
     if time:
-        timer time+.5 action [Show("_new_action_editor", opened=opened, graphic_mode=graphic_mode), \
+        timer time+.5 action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
                             Function(change_time, previous_time)]
-        key "game_menu" action [Show("_new_action_editor", opened=opened, graphic_mode=graphic_mode), \
+        key "game_menu" action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
                             Function(change_time, previous_time)]
         $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
             [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
-            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=previous_time, graphic_mode=graphic_mode)]
+            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=previous_time, in_graphic_mode=in_graphic_mode)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
 
@@ -144,410 +144,342 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, graphic_mode=
                 #         dragged _viewers.drag_change_time
                 bar value _viewers.CurrentTime(persistent._time_range):
                     xalign 1. yalign .5 style "new_action_editor_bar"
-            if graphic_mode:
-                hbox:
-                    $key = graphic_mode
-                    if not isinstance(graphic_mode, tuple):
-                        $p = key
-                        $d = _viewers.get_default(p, True)
+            viewport:
+                mousewheel True
+                scrollbars "vertical"
+                has vbox
+                for s, ks in enumerate(all_keyframes):
+                    if s != current_scene:
+                        hbox:
+                            hbox:
+                                style_group "new_action_editor_c"
+                                textbutton "+ "+"scene[s]":
+                                    action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
+                            fixed:
+                                add TimeLine(s, None)
+                                # $(v, t, w) = scene_keyframes[s]
+                                # add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                #     clicked=Function(change_time, t))
+                                # for key, cs in all_keyframes[s].items():
+                                #     if isinstance(key, tuple):
+                                #         $p = key[2]
+                                #     else:
+                                #         $p = key
+                                #     if (p not in props_groups["focusing"] or
+                                #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                #         for c in cs:
+                                #             $(v, t, w) = c
+                                #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                #                 clicked=Function(change_time, t))
                     else:
-                        $(tag, layer, p) = key
-                        $d = _viewers.get_default(p)
-                    $value = get_property(key)
-                    $f = generate_changed(key)
-                    $cs = all_keyframes[s].get(key, [])
-                    $use_wide_range = is_wide_range(key)
-                    if not use_wide_range or isinstance(value, float):
-                        $value_format = float_format
-                    else:
-                        $value_format = int_format
-
-                    yfill True
-                    hbox:
-                        style_group "new_action_editor_c"
-                        yfill True
-                        textbutton "[graphic_mode]" action None text_color "#CCC"
-                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                            text_size=16, text_color="#CCC", text_hover_underline=True)
-                    fixed:
-                        ysize None
-                        add TimeLineBackground(key, True)
-                        $(v, t, w) = scene_keyframes[s]
-                        $last_v, last_t = None, None
-                        for c in cs:
-                            $(v, t, w) = c
-
-                            if last_v is not None:
-                                $v_diff = (v - last_v)
-                                $t_diff = (t - last_t)
-                                for t2 in range(1, mark_num):
-                                    drag:
-                                        child _viewers.interpolate_key_child
-                                        xpos time_to_pos(last_t + t_diff*t2/mark_num)
-                                        ypos value_to_pos(last_t + t_diff*t2/mark_num, key, in_graphic_mode=True)
-                                        droppable False
-                                        draggable False
-                            $last_v, last_t = v, t
-
-                            add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
-                                clicked=Function(change_time, t),
-                                alternate=ShowAlternateMenu(
-                                    generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=True),
-                                    style_prefix="_viewers_alternate_menu"))
-            else:
-                viewport:
-                    mousewheel True
-                    scrollbars "vertical"
-                    has vbox
-                    for s, ks in enumerate(all_keyframes):
-                        if s != current_scene:
+                        hbox:
+                            hbox:
+                                style_group "new_action_editor_c"
+                                textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
+                            fixed:
+                                add TimeLine(s, None)
+                        if "camera" not in opened[s]:
                             hbox:
                                 hbox:
                                     style_group "new_action_editor_c"
-                                    textbutton "+ "+"scene[s]":
-                                        action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
+                                    if persistent._open_only_one_page:
+                                        $new_opened = {s:["camera"]}
+                                    else:
+                                        $new_opened = opened.copy()
+                                        $new_opened[s] = new_opened[s] + ["camera"]
+                                    textbutton _(indent+"+ "+"camera"):
+                                        action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
+                                        Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
                                 fixed:
-                                    add TimeLineBackground()
-                                    $(v, t, w) = scene_keyframes[s]
-                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                        clicked=Function(change_time, t))
-                                    for key, cs in all_keyframes[s].items():
-                                        if isinstance(key, tuple):
-                                            $p = key[2]
-                                        else:
-                                            $p = key
-                                        if (p not in props_groups["focusing"] or
-                                            (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                            for c in cs:
-                                                $(v, t, w) = c
-                                                add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                    clicked=Function(change_time, t))
+                                    add TimeLine(s, "camera")
+                                    # for p, d in _viewers.camera_props:
+                                    #     if (p not in props_groups["focusing"] or
+                                    #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                    #         for c in all_keyframes[s].get(p, []):
+                                    #             $(v, t, w) = c
+                                    #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                    #                 clicked=Function(change_time, t))
                         else:
                             hbox:
                                 hbox:
                                     style_group "new_action_editor_c"
-                                    textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
+                                    $new_opened = opened.copy()
+                                    $new_opened[s] = opened[s].copy()
+                                    $new_opened[s].remove("camera")
+                                    textbutton _(indent+"- "+"camera"):
+                                        action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                    textbutton _("clipboard"):
+                                        action Function(_viewers.put_camera_clipboard)
+                                        size_group None
+                                        style_group "new_action_editor_b"
                                 fixed:
-                                    add TimeLineBackground()
-                                    $(v, t, w) = scene_keyframes[s]
-                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                        clicked=Function(change_time, t))
-                                    for key, cs in all_keyframes[s].items():
-                                        if isinstance(key, tuple):
-                                            $p = key[2]
-                                        else:
-                                            $p = key
-                                        if (p not in props_groups["focusing"] or
+                                    add TimeLine(s, "camera")
+                                    # for p, d in _viewers.camera_props:
+                                    #     if (p not in props_groups["focusing"] or
+                                    #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                    #         for c in all_keyframes[s].get(p, []):
+                                    #             $(v, t, w) = c
+                                    #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                    #                 clicked=Function(change_time, t))
+                            textbutton _(indent*2+"  perspective"):
+                                action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
+                                Function(_viewers.toggle_perspective)]
+                            for i, props_set_name in enumerate(props_set_names):
+                                if props_set_name in opened[s]:
+                                    hbox:
+                                        hbox:
+                                            style_group "new_action_editor_c"
+                                            $new_opened = opened.copy()
+                                            $new_opened[s] = opened[s].copy()
+                                            $new_opened[s].remove(props_set_name)
+                                            textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                        fixed:
+                                            add TimeLine(s, "camera", props_set_num=i)
+                                            # for p in props_set[i]:
+                                            #     if (p not in props_groups["focusing"] or \
+                                            #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                            #         for c in all_keyframes[s].get(p, []):
+                                            #             $(v, t, w) = c
+                                            #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                            #                 clicked=Function(change_time, t))
+                                    for p in props_set[i]:
+                                        if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                            for c in cs:
-                                                $(v, t, w) = c
-                                                add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                    clicked=Function(change_time, t))
-
-                            if "camera" not in opened[s]:
+                                            $key = p
+                                            $value = get_property(p)
+                                            $d = _viewers.get_default(p, True)
+                                            $f = generate_changed(p)
+                                            $cs = all_keyframes[s].get(key, []) #TODO
+                                            $use_wide_range = is_wide_range(key)
+                                            if not use_wide_range or isinstance(value, float):
+                                                $value_format = float_format
+                                            else:
+                                                $value_format = int_format
+                                            hbox:
+                                                hbox:
+                                                    style_group "new_action_editor_c"
+                                                    textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                    add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                        text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                if key not in in_graphic_mode:
+                                                    fixed:
+                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                        # for c in cs:
+                                                        #     $(v, t, w) = c
+                                                        #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
+                                                        #         clicked=Function(change_time, t),
+                                                        #         alternate=ShowAlternateMenu(
+                                                        #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
+                                                        #             style_prefix="_viewers_alternate_menu"))
+                                                else:
+                                                    fixed:
+                                                        # ysize None
+                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                        # yfit True
+                                                        # add TimeLineBackground(key, True, cs)
+                                                        # for c in cs:
+                                                        #     $(v, t, w) = c
+                                                        #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
+                                                        #         clicked=Function(change_time, t),
+                                                        #         alternate=ShowAlternateMenu(
+                                                        #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
+                                                        #             style_prefix="_viewers_alternate_menu"))
+                                else:
+                                    hbox:
+                                        hbox:
+                                            style_group "new_action_editor_c"
+                                            if persistent._open_only_one_page:
+                                                $new_opened = {s:["camera", props_set_name]}
+                                            else:
+                                                $new_opened = opened.copy()
+                                                $new_opened[s] = new_opened[s] + [props_set_name]
+                                            textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                        fixed:
+                                            add TimeLine(s, "camera", props_set_num=i)
+                        for tag in tag_list:
+                            if tag not in opened[s]:
                                 hbox:
                                     hbox:
                                         style_group "new_action_editor_c"
                                         if persistent._open_only_one_page:
-                                            $new_opened = {s:["camera"]}
+                                            $new_opened = {s:[tag]}
                                         else:
                                             $new_opened = opened.copy()
-                                            $new_opened[s] = new_opened[s] + ["camera"]
-                                        textbutton _(indent+"+ "+"camera"):
-                                            action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
-                                            Show("_new_action_editor", opened=new_opened)]
+                                            $new_opened[s] = new_opened[s] + [tag]
+                                        textbutton indent+"+ "+"{}".format(tag):
+                                            action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                     fixed:
-                                        add TimeLineBackground()
-                                        for p, d in _viewers.camera_props:
-                                            if (p not in props_groups["focusing"] or
-                                                (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                                for c in all_keyframes[s].get(p, []):
-                                                    $(v, t, w) = c
-                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                        clicked=Function(change_time, t))
+                                        add TimeLine(s, (tag, layer))
                             else:
                                 hbox:
                                     hbox:
                                         style_group "new_action_editor_c"
                                         $new_opened = opened.copy()
                                         $new_opened[s] = opened[s].copy()
-                                        $new_opened[s].remove("camera")
-                                        textbutton _(indent+"- "+"camera"):
-                                            action Show("_new_action_editor", opened=new_opened)
+                                        $new_opened[s].remove(tag)
+                                        textbutton indent+"- "+"{}".format(tag):
+                                            action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                         textbutton _("clipboard"):
-                                            action Function(_viewers.put_camera_clipboard)
-                                            size_group None
+                                            action Function(_viewers.put_image_clipboard, tag, layer)
                                             style_group "new_action_editor_b"
+                                            size_group None
                                     fixed:
-                                        add TimeLineBackground()
-                                        for p, d in _viewers.camera_props:
-                                            if (p not in props_groups["focusing"] or
-                                                (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                                for c in all_keyframes[s].get(p, []):
-                                                    $(v, t, w) = c
-                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                        clicked=Function(change_time, t))
-                                textbutton _(indent*2+"  perspective"):
-                                    action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
-                                    Function(_viewers.toggle_perspective)]
+                                        add TimeLine(s, (tag, layer))
+                                textbutton _(indent*2+"  zzoom"):
+                                    action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
+                                    Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
                                 for i, props_set_name in enumerate(props_set_names):
-                                    if props_set_name in opened[s]:
+                                    if (tag, layer, props_set_name) not in opened[s]:
+                                        hbox:
+                                            hbox:
+                                                style_group "new_action_editor_c"
+                                                if persistent._open_only_one_page:
+                                                    $new_opened = {s:[tag, (tag, layer, props_set_name)]}
+                                                else:
+                                                    $new_opened = opened.copy()
+                                                    $new_opened[s] = new_opened[s] + [(tag, layer, props_set_name)]
+                                                textbutton indent*2+"+ "+props_set_name:
+                                                    action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                            fixed:
+                                                add TimeLine(s, (tag, layer), props_set_num=i)
+                                    else:
                                         hbox:
                                             hbox:
                                                 style_group "new_action_editor_c"
                                                 $new_opened = opened.copy()
                                                 $new_opened[s] = opened[s].copy()
-                                                $new_opened[s].remove(props_set_name)
-                                                textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened)
+                                                $new_opened[s].remove((tag, layer, props_set_name))
+                                                textbutton indent*2+"- " + props_set_names[i]:
+                                                    action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
-                                                add TimeLineBackground()
-                                                for p in props_set[i]:
-                                                    if (p not in props_groups["focusing"] or \
-                                                        (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                                        for c in all_keyframes[s].get(p, []):
-                                                            $(v, t, w) = c
-                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                                clicked=Function(change_time, t))
+                                                add TimeLine(s, (tag, layer), props_set_num=i)
+                                                # for p in props_set[i]:
+                                                #     for c in all_keyframes[s].get((tag, layer, p), []):
+                                                #         $(v, t, w) = c
+                                                #         add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
+                                                #             clicked=Function(change_time, t))
                                         for p in props_set[i]:
-                                            if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
-                                                (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                                $key = p
-                                                $value = get_property(p)
-                                                $d = _viewers.get_default(p, True)
-                                                $f = generate_changed(p)
-                                                $cs = all_keyframes[s].get(key, [])
-                                                $use_wide_range = is_wide_range(key)
+                                            if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                                and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
+                                                or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
+                                                $key = (tag, layer, p)
+                                                $d = _viewers.get_default(p)
+                                                $value = get_property(key)
+                                                $f = generate_changed(key)
+                                                # $cs = all_keyframes[s].get(key, []) #TODO
+                                                $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                                                 if not use_wide_range or isinstance(value, float):
                                                     $value_format = float_format
                                                 else:
                                                     $value_format = int_format
                                                 hbox:
-                                                    hbox:
-                                                        style_group "new_action_editor_c"
-                                                        textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                            text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                    fixed:
-                                                        add TimeLineBackground(key)
-                                                        for c in cs:
-                                                            $(v, t, w) = c
-                                                            add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
-                                                                clicked=Function(change_time, t),
-                                                                alternate=ShowAlternateMenu(
-                                                                    generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened),
-                                                                    style_prefix="_viewers_alternate_menu"))
-                                    else:
-                                        hbox:
-                                            hbox:
-                                                style_group "new_action_editor_c"
-                                                if persistent._open_only_one_page:
-                                                    $new_opened = {s:["camera", props_set_name]}
-                                                else:
-                                                    $new_opened = opened.copy()
-                                                    $new_opened[s] = new_opened[s] + [props_set_name]
-                                                textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened)
-                                            fixed:
-                                                add TimeLineBackground()
-                                                for p in props_set[i]:
-                                                    if (p not in props_groups["focusing"] or \
-                                                        (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                                        for c in all_keyframes[s].get(p, []):
-                                                            $(v, t, w) = c
-                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                                clicked=Function(change_time, t))
-                            for tag in tag_list:
-                                if tag not in opened[s]:
-                                    hbox:
-                                        hbox:
-                                            style_group "new_action_editor_c"
-                                            if persistent._open_only_one_page:
-                                                $new_opened = {s:[tag]}
-                                            else:
-                                                $new_opened = opened.copy()
-                                                $new_opened[s] = new_opened[s] + [tag]
-                                            textbutton indent+"+ "+"{}".format(tag):
-                                                action Show("_new_action_editor", opened=new_opened)
-                                        fixed:
-                                            add TimeLineBackground()
-                                            for p, d in _viewers.transform_props:
-                                                for c in all_keyframes[s].get((tag, layer, p), []):
-                                                    $(v, t, w) = c
-                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                        clicked=Function(change_time, t))
-                                else:
-                                    hbox:
-                                        hbox:
-                                            style_group "new_action_editor_c"
-                                            $new_opened = opened.copy()
-                                            $new_opened[s] = opened[s].copy()
-                                            $new_opened[s].remove(tag)
-                                            textbutton indent+"- "+"{}".format(tag):
-                                                action Show("_new_action_editor", opened=new_opened)
-                                            textbutton _("clipboard"):
-                                                action Function(_viewers.put_image_clipboard, tag, layer)
-                                                style_group "new_action_editor_b"
-                                                size_group None
-                                        fixed:
-                                            add TimeLineBackground()
-                                            for p, d in _viewers.transform_props:
-                                                for c in all_keyframes[s].get((tag, layer, p), []):
-                                                    $(v, t, w) = c
-                                                    add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                        clicked=Function(change_time, t))
-                                    textbutton _(indent*2+"  zzoom"):
-                                        action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
-                                        Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
-                                    for i, props_set_name in enumerate(props_set_names):
-                                        if (tag, layer, props_set_name) not in opened[s]:
-                                            hbox:
-                                                hbox:
-                                                    style_group "new_action_editor_c"
-                                                    if persistent._open_only_one_page:
-                                                        $new_opened = {s:[tag, (tag, layer, props_set_name)]}
-                                                    else:
-                                                        $new_opened = opened.copy()
-                                                        $new_opened[s] = new_opened[s] + [(tag, layer, props_set_name)]
-                                                    textbutton indent*2+"+ "+props_set_name:
-                                                        action Show("_new_action_editor", opened=new_opened)
-                                                fixed:
-                                                    add TimeLineBackground()
-                                                    for p in props_set[i]:
-                                                        for c in all_keyframes[s].get((tag, layer, p), []):
-                                                            $(v, t, w) = c
-                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                                clicked=Function(change_time, t))
-                                        else:
-                                            hbox:
-                                                hbox:
-                                                    style_group "new_action_editor_c"
-                                                    $new_opened = opened.copy()
-                                                    $new_opened[s] = opened[s].copy()
-                                                    $new_opened[s].remove((tag, layer, props_set_name))
-                                                    textbutton indent*2+"- " + props_set_names[i]:
-                                                        action Show("_new_action_editor", opened=new_opened)
-                                                fixed:
-                                                    add TimeLineBackground()
-                                                    for p in props_set[i]:
-                                                        for c in all_keyframes[s].get((tag, layer, p), []):
-                                                            $(v, t, w) = c
-                                                            add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                                clicked=Function(change_time, t))
-                                            for p in props_set[i]:
-                                                if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
-                                                    and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
-                                                    or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
-                                                    $key = (tag, layer, p)
-                                                    $d = _viewers.get_default(p)
-                                                    $value = get_property(key)
-                                                    $f = generate_changed(key)
-                                                    $cs = all_keyframes[s].get(key, [])
-                                                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
-                                                    if not use_wide_range or isinstance(value, float):
-                                                        $value_format = float_format
-                                                    else:
-                                                        $value_format = int_format
-                                                    hbox:
-                                                        if p == "child":
-                                                            vbox:
-                                                                xfill False
-                                                                hbox:
-                                                                    style_group "new_action_editor_c"
-                                                                    textbutton indent*3+"  [value[0]]":
-                                                                        action [SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                        Function(_viewers.change_child, tag, layer, default=value[0])]
-                                                                        size_group None
-                                                                hbox:
-                                                                    style_group "new_action_editor_c"
-                                                                    textbutton indent*3+"  with [value[1]]":
-                                                                        action [SensitiveIf(key in all_keyframes[s]),
-                                                                        SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                        Function(_viewers.edit_transition, tag, layer)]
-                                                                        size_group None
-                                                        else:
+                                                    if p == "child":
+                                                        vbox:
+                                                            xfill False
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]":
-                                                                    action None text_color "#CCC"
-                                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                                    text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                        fixed:
-                                                            add TimeLineBackground(key)
-                                                            for c in cs:
-                                                                $(v, t, w) = c
-                                                                add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
-                                                                    clicked=Function(change_time, t),
-                                                                    alternate=ShowAlternateMenu(
-                                                                        generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened),
-                                                                        style_prefix="_viewers_alternate_menu"))
-                                    $new_opened = opened.copy()
-                                    $new_opened[s] = opened[s].copy()
-                                    $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
-                                    textbutton _(indent*3+"  remove"):
-                                        action [SensitiveIf(tag in _viewers.image_state[s][layer]),
-                                            Show("_new_action_editor", opened=new_opened),
-                                            Function(_viewers.remove_image, layer, tag)]
-                                        size_group None
-                            textbutton _(indent+"+(add image)"):
-                                action Function(_viewers.add_image, layer)
-                                style_group "new_action_editor_c"
-                    textbutton _("+(add scene)"):
-                        action _viewers.add_scene
-                        style_group "new_action_editor_c"
-                    if "sounds" not in opened:
-                        hbox:
-                            hbox:
-                                style_group "new_action_editor_c"
-                                if persistent._open_only_one_page:
-                                    $new_opened = {"sounds":True}
-                                else:
-                                    $new_opened = opened.copy()
-                                    $new_opened["sounds"] = True
-                                textbutton _("+ "+"sounds"):
-                                    action [SensitiveIf(persistent._viewer_channel_list),
-                                    Show("_new_action_editor", opened=new_opened)]
-                            fixed:
-                                add TimeLineBackground()
-                                for channel, play_times in _viewers.sound_keyframes.items():
-                                    for t in play_times:
-                                        add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=channel,
-                                            clicked=Function(change_time, t))
-                    else:
+                                                                textbutton indent*3+"  [value[0]]":
+                                                                    action [SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.change_child, tag, layer, default=value[0])]
+                                                                    size_group None
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*3+"  with [value[1]]":
+                                                                    action [SensitiveIf(key in all_keyframes[s]),
+                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.edit_transition, tag, layer)]
+                                                                    size_group None
+                                                    else:
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#CCC"
+                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                    fixed:
+                                                        if key not in in_graphic_mode:
+                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                            # for c in cs:
+                                                            #     $(v, t, w) = c
+                                                            #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
+                                                            #         clicked=Function(change_time, t),
+                                                            #         alternate=ShowAlternateMenu(
+                                                            #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
+                                                            #             style_prefix="_viewers_alternate_menu"))
+                                                        else:
+                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                            # for c in cs:
+                                                            #     $(v, t, w) = c
+                                                            #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
+                                                            #         clicked=Function(change_time, t),
+                                                            #         alternate=ShowAlternateMenu(
+                                                            #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
+                                                            #             style_prefix="_viewers_alternate_menu"))
+                                $new_opened = opened.copy()
+                                $new_opened[s] = opened[s].copy()
+                                $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
+                                textbutton _(indent*3+"  remove"):
+                                    action [SensitiveIf(tag in _viewers.image_state[s][layer]),
+                                        Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode),
+                                        Function(_viewers.remove_image, layer, tag)]
+                                    size_group None
+                        textbutton _(indent+"+(add image)"):
+                            action Function(_viewers.add_image, layer)
+                            style_group "new_action_editor_c"
+                textbutton _("+(add scene)"):
+                    action _viewers.add_scene
+                    style_group "new_action_editor_c"
+                if "sounds" not in opened:
+                    hbox:
                         hbox:
                             style_group "new_action_editor_c"
-                            $new_opened = opened.copy()
-                            $del new_opened["sounds"]
-                            textbutton _(indent+"- "+"sounds"):
-                                action Show("_new_action_editor", opened=new_opened)
-                            textbutton _("clipboard"):
-                                action Function(_viewers.put_sound_clipboard)
-                                size_group None
-                                style_group "new_action_editor_b"
-                        for channel, play_times in sound_keyframes.items():
+                            if persistent._open_only_one_page:
+                                $new_opened = {"sounds":True}
+                            else:
+                                $new_opened = opened.copy()
+                                $new_opened["sounds"] = True
+                            textbutton _("+ "+"sounds"):
+                                action [SensitiveIf(persistent._viewer_channel_list),
+                                Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
+                        fixed:
+                            add TimeLine(s, "sounds")
+                else:
+                    hbox:
+                        style_group "new_action_editor_c"
+                        $new_opened = opened.copy()
+                        $del new_opened["sounds"]
+                        textbutton _(indent+"- "+"sounds"):
+                            action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                        textbutton _("clipboard"):
+                            action Function(_viewers.put_sound_clipboard)
+                            size_group None
+                            style_group "new_action_editor_b"
+                    for channel, play_times in sound_keyframes.items():
+                        hbox:
                             hbox:
-                                hbox:
-                                    style_group "new_action_editor_c"
-                                    textbutton indent*1+"  [channel]":
-                                        action None text_color "#CCC"
-                                        size_group None
-                                fixed:
-                                    add TimeLineBackground()
-                                    for t in play_times:
-                                        add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=channel, is_sound=True, 
-                                            clicked=Function(change_time, t),
-                                            alternate=ShowAlternateMenu(
-                                                generate_sound_menu(channel=channel, time=t),
-                                                style_prefix="_viewers_alternate_menu"))
-                            hbox:
-                                $value = "None"
-                                $sorted_play_times = sound_keyframes[channel].keys()
-                                $sorted_play_times.sort()
-                                for t in sorted_play_times:
-                                    if current_time >= t:
-                                        $value = sound_keyframes[channel][t]
-                                textbutton indent*2+"  [value]":
-                                    action [SelectedIf(keyframes_exist(channel, is_sound=True)),
-                                        Function(_viewers.edit_playing_file, channel, current_time)]
+                                style_group "new_action_editor_c"
+                                textbutton indent*1+"  [channel]":
+                                    action None text_color "#CCC"
                                     size_group None
+                            fixed:
+                                add TimeLine(s, "sounds", key=channel)
+                                # for t in play_times:
+                                #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=channel, is_sound=True, 
+                                #         clicked=Function(change_time, t),
+                                #         alternate=ShowAlternateMenu(
+                                #             generate_sound_menu(channel=channel, time=t),
+                                #             style_prefix="_viewers_alternate_menu"))
+                        hbox:
+                            $value = "None"
+                            $sorted_play_times = sound_keyframes[channel].keys()
+                            $sorted_play_times.sort()
+                            for t in sorted_play_times:
+                                if current_time >= t:
+                                    $value = sound_keyframes[channel][t]
+                            textbutton indent*2+"  [value]":
+                                action [SelectedIf(keyframes_exist(channel, is_sound=True)),
+                                    Function(_viewers.edit_playing_file, channel, current_time)]
+                                size_group None
 
 
 init -1599 python in _viewers:
@@ -1240,24 +1172,23 @@ init -1598:
 
 
 
-init -1598 python in _viewers:
-    # def drag_change_time(drags, drops):
-    #     barsize = config.screen_width-c_box_size-50+key_half_xsize
-    #     frac = drags[0].x/float(barsize)
-    #     goal_frac = (frac - float(key_half_xsize)/barsize)*float(barsize)/(barsize-2*key_half_xsize)
-    #     change_time(goal_frac*renpy.store.persistent._time_range)
-    #     return None
+init 1 python in _viewers:
+    from renpy.store import Function, QueueEvent, Text, BarValue, DictEquality, ShowAlternateMenu
 
 
     def pos_to_time(x):
         barwidth = config.screen_width - c_box_size-50 + key_half_xsize
         frac = float(x)/(barwidth-key_xsize)
         goal = round(frac*persistent._time_range, 2)
+        if goal < 0:
+            goal = 0.
+        elif goal > persistent._time_range:
+            goal = persistent._time_range
         return goal
 
 
     def time_to_pos(time):
-        xpos = time/renpy.store.persistent._time_range
+        xpos = time/persistent._time_range
         barwidth = config.screen_width-c_box_size-50+key_half_xsize
         return xpos*float(barwidth-key_xsize)/barwidth
 
@@ -1442,13 +1373,13 @@ init -1598 python in _viewers:
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
                     if self.clicking == True:
                         self.clicking = False
-                        action=renpy.store.Function(edit_value, self.changed, self.use_wide_range, self.value, self.force_plus),
+                        action=Function(edit_value, self.changed, self.use_wide_range, self.value, self.force_plus),
                         rv = renpy.run(action)
                         if rv is not None:
                             return rv
                         raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
-                    alternate=renpy.store.Function(reset, self.key),
+                    alternate=Function(reset, self.key),
                     rv = renpy.run(alternate)
                     if rv is not None:
                         return rv
@@ -1467,11 +1398,10 @@ init -1598 python in _viewers:
                 renpy.redraw(self, 0)
 
 
-    class KeyFrame(renpy.Displayable):
+    class KeyFrame():
 
 
         def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, dot=False, is_sound=False):
-            super(KeyFrame, self).__init__()
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
             self.child = child
@@ -1481,7 +1411,7 @@ init -1598 python in _viewers:
             self.key = key
             if not isinstance(clicked, list):
                 clicked = [clicked]
-            self.clicked = clicked + [renpy.store.QueueEvent("mouseup_1")]
+            self.clicked = clicked + [QueueEvent("mouseup_1")]
             self.alternate = alternate
             self.in_graphic_mode = in_graphic_mode
             self.dot = dot
@@ -1505,6 +1435,8 @@ init -1598 python in _viewers:
                 self.barheight = config.screen_height*(1-preview_size)-time_column_height
             else:
                 self.barheight = key_ysize
+            self.width = key_xsize
+            self.height = key_ysize
 
 
         def __eq__(self, other):
@@ -1533,12 +1465,15 @@ init -1598 python in _viewers:
             #     return False
 
             # otherの方が表示済でselfが新しい方のよう
-            other.clicked   = self.clicked
-            other.alternate = self.alternate
             return True
 
 
-        def render(self, width, height, st, at):
+        def update(self, other):
+            self.clicked = other.clicked
+            self.alternate = other.alternate
+
+
+        def get_child(self):
             if self.in_graphic_mode:
                 self.xpos = time_to_pos(self.time)
                 self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
@@ -1551,13 +1486,29 @@ init -1598 python in _viewers:
                 child = self.hover_child
             else:
                 child = self.child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos)
+            
 
-            child_render = renpy.render(child, width, height, st, at)
-            self.width, self.height = child_render.get_size()
-            render = renpy.Render(self.barwidth, self.barheight)
-            render.blit(child_render, (self.xpos, self.ypos))
 
-            return render
+        # def render(self, width, height, st, at):
+        #     if self.in_graphic_mode:
+        #         self.xpos = time_to_pos(self.time)
+        #         self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
+        #     else:
+        #         self.xpos = time_to_pos(self.time)
+        #         self.ypos = 0.
+        #     self.xpos *= self.barwidth
+        #     self.ypos *= self.barheight
+        #     if self.hovered:
+        #         child = self.hover_child
+        #     else:
+        #         child = self.child
+        #     child = Transform(child, xoffset=self.xpos, yoffset=self.ypos)
+        #
+        #     render = child.render(width, height, st, at)
+        #     self.width, self.height = render.get_size()
+        #
+        #     return render
 
 
         def event(self, ev, x, y, st):
@@ -1571,20 +1522,19 @@ init -1598 python in _viewers:
                 to_x = (x - self.last_x)*self.speed + self.last_xpos
                 if to_x <= 0:
                     to_x = 0
-                if to_x >= self.barwidth - key_xsize:
-                    to_x = self.barwidth - key_xsize
+                if to_x >= self.barwidth - self.width:
+                    to_x = self.barwidth - self.width
                 pos = to_x
                 if self.in_graphic_mode:
                     to_y = (y - self.last_y)*self.speed + self.last_ypos
                     if to_y <= 0:
                         to_y = 0
-                    if to_y >= self.barheight - key_ysize:
-                        to_y = self.barheight - key_ysize
+                    if to_y >= self.barheight - self.height:
+                        to_y = self.barheight - self.height
                     pos = (to_x, to_y)
                 last_time = self.time
                 self.time = key_drag_changed(pos, self.key, self.time, \
                     is_sound=self.is_sound, in_graphic_mode=self.in_graphic_mode)
-                renpy.store.test = (self.time, last_time, pos, self.is_sound)
 
             self.hovered = False
             if not self.dragging and \
@@ -1624,24 +1574,221 @@ init -1598 python in _viewers:
                 self.last_x = None
                 self.last_y = None
                 raise renpy.display.core.IgnoreEvent()
-            if not playing:
-                renpy.redraw(self, 0)
+        #     if not playing:
+        #         renpy.redraw(self, 0)
+        #
+        #
+        # def per_interact(self):
+        #     if not playing:
+        #         renpy.redraw(self, 0)
+
+
+
+    class TimeLine(renpy.Displayable):
+
+
+        def __init__(self, scene, tag, props_set_num=None, key=None, changed=None, use_wide_range=None, opened=None, in_graphic_mode=[]):
+            super(TimeLine, self).__init__()
+            from pygame import MOUSEMOTION
+            from renpy.store import Function, Solid, Fixed
+            self.scene = scene
+            self.tag = tag
+            self.props_set_num = props_set_num
+            self.key = key
+            self.changed=changed
+            self.use_wide_range=use_wide_range
+            self.opened=opened
+            self.in_graphic_mode = in_graphic_mode
+
+            self.children = []
+
+            # if key is not None:
+            #     self.key_list = [key]
+            #     if isinstance(key, tuple):
+            #         n, l, p = key
+            #         for gn, ps in props_groups.items():
+            #             if p in ps:
+            #                 self.key_list = [(n, l, p) for p in props_groups[gn]]
+            #     else:
+            #         for gn, ps in props_groups.items():
+            #             if key in ps:
+            #                 if gn != "focusing":
+            #                     self.key_list = props_groups[gn]
+            self.graphic_mode = self.key in self.in_graphic_mode
+            self.background = TimeLineBackground(self.key, self.graphic_mode)
+            self.mark_num = 100
+
+
+        def __eq__(self, other):
+            if not isinstance(other, TimeLine):
+                return False
+            if self.scene != other.scene:
+                return False
+            if self.tag != other.tag:
+                return False
+            if self.props_set_num != other.props_set_num:
+                return False
+            if self.key != other.key:
+                return False
+            if self.in_graphic_mode != other.in_graphic_mode:
+                return False
+            # if self.changed != other.changed:
+            #     return False
+            # if self.use_wide_range != other.use_wide_range:
+            #     return False
+            # if self.opened != other.opened:
+            #     return False
+            return True
+
+
+        def render(self, width, height, st, at):
+            new_children = []
+            if self.tag is None:
+                _, t, _ = scene_keyframes[self.scene]
+                scene_start = scene_keyframes[self.scene][1]
+                child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
+                new_children.append(child)
+                for key, cs in all_keyframes[self.scene].items():
+                    if isinstance(key, tuple):
+                        p = key[2]
+                    else:
+                        p = key
+                    if p not in props_groups["focusing"] or \
+                        (persistent._viewer_focusing and get_value("perspective", scene_start, True)):
+                        for c in cs:
+                            _, t, _ = c
+                            child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
+                            new_children.append(child)
+            elif self.tag == "camera" and self.props_set_num is None and self.key is None:
+                scene_start = scene_keyframes[self.scene][1]
+                for p, d in camera_props:
+                    _all_keyframes = all_keyframes[self.scene]
+                    if (p not in props_groups["focusing"] or
+                        (persistent._viewer_focusing and get_value("perspective", scene_start, True))):
+                        for _, t, _ in _all_keyframes.get(p, []):
+                            child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
+                            new_children.append(child)
+            elif self.tag == "camera" and self.props_set_num is not None:
+                _all_keyframes = all_keyframes[self.scene]
+                scene_start = scene_keyframes[self.scene][1]
+                for p in props_set[self.props_set_num]:
+                    if (p not in props_groups["focusing"] or \
+                        (persistent._viewer_focusing and get_value("perspective", scene_start, True))):
+                        for _, t, _ in _all_keyframes.get(p, []):
+                            child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
+                            new_children.append(child)
+            elif self.tag == "camera" and self.key is not None and not self.graphic_mode:
+                for c in all_keyframes[self.scene].get(self.key, []):
+                    _, t, _ = c
+                    child = KeyFrame(key_child, t, key_hovere_child, key=self.key,
+                        clicked=Function(change_time, t),
+                        alternate=ShowAlternateMenu(
+                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
+                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            style_prefix="_viewers_alternate_menu"))
+                    new_children.append(child)
+            elif self.tag == "camera" and self.key is not None and self.graphic_mode:
+                for c in all_keyframes[self.scene].get(self.key, []):
+                    _, t, _ = c
+                    child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
+                        clicked=Function(change_time, t),
+                        alternate=ShowAlternateMenu(
+                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
+                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            style_prefix="_viewers_alternate_menu"))
+                    new_children.append(child)
+            elif isinstance(self.tag, tuple) and self.props_set_num is None and self.key is None:
+                tag, layer = self.tag
+                _all_keyframes = all_keyframes[self.scene]
+                for p, d in transform_props:
+                    for _, t, _ in _all_keyframes.get((tag, layer, p), []):
+                        child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
+                            clicked=Function(change_time, t))
+                        new_children.append(child)
+            elif isinstance(self.tag, tuple) and self.props_set_num is not None:
+                tag, layer = self.tag
+                _all_keyframes = all_keyframes[self.scene]
+                for p in props_set[self.props_set_num]:
+                    for _, t, _ in _all_keyframes.get((tag, layer, p), []):
+                        child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
+                            clicked=Function(change_time, t))
+                        new_children.append(child)
+            elif isinstance(self.tag, tuple) and self.key is not None and not self.graphic_mode:
+                for c in all_keyframes[self.scene].get(self.key, []):
+                    _, t, _ = c
+                    child = KeyFrame(key_child, t, key_hovere_child, key=self.key,
+                        clicked=Function(change_time, t),
+                        alternate=ShowAlternateMenu(
+                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
+                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            style_prefix="_viewers_alternate_menu"))
+                    new_children.append(child)
+            elif isinstance(self.tag, tuple) and self.key is not None and self.graphic_mode:
+                for c in all_keyframes[self.scene].get(self.key, []):
+                    _, t, _ = c
+                    child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
+                        clicked=Function(change_time, t),
+                        alternate=ShowAlternateMenu(
+                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
+                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            style_prefix="_viewers_alternate_menu"))
+                    new_children.append(child)
+            elif self.tag == "sounds" and self.key is None:
+                for channel, play_times in sound_keyframes.items():
+                    for t in play_times:
+                        child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=channel,
+                            clicked=Function(change_time, t))
+                        new_children.append(child)
+            elif self.tag == "sounds" and self.key is not None:
+                for t in sound_keyframes[self.key]:
+                    child = KeyFrame(key_child, t, key_hovere_child, key=self.key, is_sound=True, 
+                        clicked=Function(change_time, t),
+                        alternate=ShowAlternateMenu(
+                            generate_sound_menu(channel=self.key, time=t),
+                            style_prefix="_viewers_alternate_menu"))
+                    new_children.append(child)
+
+            box = Fixed()
+            box.add(self.background.get_child())
+
+            children = []
+            for new_c in new_children:
+                for old_c in self.children:
+                    if new_c == old_c:
+                        old_c.update(new_c)
+                        children.append(old_c)
+                        box.add(old_c.get_child())
+                        break
+                else:
+                    children.append(new_c)
+                    box.add(new_c.get_child())
+            self.children = children
+
+            render = box.render(width, height, st, at)
+            return render
+
+
+        def event(self, ev, x, y, st):
+            for c in self.children:
+                c.event(ev, x, y, st)
+            self.background.event(ev, x, y, st)
 
 
         def per_interact(self):
             if not playing:
                 renpy.redraw(self, 0)
+                # for c in self.children:
+                #     c.per_interact()
 
 
-
-    class TimeLineBackground(renpy.Displayable):
+    class TimeLineBackground():
 
 
         def __init__(self, key=None, in_graphic_mode=False):
-            super(TimeLineBackground, self).__init__()
             from pygame import MOUSEMOTION
             from renpy.store import Function, Solid, Fixed
             self.key = key
+            # self.scene = scene
             self.in_graphic_mode = in_graphic_mode
 
             self.key_list = [key]
@@ -1656,31 +1803,63 @@ init -1598 python in _viewers:
                         if gn != "focusing":
                             self.key_list = props_groups[gn]
 
-            box = Fixed()
             if in_graphic_mode:
-                box.add(Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=int(config.screen_height*(1-preview_size)-time_column_height-2*key_half_xsize),  xoffset=key_half_xsize, yoffset=key_half_ysize))
+                self.width  = config.screen_width-c_box_size-50-key_half_xsize
+                self.height = int(config.screen_height*(1-preview_size)-time_column_height-2*key_half_xsize)
+                self.xpos = key_half_xsize
+                self.ypos = key_half_ysize
             else:
-                box.add(Solid(time_line_background_color, xsize=config.screen_width-c_box_size-50-key_half_xsize, ysize=key_ysize, xoffset=key_half_xsize))
-            self.child = box
+                self.width  = config.screen_width-c_box_size-50-key_half_xsize
+                self.height = key_ysize
+                self.xpos = key_half_xsize
+                self.ypos = 0
+            self.child = Solid(time_line_background_color, xsize=self.width, ysize=self.height,  xoffset=self.xpos, yoffset=self.ypos)
 
             self.MOUSEMOTION = MOUSEMOTION
 
             self.dragging = False
             self.clicking = False
             self.hovered = False
+            self.mark_num = 100
 
 
         def __eq__(self, other):
             if not isinstance(other, TimeLineBackground):
                 return False
-            if self.key == other.key and self.in_graphic_mode == other.in_graphic_mode:
-                return True
+            if self.key != other.key or self.in_graphic_mode != other.in_graphic_mode:
+                return False
+            return True
 
 
-        def render(self, width, height, st, at):
-            render = self.child.render(width, height, st, at)
-            self.width, self.height = render.get_size()
-            return render
+        def get_child(self):
+            return self.child
+
+
+        # def get_pos(self):
+        #     if self.in_graphic_mode:
+        #         return key_half_xsize, key_half_ysize
+        #     else:
+        #         return key_half_xsize, 0
+        # def render(self, width, height, st, at):
+        #     box = Fixed()
+        #     box.add(self.child)
+        #
+        #     # if self.in_graphic_mode:
+        #     #     last_v, last_t = None, None
+        #     #     for c in all_keyframes[self.scene][self.key]:
+        #     #         v, t, _ = c
+        #     #         if last_v is not None:
+        #     #             v_diff = (v - last_v)
+        #     #             t_diff = (t - last_t)
+        #     #             for t2 in range(1, self.mark_num):
+        #     #                     box.add(interpolate_key_child, 
+        #     #                         xpos=time_to_pos(last_t + t_diff*t2/self.mark_num),
+        #     #                         ypos=value_to_pos(last_t + t_diff*t2/self.mark_num, key, in_graphic_mode=true)
+        #     #                         )
+        #
+        #     render = box.render(width, height, st, at)
+        #     self.width, self.height = render.get_size()
+        #     return render
 
 
         def event(self, ev, x, y, st):
@@ -1688,7 +1867,7 @@ init -1598 python in _viewers:
                 self.dragging = True
 
             self.hovered = False
-            if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
+            if not self.dragging and x >= self.xpos and x <= self.width + self.xpos and y >= self.ypos and y <= self.height + self.ypos:
                 self.hovered = True
                 if renpy.map_event(ev, "mousedown_1"):
                     self.clicking = True
@@ -1698,7 +1877,6 @@ init -1598 python in _viewers:
                         self.clicking = False
                         time = pos_to_time(x)
                         change_time(time)
-                        renpy.store.QueueEvent("mouseup_1")()
                         raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
                     if self.key:
@@ -1723,13 +1901,13 @@ init -1598 python in _viewers:
             self.int_x = int_x
             self.int_y = int_y
             if self.int_x:
-                self.x_range = renpy.store.persistent._wide_range
+                self.x_range = persistent._wide_range
             else:
-                self.x_range = renpy.store.persistent._narrow_range
+                self.x_range = persistent._narrow_range
             if self.int_y:
-                self.y_range = renpy.store.persistent._wide_range
+                self.y_range = persistent._wide_range
             else:
-                self.y_range = renpy.store.persistent._narrow_range
+                self.y_range = persistent._narrow_range
 
             self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
             self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
@@ -1800,7 +1978,7 @@ init -1598 python in _viewers:
         return button_list
 
 
-    def generate_menu(key, check_point, use_wide_range=False, change_func=None, opened=None, in_graphic_mode=False):
+    def generate_menu(key, check_point, use_wide_range=False, change_func=None, opened=None, in_graphic_mode=[]):
         from renpy.store import ToggleDict, Function, SelectedIf, SensitiveIf, Show
         check_points = all_keyframes[current_scene][key]
         i = check_points.index(check_point)
@@ -1830,10 +2008,10 @@ init -1598 python in _viewers:
         button_list = []
 
         if p == "child":
-            button_list.append(("edit child: {}".format(v[0])), 
-                Function(change_child, n, l, time=t, default=v[0]))
-            button_list.append(("edit transform: {}".format(v[1])), 
-                Function(edit_transition, n, l, time=t))
+            button_list.append((("edit child: {}".format(v[0])), 
+                Function(change_child, n, l, time=t, default=v[0])))
+            button_list.append((("edit transform: {}".format(v[1])), 
+                Function(edit_transition, n, l, time=t)))
         else:
             button_list.append(( _("edit value: {}".format(v)),
                 [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
@@ -1848,10 +2026,12 @@ init -1598 python in _viewers:
                             key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
                             use_wide_range=use_wide_range, force_plus=p in force_plus, time=t)]))
                 if len(check_points) >= 2:
-                    if in_graphic_mode:
-                        button_list.append(( _("normal editor"), [SelectedIf(False), Show("_new_action_editor", opened=opened)]))
+                    if key in in_graphic_mode:
+                        _in_graphic_mode = in_graphic_mode[:]
+                        _in_graphic_mode.remove(key)
                     else:
-                        button_list.append(( _("graphic editor"), [SelectedIf(False), Show("_new_action_editor", opened=opened, graphic_mode=key)]))
+                        _in_graphic_mode = in_graphic_mode + [key]
+                    button_list.append(( _("toggle graphic editor"), [SelectedIf(key in in_graphic_mode), Show("_new_action_editor", opened=opened, in_graphic_mode=_in_graphic_mode)]))
             button_list.append(( _("reset"), Function(reset, key)))
 
         button_list.append(( _("edit time: {}".format(t)), Function(edit_move_keyframe, keys=k_list, old=t)))
@@ -1861,9 +2041,8 @@ init -1598 python in _viewers:
         return button_list
 
 
-init 0 python in _viewers:
     @renpy.pure
-    class CurrentTime(renpy.store.BarValue, renpy.store.DictEquality):
+    class CurrentTime(BarValue, DictEquality):
 
         def __init__(self, range):
             self.range = range
