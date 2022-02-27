@@ -542,9 +542,10 @@ init -1598 python in _viewers:
         global current_time, playing
         if time is None:
             time = st
-            if st <= end_time:
+            if st <= end_time + return_margin+.1:
                 playing = True
-                current_time = st + start_time
+                if st <= end_time:
+                    current_time = st + start_time
             else:
                 playing = False
         else:

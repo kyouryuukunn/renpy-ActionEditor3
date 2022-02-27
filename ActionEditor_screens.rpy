@@ -35,12 +35,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             $opened[s] = []
 
     $indent = "  "
-    $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
-        [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
-        Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
-    key "K_SPACE" action play_action
-    key "action_editor" action NullAction()
-    key "hide_windows" action NullAction()
 
     $offsetX, offsetY = get_property("offsetX"), get_property("offsetY")
     $value_range = persistent._wide_range
@@ -67,15 +61,21 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
 
     if time:
-        timer time+.5 action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
-                            Function(change_time, previous_time)]
+        timer time+_viewers.return_margin action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
+                            Function(_viewers.return_start_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
                             Function(change_time, previous_time)]
         $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
-            [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
-            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=previous_time, in_graphic_mode=in_graphic_mode)]
+            _viewers.pause, \
+            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), in_graphic_mode=in_graphic_mode)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
+        $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+            [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
+            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
+    key "K_SPACE" action play_action
+    key "action_editor" action NullAction()
+    key "hide_windows" action NullAction()
 
     $state=_viewers.get_image_state(layer)
     $tag_list =  []
@@ -424,6 +424,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
 
 init -1599 python in _viewers:
+    return_margin = 0.5
     time_column_height = 30
     key_xsize = 22
     key_ysize = 22
@@ -1100,6 +1101,17 @@ init 1 python in _viewers:
     from renpy.store import Function, QueueEvent, Text, BarValue, DictEquality, ShowAlternateMenu
 
 
+    def return_start_time(start_time):
+        if playing:
+            change_time(start_time)
+
+
+    def pause():
+        global playing
+        if playing:
+            change_time(current_time)
+
+
     def pos_to_time(x):
         barwidth = config.screen_width - c_box_size - 50 - key_half_xsize
         frac = float(x - key_half_xsize)/barwidth
@@ -1450,7 +1462,6 @@ init 1 python in _viewers:
                         for t2 in range(1, self.mark_num):
                             xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
                             ypos = value_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
-                            # box.add(Transform(interpolate_key_child))
                             box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
                     last_v, last_t = v, t
 
