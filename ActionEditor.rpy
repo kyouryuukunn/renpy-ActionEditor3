@@ -411,12 +411,14 @@ init -1598 python in _viewers:
             for channel, times in sound_keyframes.items():
                 time = 0
                 files = []
-                if times:
-                    for t, fs in times.items():
+                sorted_times = times.keys()
+                sorted_times.sort()
+                if sorted_times:
+                    for t in sorted_times:
                         duration = t - time
                         if duration > 0:
                             files.append("<silence {}>".format(duration))
-                        file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
+                        file = renpy.python.py_eval(times[t], locals=renpy.python.store_dicts["store.audio"])
                         files += file
                         time = t
                         for f in file:
@@ -1390,11 +1392,14 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            if times:
-                for t, fs in times.items():
+            sorted_times = times.keys()
+            sorted_times.sort()
+            if sorted_times:
+                for t in sorted_times:
                     duration = t - time
                     if duration > 0:
                         files += "'<silence {}>',\n        ".format(round(duration, 3))
+                    fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
                     file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
@@ -1693,16 +1698,13 @@ show %s""" % child
     def edit_playing_file(channel, time=None):
         if time is None:
             time = current_time
-        if is_playing(channel, time, time):
+        if time not in sound_keyframes[channel] and is_playing(channel, time, time):
             renpy.notify(_("This channel is already used in this time"))
             return
         default = ""
         if time in sound_keyframes[channel]:
             default = sound_keyframes[channel][time]
         v = renpy.invoke_in_new_context(renpy.call_screen, "_sound_selector", default=default)
-        if v == "None":
-            sound_keyframes[channel][time] = v
-            return
         if "[" not in v:  #]"
             v = "[" + v   #]"
         if "]" not in v:
@@ -1721,7 +1723,7 @@ show %s""" % child
         for f in renpy.python.py_eval(v, locals=renpy.python.store_dicts["store.audio"]):
             duration += get_file_duration(f)
         for t in sound_keyframes[channel].keys():
-            if t <= time + duration and t >= time:
+            if t <= time + duration and t > time:
                 renpy.notify(_("This channel is already used in this time"))
                 return
         sound_keyframes[channel][time] = v
@@ -1899,15 +1901,6 @@ show %s""" % child
             renpy.music.stop(c, False)
         play(False)
         renpy.restart_interaction()
-
-
-    def change_to_current_time():
-        change_time(current_time)
-
-
-    def backto_start_time(start_time):
-        if playing:
-            change_time(start_time)
 
 
     def get_file_duration(filename):
@@ -2242,11 +2235,14 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            if times:
-                for t, fs in times.items():
+            sorted_times = times.keys()
+            sorted_times.sort()
+            if sorted_times:
+                for t in sorted_times:
                     duration = t - time
                     if duration > 0:
                         files += "'<silence {}>',\n        ".format(round(duration, 3))
+                    fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
                     file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])

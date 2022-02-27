@@ -28,9 +28,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $generate_sound_menu = _viewers.generate_sound_menu
     $generate_menu = _viewers.generate_menu
     $is_wide_range = _viewers.is_wide_range
-    $KeyFrame = _viewers.KeyFrame
-    $TimeLineBackground = _viewers.TimeLineBackground
-    $backto_start_time = _viewers.backto_start_time
     $TimeLine = _viewers.TimeLine
 
     if opened is None:
@@ -136,12 +133,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                         action Function(_viewers.edit_time)
                         xalign 1.
                         size_group None
-                # fixed:
-                #     drag:
-                #         drag_name "time"
-                #         child _viewers.key_child
-                #         xpos time_to_pos(current_time)
-                #         dragged _viewers.drag_change_time
                 bar value _viewers.CurrentTime(persistent._time_range):
                     xalign 1. yalign .5 style "new_action_editor_bar"
             viewport:
@@ -157,20 +148,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                     action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
                             fixed:
                                 add TimeLine(s, None)
-                                # $(v, t, w) = scene_keyframes[s]
-                                # add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                #     clicked=Function(change_time, t))
-                                # for key, cs in all_keyframes[s].items():
-                                #     if isinstance(key, tuple):
-                                #         $p = key[2]
-                                #     else:
-                                #         $p = key
-                                #     if (p not in props_groups["focusing"] or
-                                #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                #         for c in cs:
-                                #             $(v, t, w) = c
-                                #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                #                 clicked=Function(change_time, t))
                     else:
                         hbox:
                             hbox:
@@ -192,13 +169,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                         Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
                                 fixed:
                                     add TimeLine(s, "camera")
-                                    # for p, d in _viewers.camera_props:
-                                    #     if (p not in props_groups["focusing"] or
-                                    #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                    #         for c in all_keyframes[s].get(p, []):
-                                    #             $(v, t, w) = c
-                                    #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                    #                 clicked=Function(change_time, t))
                         else:
                             hbox:
                                 hbox:
@@ -214,13 +184,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                         style_group "new_action_editor_b"
                                 fixed:
                                     add TimeLine(s, "camera")
-                                    # for p, d in _viewers.camera_props:
-                                    #     if (p not in props_groups["focusing"] or
-                                    #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                    #         for c in all_keyframes[s].get(p, []):
-                                    #             $(v, t, w) = c
-                                    #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                    #                 clicked=Function(change_time, t))
                             textbutton _(indent*2+"  perspective"):
                                 action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
                                 Function(_viewers.toggle_perspective)]
@@ -235,13 +198,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                         fixed:
                                             add TimeLine(s, "camera", props_set_num=i)
-                                            # for p in props_set[i]:
-                                            #     if (p not in props_groups["focusing"] or \
-                                            #         (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                            #         for c in all_keyframes[s].get(p, []):
-                                            #             $(v, t, w) = c
-                                            #             add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                            #                 clicked=Function(change_time, t))
                                     for p in props_set[i]:
                                         if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                             (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
@@ -249,7 +205,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             $value = get_property(p)
                                             $d = _viewers.get_default(p, True)
                                             $f = generate_changed(p)
-                                            $cs = all_keyframes[s].get(key, []) #TODO
                                             $use_wide_range = is_wide_range(key)
                                             if not use_wide_range or isinstance(value, float):
                                                 $value_format = float_format
@@ -264,26 +219,10 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 if key not in in_graphic_mode:
                                                     fixed:
                                                         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
-                                                        # for c in cs:
-                                                        #     $(v, t, w) = c
-                                                        #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
-                                                        #         clicked=Function(change_time, t),
-                                                        #         alternate=ShowAlternateMenu(
-                                                        #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
-                                                        #             style_prefix="_viewers_alternate_menu"))
                                                 else:
                                                     fixed:
                                                         # ysize None
                                                         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
-                                                        # yfit True
-                                                        # add TimeLineBackground(key, True, cs)
-                                                        # for c in cs:
-                                                        #     $(v, t, w) = c
-                                                        #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
-                                                        #         clicked=Function(change_time, t),
-                                                        #         alternate=ShowAlternateMenu(
-                                                        #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
-                                                        #             style_prefix="_viewers_alternate_menu"))
                                 else:
                                     hbox:
                                         hbox:
@@ -353,11 +292,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
                                                 add TimeLine(s, (tag, layer), props_set_num=i)
-                                                # for p in props_set[i]:
-                                                #     for c in all_keyframes[s].get((tag, layer, p), []):
-                                                #         $(v, t, w) = c
-                                                #         add KeyFrame(_viewers.insensitive_key_child, t, _viewers.insensitive_key_hovere_child, False, key=None,
-                                                #             clicked=Function(change_time, t))
                                         for p in props_set[i]:
                                             if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                 and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
@@ -366,7 +300,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 $d = _viewers.get_default(p)
                                                 $value = get_property(key)
                                                 $f = generate_changed(key)
-                                                # $cs = all_keyframes[s].get(key, []) #TODO
                                                 $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                                                 if not use_wide_range or isinstance(value, float):
                                                     $value_format = float_format
@@ -399,22 +332,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     fixed:
                                                         if key not in in_graphic_mode:
                                                             add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
-                                                            # for c in cs:
-                                                            #     $(v, t, w) = c
-                                                            #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key,
-                                                            #         clicked=Function(change_time, t),
-                                                            #         alternate=ShowAlternateMenu(
-                                                            #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
-                                                            #             style_prefix="_viewers_alternate_menu"))
                                                         else:
                                                             add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
-                                                            # for c in cs:
-                                                            #     $(v, t, w) = c
-                                                            #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=key, in_graphic_mode=True,
-                                                            #         clicked=Function(change_time, t),
-                                                            #         alternate=ShowAlternateMenu(
-                                                            #             generate_menu(key=key, check_point=c, use_wide_range=use_wide_range, change_func=f, opened=opened, in_graphic_mode=in_graphic_mode),
-                                                            #             style_prefix="_viewers_alternate_menu"))
                                 $new_opened = opened.copy()
                                 $new_opened[s] = opened[s].copy()
                                 $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
@@ -454,7 +373,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                             action Function(_viewers.put_sound_clipboard)
                             size_group None
                             style_group "new_action_editor_b"
-                    for channel, play_times in sound_keyframes.items():
+                    for channel in sound_keyframes:
                         hbox:
                             hbox:
                                 style_group "new_action_editor_c"
@@ -463,12 +382,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                     size_group None
                             fixed:
                                 add TimeLine(s, "sounds", key=channel)
-                                # for t in play_times:
-                                #     add KeyFrame(_viewers.key_child, t, _viewers.key_hovere_child, key=channel, is_sound=True, 
-                                #         clicked=Function(change_time, t),
-                                #         alternate=ShowAlternateMenu(
-                                #             generate_sound_menu(channel=channel, time=t),
-                                #             style_prefix="_viewers_alternate_menu"))
                         hbox:
                             $value = "None"
                             $sorted_play_times = sound_keyframes[channel].keys()
@@ -1285,7 +1198,6 @@ init 1 python in _viewers:
         return prop not in force_float and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
 
 
-
     class DraggableValue(renpy.Displayable):
 
 
@@ -1458,13 +1370,6 @@ init 1 python in _viewers:
                 return False
             if self.time != other.time:
                 return False
-            # if not other.dragging:
-            #     return False
-            # if not self.dragging and not other.dragging:
-            # if self.dragging and not other.dragging:
-            #     return False
-
-            # otherの方が表示済でselfが新しい方のよう
             return True
 
 
@@ -1487,28 +1392,6 @@ init 1 python in _viewers:
             else:
                 child = self.child
             return Transform(child, xoffset=self.xpos, yoffset=self.ypos)
-            
-
-
-        # def render(self, width, height, st, at):
-        #     if self.in_graphic_mode:
-        #         self.xpos = time_to_pos(self.time)
-        #         self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
-        #     else:
-        #         self.xpos = time_to_pos(self.time)
-        #         self.ypos = 0.
-        #     self.xpos *= self.barwidth
-        #     self.ypos *= self.barheight
-        #     if self.hovered:
-        #         child = self.hover_child
-        #     else:
-        #         child = self.child
-        #     child = Transform(child, xoffset=self.xpos, yoffset=self.ypos)
-        #
-        #     render = child.render(width, height, st, at)
-        #     self.width, self.height = render.get_size()
-        #
-        #     return render
 
 
         def event(self, ev, x, y, st):
@@ -1574,13 +1457,6 @@ init 1 python in _viewers:
                 self.last_x = None
                 self.last_y = None
                 raise renpy.display.core.IgnoreEvent()
-        #     if not playing:
-        #         renpy.redraw(self, 0)
-        #
-        #
-        # def per_interact(self):
-        #     if not playing:
-        #         renpy.redraw(self, 0)
 
 
 
@@ -1601,19 +1477,6 @@ init 1 python in _viewers:
             self.in_graphic_mode = in_graphic_mode
 
             self.children = []
-
-            # if key is not None:
-            #     self.key_list = [key]
-            #     if isinstance(key, tuple):
-            #         n, l, p = key
-            #         for gn, ps in props_groups.items():
-            #             if p in ps:
-            #                 self.key_list = [(n, l, p) for p in props_groups[gn]]
-            #     else:
-            #         for gn, ps in props_groups.items():
-            #             if key in ps:
-            #                 if gn != "focusing":
-            #                     self.key_list = props_groups[gn]
             self.graphic_mode = self.key in self.in_graphic_mode
             self.background = TimeLineBackground(self.key, self.graphic_mode)
             self.mark_num = 100
@@ -1632,12 +1495,6 @@ init 1 python in _viewers:
                 return False
             if self.in_graphic_mode != other.in_graphic_mode:
                 return False
-            # if self.changed != other.changed:
-            #     return False
-            # if self.use_wide_range != other.use_wide_range:
-            #     return False
-            # if self.opened != other.opened:
-            #     return False
             return True
 
 
@@ -1777,8 +1634,6 @@ init 1 python in _viewers:
         def per_interact(self):
             if not playing:
                 renpy.redraw(self, 0)
-                # for c in self.children:
-                #     c.per_interact()
 
 
     class TimeLineBackground():
@@ -1835,39 +1690,13 @@ init 1 python in _viewers:
             return self.child
 
 
-        # def get_pos(self):
-        #     if self.in_graphic_mode:
-        #         return key_half_xsize, key_half_ysize
-        #     else:
-        #         return key_half_xsize, 0
-        # def render(self, width, height, st, at):
-        #     box = Fixed()
-        #     box.add(self.child)
-        #
-        #     # if self.in_graphic_mode:
-        #     #     last_v, last_t = None, None
-        #     #     for c in all_keyframes[self.scene][self.key]:
-        #     #         v, t, _ = c
-        #     #         if last_v is not None:
-        #     #             v_diff = (v - last_v)
-        #     #             t_diff = (t - last_t)
-        #     #             for t2 in range(1, self.mark_num):
-        #     #                     box.add(interpolate_key_child, 
-        #     #                         xpos=time_to_pos(last_t + t_diff*t2/self.mark_num),
-        #     #                         ypos=value_to_pos(last_t + t_diff*t2/self.mark_num, key, in_graphic_mode=true)
-        #     #                         )
-        #
-        #     render = box.render(width, height, st, at)
-        #     self.width, self.height = render.get_size()
-        #     return render
-
-
         def event(self, ev, x, y, st):
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
 
             self.hovered = False
-            if not self.dragging and x >= self.xpos and x <= self.width + self.xpos and y >= self.ypos and y <= self.height + self.ypos:
+            if not self.dragging and x >= self.xpos and x <= self.width + self.xpos \
+                and y >= self.ypos and y <= self.height + self.ypos:
                 self.hovered = True
                 if renpy.map_event(ev, "mousedown_1"):
                     self.clicking = True
@@ -1909,8 +1738,10 @@ init 1 python in _viewers:
             else:
                 self.y_range = persistent._narrow_range
 
-            self.cx = self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
-            self.cy = self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
+            self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
+            self.cx =  self.x
+            self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
+            self.cy =  self.y
 
 
         def render(self, width, height, st, at):
