@@ -402,29 +402,12 @@ init -1599 python in _viewers:
     key_half_xsize = 22 // 2
     key_half_ysize = 22 // 2
     time_line_background_color = "#222"
-    box = Fixed(xsize=key_xsize, ysize=key_ysize)
-    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#77A", xsize=16, ysize=16)))
-    key_child = box
 
-    box = Fixed(xsize=key_xsize, ysize=key_ysize)
-    box.add(Solid("#BBB", xsize=4, ysize=4, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2))
-    interpolate_key_child = box
-
-    box = Fixed(xsize=key_xsize, ysize=key_ysize)
-    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16)))
-    key_hovere_child = box
-
-    box = Fixed(xsize=key_xsize, ysize=key_ysize)
-    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#447", xsize=16, ysize=16)))
-    insensitive_key_child = box
-
-    box = Fixed(xsize=key_xsize, ysize=key_ysize)
-    box.add(Solid(time_line_background_color+"1", xsize=key_xsize, ysize=key_ysize))
-    box.add(Transform(rotate=45)(Solid("#669", xsize=16, ysize=16)))
-    insensitive_key_hovere_child = box
+    key_child = Transform(rotate=45)(Solid("#77A", xsize=16, ysize=16))
+    key_hovere_child = Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16))
+    insensitive_key_child = Transform(rotate=45)(Solid("#447", xsize=16, ysize=16))
+    insensitive_key_hovere_child = Transform(rotate=45)(Solid("#669", xsize=16, ysize=16))
+    interpolate_key_child = Solid("#BBB", xsize=4, ysize=4, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2)
 
     c_box_size = 320
     timeline_ysize = 27
@@ -1090,8 +1073,8 @@ init 1 python in _viewers:
 
 
     def pos_to_time(x):
-        barwidth = config.screen_width - c_box_size-50 + key_half_xsize
-        frac = float(x)/(barwidth-key_xsize)
+        barwidth = config.screen_width - c_box_size - 50 - key_half_xsize
+        frac = float(x - key_half_xsize)/barwidth
         goal = round(frac*persistent._time_range, 2)
         if goal < 0:
             goal = 0.
@@ -1101,9 +1084,9 @@ init 1 python in _viewers:
 
 
     def time_to_pos(time):
-        xpos = time/persistent._time_range
-        barwidth = config.screen_width-c_box_size-50+key_half_xsize
-        return xpos*float(barwidth-key_xsize)/barwidth
+        frac = time/persistent._time_range
+        barwidth = config.screen_width - c_box_size - 50 - key_half_xsize
+        return frac*barwidth + key_half_xsize
 
 
     def value_to_pos(time, key=None, in_graphic_mode=None):
@@ -1310,156 +1293,6 @@ init 1 python in _viewers:
                 renpy.redraw(self, 0)
 
 
-    class KeyFrame():
-
-
-        def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, dot=False, is_sound=False):
-            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
-            from pygame.key import get_mods
-            self.child = child
-            self.hover_child = hover_child
-            self.time = time
-            self.draggable = draggable
-            self.key = key
-            if not isinstance(clicked, list):
-                clicked = [clicked]
-            self.clicked = clicked + [QueueEvent("mouseup_1")]
-            self.alternate = alternate
-            self.in_graphic_mode = in_graphic_mode
-            self.dot = dot
-            self.is_sound = is_sound
-
-            self.dragging = False
-            self.clicking = False
-            self.hovered = False
-
-            self.MOUSEMOTION = MOUSEMOTION
-            self.speed = 1.0
-            self.SLOW = 0.33
-            self.NORMAL = 1.0
-            self.FAST = 3.0
-            self.KMOD_SHIFT = KMOD_SHIFT
-            self.KMOD_CTRL = KMOD_CTRL
-            self.get_mods = get_mods
-
-            self.barwidth = config.screen_width - c_box_size-50 + key_half_xsize
-            if in_graphic_mode:
-                self.barheight = config.screen_height*(1-preview_size)-time_column_height
-            else:
-                self.barheight = key_ysize
-            self.width = key_xsize
-            self.height = key_ysize
-
-
-        def __eq__(self, other):
-            if not isinstance(other, KeyFrame):
-                return False
-            if self.child != other.child:
-                return False
-            if self.hover_child != other.hover_child:
-                return False
-            if self.draggable != other.draggable:
-                return False
-            if self.key != other.key:
-                return False
-            if self.in_graphic_mode != other.in_graphic_mode:
-                return False
-            if self.dot != other.dot:
-                return False
-            if self.is_sound != other.is_sound:
-                return False
-            if self.time != other.time:
-                return False
-            return True
-
-
-        def update(self, other):
-            self.clicked = other.clicked
-            self.alternate = other.alternate
-
-
-        def get_child(self):
-            if self.in_graphic_mode:
-                self.xpos = time_to_pos(self.time)
-                self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
-            else:
-                self.xpos = time_to_pos(self.time)
-                self.ypos = 0.
-            self.xpos *= self.barwidth
-            self.ypos *= self.barheight
-            if self.hovered:
-                child = self.hover_child
-            else:
-                child = self.child
-            return Transform(child, xoffset=self.xpos, yoffset=self.ypos)
-
-
-        def event(self, ev, x, y, st):
-            if self.dot:
-                if not playing:
-                    renpy.redraw(self, 0)
-                return
-
-            if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
-                self.dragging = True
-                to_x = (x - self.last_x)*self.speed + self.last_xpos
-                if to_x <= 0:
-                    to_x = 0
-                if to_x >= self.barwidth - self.width:
-                    to_x = self.barwidth - self.width
-                pos = to_x
-                if self.in_graphic_mode:
-                    to_y = (y - self.last_y)*self.speed + self.last_ypos
-                    if to_y <= 0:
-                        to_y = 0
-                    if to_y >= self.barheight - self.height:
-                        to_y = self.barheight - self.height
-                    pos = (to_x, to_y)
-                last_time = self.time
-                self.time = key_drag_changed(pos, self.key, self.time, \
-                    is_sound=self.is_sound, in_graphic_mode=self.in_graphic_mode)
-
-            self.hovered = False
-            if not self.dragging and \
-                x >= self.xpos and x <= self.width+self.xpos and \
-                y >= self.ypos and y <= self.height+self.ypos:
-                self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
-                    if self.get_mods() & self.KMOD_CTRL:
-                        self.speed = self.SLOW
-                    elif self.get_mods() & self.KMOD_SHIFT:
-                        self.speed = self.FAST
-                    else:
-                        self.speed = self.NORMAL
-                    self.clicking = True
-                    self.last_xpos = self.xpos
-                    self.last_ypos = self.ypos
-                    self.last_x = x
-                    self.last_y = y
-                    raise renpy.display.core.IgnoreEvent()
-                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
-                    if self.clicking == True:
-                        self.clicking = False
-                        rv = renpy.run(self.clicked)
-                        if rv is not None:
-                            return rv
-                        raise renpy.display.core.IgnoreEvent()
-                elif renpy.map_event(ev, "button_alternate"):
-                    rv = renpy.run(self.alternate)
-                    if rv is not None:
-                        return rv
-                    raise renpy.display.core.IgnoreEvent()
-            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
-                self.dragging = False
-                self.clicking = False
-                self.last_xpos = self.xpos
-                self.last_ypos = self.ypos
-                self.last_x = None
-                self.last_y = None
-                raise renpy.display.core.IgnoreEvent()
-
-
-
     class TimeLine(renpy.Displayable):
 
 
@@ -1626,14 +1459,169 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            redraw = False
             for c in self.children:
-                c.event(ev, x, y, st)
+                rv = c.event(ev, x, y, st)
+                if rv:
+                    redraw = True
             self.background.event(ev, x, y, st)
+            if redraw:
+                renpy.redraw(self, 0)
 
 
         def per_interact(self):
             if not playing:
                 renpy.redraw(self, 0)
+
+
+    class KeyFrame():
+
+
+        def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, dot=False, is_sound=False):
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame.key import get_mods
+            self.child = child
+            self.hover_child = hover_child
+            self.time = time
+            self.draggable = draggable
+            self.key = key
+            if not isinstance(clicked, list):
+                clicked = [clicked]
+            self.clicked = clicked + [QueueEvent("mouseup_1")]
+            self.alternate = alternate
+            self.in_graphic_mode = in_graphic_mode
+            self.dot = dot
+            self.is_sound = is_sound
+
+            self.dragging = False
+            self.clicking = False
+            self.last_hovered = self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+            self.speed = 1.0
+            self.SLOW = 0.33
+            self.NORMAL = 1.0
+            self.FAST = 3.0
+            self.KMOD_SHIFT = KMOD_SHIFT
+            self.KMOD_CTRL = KMOD_CTRL
+            self.get_mods = get_mods
+
+            self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
+            if in_graphic_mode:
+                self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            else:
+                self.barheight = key_ysize
+            self.width = key_xsize
+            self.height = key_ysize
+
+
+        def __eq__(self, other):
+            if not isinstance(other, KeyFrame):
+                return False
+            if self.child != other.child:
+                return False
+            if self.hover_child != other.hover_child:
+                return False
+            if self.draggable != other.draggable:
+                return False
+            if self.key != other.key:
+                return False
+            if self.in_graphic_mode != other.in_graphic_mode:
+                return False
+            if self.dot != other.dot:
+                return False
+            if self.is_sound != other.is_sound:
+                return False
+            if self.time != other.time:
+                return False
+            return True
+
+
+        def update(self, other):
+            self.clicked = other.clicked
+            self.alternate = other.alternate
+
+
+        def get_child(self):
+            if self.in_graphic_mode:
+                self.xpos = time_to_pos(self.time)
+                self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
+            else:
+                self.xpos = time_to_pos(self.time)
+                self.ypos = 0.
+            if self.hovered:
+                child = self.hover_child
+            else:
+                child = self.child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, xanchor=0.5)
+
+
+        def event(self, ev, x, y, st):
+            if self.dot:
+                return
+
+            if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                to_x = (x - self.last_x)*self.speed + self.last_xpos
+                if to_x < self.width/2.:
+                    to_x = 0
+                if to_x > self.barwidth + self.width/2.:
+                    to_x = self.barwidth + self.width/2.
+                pos = to_x
+                if self.in_graphic_mode:
+                    to_y = (y - self.last_y)*self.speed + self.last_ypos
+                    if to_y <= 0:
+                        to_y = 0
+                    if to_y >= self.barheight - self.height:
+                        to_y = self.barheight - self.height
+                    pos = (to_x, to_y)
+                last_time = self.time
+                self.time = key_drag_changed(pos, self.key, self.time, \
+                    is_sound=self.is_sound, in_graphic_mode=self.in_graphic_mode)
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
+                y >= self.ypos and y <= self.height+self.ypos:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    if self.get_mods() & self.KMOD_CTRL:
+                        self.speed = self.SLOW
+                    elif self.get_mods() & self.KMOD_SHIFT:
+                        self.speed = self.FAST
+                    else:
+                        self.speed = self.NORMAL
+                    self.clicking = True
+                    self.last_xpos = self.xpos
+                    self.last_ypos = self.ypos
+                    self.last_x = x
+                    self.last_y = y
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    if self.clicking == True:
+                        self.clicking = False
+                        rv = renpy.run(self.clicked)
+                        if rv is not None:
+                            return rv
+                        raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    rv = renpy.run(self.alternate)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                self.last_xpos = self.xpos
+                self.last_ypos = self.ypos
+                self.last_x = None
+                self.last_y = None
+                raise renpy.display.core.IgnoreEvent()
+            if self.last_hovered != self.hovered:
+                self.last_hovered = self.hovered
+                return True
+            self.last_hovered = self.hovered
+
 
 
     class TimeLineBackground():
