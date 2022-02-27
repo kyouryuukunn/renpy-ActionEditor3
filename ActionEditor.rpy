@@ -344,6 +344,11 @@ init -1598 python in _viewers:
         else:
             range = persistent._narrow_range
         if force_plus:
+            if value < 0:
+                if isinstance(value, int):
+                    value = 0
+                else:
+                    value = 0.
             return value
         else:
             return value + range

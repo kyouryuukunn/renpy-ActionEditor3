@@ -23,8 +23,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $props_set_names = _viewers.props_set_names
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
-    $time_to_pos = _viewers.time_to_pos
-    $value_to_pos = _viewers.value_to_pos
     $generate_sound_menu = _viewers.generate_sound_menu
     $generate_menu = _viewers.generate_menu
     $is_wide_range = _viewers.is_wide_range
@@ -135,264 +133,294 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                         size_group None
                 bar value _viewers.CurrentTime(persistent._time_range):
                     xalign 1. yalign .5 style "new_action_editor_bar"
-            viewport:
-                mousewheel True
-                scrollbars "vertical"
-                has vbox
-                for s, ks in enumerate(all_keyframes):
-                    if s != current_scene:
-                        hbox:
-                            hbox:
-                                style_group "new_action_editor_c"
-                                textbutton "+ "+"scene[s]":
-                                    action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
-                            fixed:
-                                add TimeLine(s, None)
-                    else:
-                        hbox:
-                            hbox:
-                                style_group "new_action_editor_c"
-                                textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
-                            fixed:
-                                add TimeLine(s, None)
-                        if "camera" not in opened[s]:
+            if in_graphic_mode:
+                $key = in_graphic_mode[0]
+                if isinstance(key, tuple):
+                    $p = key[2]
+                    $d = _viewers.get_default(p)
+                    $tag=(key[0], key[1])
+                else:
+                    $p = key
+                    $d = _viewers.get_default(p, True)
+                    $tag = "camera"
+                $value = get_property(key)
+                $f = generate_changed(key)
+                $use_wide_range = is_wide_range(key)
+                if not use_wide_range or isinstance(value, float):
+                    $value_format = float_format
+                else:
+                    $value_format = int_format
+                hbox:
+                    #他と同時にグラフィックモードで表示するとタイムバーが反応しないことがある
+                    hbox:
+                        style_group "new_action_editor_c"
+                        textbutton "  [key]" action None text_color "#CCC"
+                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                            text_size=16, text_color="#CCC", text_hover_underline=True)
+                    fixed:
+                        # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                        ysize None
+                        add TimeLine(s, tag, key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+            else:
+                viewport:
+                    mousewheel True
+                    scrollbars "vertical"
+                    has vbox
+                    for s, ks in enumerate(all_keyframes):
+                        if s != current_scene:
                             hbox:
                                 hbox:
                                     style_group "new_action_editor_c"
-                                    if persistent._open_only_one_page:
-                                        $new_opened = {s:["camera"]}
-                                    else:
-                                        $new_opened = opened.copy()
-                                        $new_opened[s] = new_opened[s] + ["camera"]
-                                    textbutton _(indent+"+ "+"camera"):
-                                        action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
-                                        Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
+                                    textbutton "+ "+"scene[s]":
+                                        action [SelectedIf(current_scene == s), Function(_viewers.change_scene, s)]
                                 fixed:
-                                    add TimeLine(s, "camera")
+                                    add TimeLine(s, None)
                         else:
                             hbox:
                                 hbox:
                                     style_group "new_action_editor_c"
-                                    $new_opened = opened.copy()
-                                    $new_opened[s] = opened[s].copy()
-                                    $new_opened[s].remove("camera")
-                                    textbutton _(indent+"- "+"camera"):
-                                        action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
-                                    textbutton _("clipboard"):
-                                        action Function(_viewers.put_camera_clipboard)
-                                        size_group None
-                                        style_group "new_action_editor_b"
+                                    textbutton "- "+"scene[s]" action SelectedIf(current_scene == s)
                                 fixed:
-                                    add TimeLine(s, "camera")
-                            textbutton _(indent*2+"  perspective"):
-                                action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
-                                Function(_viewers.toggle_perspective)]
-                            for i, props_set_name in enumerate(props_set_names):
-                                if props_set_name in opened[s]:
-                                    hbox:
-                                        hbox:
-                                            style_group "new_action_editor_c"
-                                            $new_opened = opened.copy()
-                                            $new_opened[s] = opened[s].copy()
-                                            $new_opened[s].remove(props_set_name)
-                                            textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
-                                        fixed:
-                                            add TimeLine(s, "camera", props_set_num=i)
-                                    for p in props_set[i]:
-                                        if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
-                                            (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
-                                            $key = p
-                                            $value = get_property(p)
-                                            $d = _viewers.get_default(p, True)
-                                            $f = generate_changed(p)
-                                            $use_wide_range = is_wide_range(key)
-                                            if not use_wide_range or isinstance(value, float):
-                                                $value_format = float_format
-                                            else:
-                                                $value_format = int_format
-                                            hbox:
-                                                hbox:
-                                                    style_group "new_action_editor_c"
-                                                    textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                    add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                        text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                if key not in in_graphic_mode:
-                                                    fixed:
-                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
-                                                else:
-                                                    fixed:
-                                                        # ysize None
-                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
-                                else:
-                                    hbox:
-                                        hbox:
-                                            style_group "new_action_editor_c"
-                                            if persistent._open_only_one_page:
-                                                $new_opened = {s:["camera", props_set_name]}
-                                            else:
-                                                $new_opened = opened.copy()
-                                                $new_opened[s] = new_opened[s] + [props_set_name]
-                                            textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
-                                        fixed:
-                                            add TimeLine(s, "camera", props_set_num=i)
-                        for tag in tag_list:
-                            if tag not in opened[s]:
+                                    add TimeLine(s, None)
+                            if "camera" not in opened[s]:
                                 hbox:
                                     hbox:
                                         style_group "new_action_editor_c"
                                         if persistent._open_only_one_page:
-                                            $new_opened = {s:[tag]}
+                                            $new_opened = {s:["camera"]}
                                         else:
                                             $new_opened = opened.copy()
-                                            $new_opened[s] = new_opened[s] + [tag]
-                                        textbutton indent+"+ "+"{}".format(tag):
-                                            action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                            $new_opened[s] = new_opened[s] + ["camera"]
+                                        textbutton _(indent+"+ "+"camera"):
+                                            action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
+                                            Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
                                     fixed:
-                                        add TimeLine(s, (tag, layer))
+                                        add TimeLine(s, "camera")
                             else:
                                 hbox:
                                     hbox:
                                         style_group "new_action_editor_c"
                                         $new_opened = opened.copy()
                                         $new_opened[s] = opened[s].copy()
-                                        $new_opened[s].remove(tag)
-                                        textbutton indent+"- "+"{}".format(tag):
+                                        $new_opened[s].remove("camera")
+                                        textbutton _(indent+"- "+"camera"):
                                             action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                         textbutton _("clipboard"):
-                                            action Function(_viewers.put_image_clipboard, tag, layer)
-                                            style_group "new_action_editor_b"
+                                            action Function(_viewers.put_camera_clipboard)
                                             size_group None
+                                            style_group "new_action_editor_b"
                                     fixed:
-                                        add TimeLine(s, (tag, layer))
-                                textbutton _(indent*2+"  zzoom"):
-                                    action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
-                                    Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
+                                        add TimeLine(s, "camera")
+                                textbutton _(indent*2+"  perspective"):
+                                    action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
+                                    Function(_viewers.toggle_perspective)]
                                 for i, props_set_name in enumerate(props_set_names):
-                                    if (tag, layer, props_set_name) not in opened[s]:
-                                        hbox:
-                                            hbox:
-                                                style_group "new_action_editor_c"
-                                                if persistent._open_only_one_page:
-                                                    $new_opened = {s:[tag, (tag, layer, props_set_name)]}
-                                                else:
-                                                    $new_opened = opened.copy()
-                                                    $new_opened[s] = new_opened[s] + [(tag, layer, props_set_name)]
-                                                textbutton indent*2+"+ "+props_set_name:
-                                                    action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
-                                            fixed:
-                                                add TimeLine(s, (tag, layer), props_set_num=i)
-                                    else:
+                                    if props_set_name in opened[s]:
                                         hbox:
                                             hbox:
                                                 style_group "new_action_editor_c"
                                                 $new_opened = opened.copy()
                                                 $new_opened[s] = opened[s].copy()
-                                                $new_opened[s].remove((tag, layer, props_set_name))
-                                                textbutton indent*2+"- " + props_set_names[i]:
-                                                    action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                                $new_opened[s].remove(props_set_name)
+                                                textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
-                                                add TimeLine(s, (tag, layer), props_set_num=i)
+                                                add TimeLine(s, "camera", props_set_num=i)
                                         for p in props_set[i]:
-                                            if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
-                                                and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
-                                                or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
-                                                $key = (tag, layer, p)
-                                                $d = _viewers.get_default(p)
-                                                $value = get_property(key)
-                                                $f = generate_changed(key)
-                                                $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                            if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
+                                                (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                                $key = p
+                                                $value = get_property(p)
+                                                $d = _viewers.get_default(p, True)
+                                                $f = generate_changed(p)
+                                                $use_wide_range = is_wide_range(key)
                                                 if not use_wide_range or isinstance(value, float):
                                                     $value_format = float_format
                                                 else:
                                                     $value_format = int_format
                                                 hbox:
-                                                    if p == "child":
-                                                        vbox:
-                                                            xfill False
-                                                            hbox:
-                                                                style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [value[0]]":
-                                                                    action [SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                    Function(_viewers.change_child, tag, layer, default=value[0])]
-                                                                    size_group None
-                                                            hbox:
-                                                                style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  with [value[1]]":
-                                                                    action [SensitiveIf(key in all_keyframes[s]),
-                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                    Function(_viewers.edit_transition, tag, layer)]
-                                                                    size_group None
-                                                    else:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action None text_color "#CCC"
-                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                            text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                    # if key not in in_graphic_mode:
                                                     fixed:
-                                                        if key not in in_graphic_mode:
-                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                    # else:
+                                                    #     fixed:
+                                                    #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                    #         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                    else:
+                                        hbox:
+                                            hbox:
+                                                style_group "new_action_editor_c"
+                                                if persistent._open_only_one_page:
+                                                    $new_opened = {s:["camera", props_set_name]}
+                                                else:
+                                                    $new_opened = opened.copy()
+                                                    $new_opened[s] = new_opened[s] + [props_set_name]
+                                                textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                            fixed:
+                                                add TimeLine(s, "camera", props_set_num=i)
+                            for tag in tag_list:
+                                if tag not in opened[s]:
+                                    hbox:
+                                        hbox:
+                                            style_group "new_action_editor_c"
+                                            if persistent._open_only_one_page:
+                                                $new_opened = {s:[tag]}
+                                            else:
+                                                $new_opened = opened.copy()
+                                                $new_opened[s] = new_opened[s] + [tag]
+                                            textbutton indent+"+ "+"{}".format(tag):
+                                                action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                        fixed:
+                                            add TimeLine(s, (tag, layer))
+                                else:
+                                    hbox:
+                                        hbox:
+                                            style_group "new_action_editor_c"
+                                            $new_opened = opened.copy()
+                                            $new_opened[s] = opened[s].copy()
+                                            $new_opened[s].remove(tag)
+                                            textbutton indent+"- "+"{}".format(tag):
+                                                action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                            textbutton _("clipboard"):
+                                                action Function(_viewers.put_image_clipboard, tag, layer)
+                                                style_group "new_action_editor_b"
+                                                size_group None
+                                        fixed:
+                                            add TimeLine(s, (tag, layer))
+                                    textbutton _(indent*2+"  zzoom"):
+                                        action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
+                                        Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
+                                    for i, props_set_name in enumerate(props_set_names):
+                                        if (tag, layer, props_set_name) not in opened[s]:
+                                            hbox:
+                                                hbox:
+                                                    style_group "new_action_editor_c"
+                                                    if persistent._open_only_one_page:
+                                                        $new_opened = {s:[tag, (tag, layer, props_set_name)]}
+                                                    else:
+                                                        $new_opened = opened.copy()
+                                                        $new_opened[s] = new_opened[s] + [(tag, layer, props_set_name)]
+                                                    textbutton indent*2+"+ "+props_set_name:
+                                                        action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                                fixed:
+                                                    add TimeLine(s, (tag, layer), props_set_num=i)
+                                        else:
+                                            hbox:
+                                                hbox:
+                                                    style_group "new_action_editor_c"
+                                                    $new_opened = opened.copy()
+                                                    $new_opened[s] = opened[s].copy()
+                                                    $new_opened[s].remove((tag, layer, props_set_name))
+                                                    textbutton indent*2+"- " + props_set_names[i]:
+                                                        action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                                                fixed:
+                                                    add TimeLine(s, (tag, layer), props_set_num=i)
+                                            for p in props_set[i]:
+                                                if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                                    and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
+                                                    or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
+                                                    $key = (tag, layer, p)
+                                                    $d = _viewers.get_default(p)
+                                                    $value = get_property(key)
+                                                    $f = generate_changed(key)
+                                                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                                    if not use_wide_range or isinstance(value, float):
+                                                        $value_format = float_format
+                                                    else:
+                                                        $value_format = int_format
+                                                    hbox:
+                                                        if p == "child":
+                                                            vbox:
+                                                                xfill False
+                                                                hbox:
+                                                                    style_group "new_action_editor_c"
+                                                                    textbutton indent*3+"  [value[0]]":
+                                                                        action [SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                        Function(_viewers.change_child, tag, layer, default=value[0])]
+                                                                        size_group None
+                                                                hbox:
+                                                                    style_group "new_action_editor_c"
+                                                                    textbutton indent*3+"  with [value[1]]":
+                                                                        action [SensitiveIf(key in all_keyframes[s]),
+                                                                        SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                        Function(_viewers.edit_transition, tag, layer)]
+                                                                        size_group None
                                                         else:
-                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
-                                $new_opened = opened.copy()
-                                $new_opened[s] = opened[s].copy()
-                                $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
-                                textbutton _(indent*3+"  remove"):
-                                    action [SensitiveIf(tag in _viewers.image_state[s][layer]),
-                                        Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode),
-                                        Function(_viewers.remove_image, layer, tag)]
-                                    size_group None
-                        textbutton _(indent+"+(add image)"):
-                            action Function(_viewers.add_image, layer)
-                            style_group "new_action_editor_c"
-                textbutton _("+(add scene)"):
-                    action _viewers.add_scene
-                    style_group "new_action_editor_c"
-                if "sounds" not in opened:
-                    hbox:
-                        hbox:
-                            style_group "new_action_editor_c"
-                            if persistent._open_only_one_page:
-                                $new_opened = {"sounds":True}
-                            else:
-                                $new_opened = opened.copy()
-                                $new_opened["sounds"] = True
-                            textbutton _("+ "+"sounds"):
-                                action [SensitiveIf(persistent._viewer_channel_list),
-                                Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
-                        fixed:
-                            add TimeLine(s, "sounds")
-                else:
-                    hbox:
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*3+"  [p]":
+                                                                    action None text_color "#CCC"
+                                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                                    text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                        fixed:
+                                                            # if key not in in_graphic_mode:
+                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                            # else:
+                                                                # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                                # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                    $new_opened = opened.copy()
+                                    $new_opened[s] = opened[s].copy()
+                                    $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
+                                    textbutton _(indent*3+"  remove"):
+                                        action [SensitiveIf(tag in _viewers.image_state[s][layer]),
+                                            Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode),
+                                            Function(_viewers.remove_image, layer, tag)]
+                                        size_group None
+                            textbutton _(indent+"+(add image)"):
+                                action Function(_viewers.add_image, layer)
+                                style_group "new_action_editor_c"
+                    textbutton _("+(add scene)"):
+                        action _viewers.add_scene
                         style_group "new_action_editor_c"
-                        $new_opened = opened.copy()
-                        $del new_opened["sounds"]
-                        textbutton _(indent+"- "+"sounds"):
-                            action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
-                        textbutton _("clipboard"):
-                            action Function(_viewers.put_sound_clipboard)
-                            size_group None
-                            style_group "new_action_editor_b"
-                    for channel in sound_keyframes:
+                    if "sounds" not in opened:
                         hbox:
                             hbox:
                                 style_group "new_action_editor_c"
-                                textbutton indent*1+"  [channel]":
-                                    action None text_color "#CCC"
-                                    size_group None
+                                if persistent._open_only_one_page:
+                                    $new_opened = {"sounds":True}
+                                else:
+                                    $new_opened = opened.copy()
+                                    $new_opened["sounds"] = True
+                                textbutton _("+ "+"sounds"):
+                                    action [SensitiveIf(persistent._viewer_channel_list),
+                                    Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
                             fixed:
-                                add TimeLine(s, "sounds", key=channel)
+                                add TimeLine(s, "sounds")
+                    else:
                         hbox:
-                            $value = "None"
-                            $sorted_play_times = sound_keyframes[channel].keys()
-                            $sorted_play_times.sort()
-                            for t in sorted_play_times:
-                                if current_time >= t:
-                                    $value = sound_keyframes[channel][t]
-                            textbutton indent*2+"  [value]":
-                                action [SelectedIf(keyframes_exist(channel, is_sound=True)),
-                                    Function(_viewers.edit_playing_file, channel, current_time)]
+                            style_group "new_action_editor_c"
+                            $new_opened = opened.copy()
+                            $del new_opened["sounds"]
+                            textbutton _(indent+"- "+"sounds"):
+                                action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
+                            textbutton _("clipboard"):
+                                action Function(_viewers.put_sound_clipboard)
                                 size_group None
+                                style_group "new_action_editor_b"
+                        for channel in sound_keyframes:
+                            hbox:
+                                hbox:
+                                    style_group "new_action_editor_c"
+                                    textbutton indent*1+"  [channel]":
+                                        action None text_color "#CCC"
+                                        size_group None
+                                fixed:
+                                    add TimeLine(s, "sounds", key=channel)
+                            hbox:
+                                $value = "None"
+                                $sorted_play_times = sound_keyframes[channel].keys()
+                                $sorted_play_times.sort()
+                                for t in sorted_play_times:
+                                    if current_time >= t:
+                                        $value = sound_keyframes[channel][t]
+                                textbutton indent*2+"  [value]":
+                                    action [SelectedIf(keyframes_exist(channel, is_sound=True)),
+                                        Function(_viewers.edit_playing_file, channel, current_time)]
+                                    size_group None
 
 
 init -1599 python in _viewers:
@@ -1086,18 +1114,55 @@ init 1 python in _viewers:
     def time_to_pos(time):
         frac = time/persistent._time_range
         barwidth = config.screen_width - c_box_size - 50 - key_half_xsize
-        return frac*barwidth + key_half_xsize
+        pos = frac*barwidth + key_half_xsize
+        if pos > barwidth + key_half_xsize:
+            pos = barwidth + key_half_xsize
+        if pos < key_half_xsize:
+            pos = key_half_xsize
+        return pos
 
 
-    def value_to_pos(time, key=None, in_graphic_mode=None):
+    def pos_to_value(y, use_wide_range, force_plus):
+        if use_wide_range:
+            range = persistent._graphic_editor_wide_range
+        else:
+            range = persistent._graphic_editor_narrow_range
+
+        barheight = config.screen_height*(1-preview_size)-time_column_height
+        if force_plus:
+            frac = 1 - (float(y)-key_half_ysize)/(barheight-key_ysize)
+            value = frac*range
+            if value < 0:
+                value = 0.
+        else:
+            frac = (0.5 - (float(y)-key_half_ysize)/(barheight-key_ysize))*2
+            value = frac*range
+            if value < -range:
+                value = -range
+        if value > range:
+            value = range
+        if use_wide_range:
+            value = int(value)
+        return value
+
+
+    def value_to_pos(time, key, force_plus):
         barheight = config.screen_height*(1-preview_size)-time_column_height
         value = get_value(key, time)
         if is_wide_range(key):
             range = persistent._graphic_editor_wide_range
         else:
             range = persistent._graphic_editor_narrow_range
-        ypos = value/float(range)*0.5 + 0.5
-        return ypos*float(barheight-key_ysize)/barheight
+        if force_plus:
+            frac = value/float(range)
+        else:
+            frac = value/float(range)*0.5 + 0.5
+        pos = barheight - key_ysize - frac*(barheight - 3*key_half_ysize)
+        if pos > barheight - key_ysize:
+            pos = barheight - key_ysize
+        if pos  < key_half_ysize:
+            pos = key_half_ysize
+        return pos
 
 
     def key_drag_changed(pos, key, time, is_sound=False, in_graphic_mode=None):
@@ -1124,24 +1189,10 @@ init 1 python in _viewers:
             time = goal
         if in_graphic_mode:
             use_wide_range = is_wide_range(key)
-            value = pos_to_value(y, use_wide_range)
+            value = pos_to_value(y, use_wide_range, p in force_plus)
             vchanged = generate_changed(key)
             vchanged(to_changed_value(value, p in force_plus, use_wide_range), time)
         return time
-
-
-    def pos_to_value(y, use_wide_range):
-        if use_wide_range:
-            range = persistent._graphic_editor_wide_range
-        else:
-            range = persistent._graphic_editor_narrow_range
-
-        barheight = config.screen_height*(1-preview_size)-time_column_height
-        frac = (float(y)/(barheight-key_xsize)-0.5)*2
-        value = frac*range
-        if use_wide_range:
-            value = int(value)
-        return value
 
 
     def absolute_pos(st, at):
@@ -1459,12 +1510,18 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+#すべてのイベントをオフにするとバーの問題は確認できない
             redraw = False
             for c in self.children:
                 rv = c.event(ev, x, y, st)
                 if rv:
                     redraw = True
+#以降を飛すとバーの問題は確認できない
+#背景をクリックしなくても問題は発生する
+#グラフィックモードでのみ背景のイベントを飛しても問題は発生する
+#背景のイベントをなくしても再描画が有効では問題発生
             self.background.event(ev, x, y, st)
+#以降を飛ばしても問題は発生した
             if redraw:
                 renpy.redraw(self, 0)
 
@@ -1513,6 +1570,16 @@ init 1 python in _viewers:
                 self.barheight = key_ysize
             self.width = key_xsize
             self.height = key_ysize
+            if in_graphic_mode:
+                self.yoffset = self.height/2.
+            else:
+                self.yoffset = 0
+            if self.key is not None:
+                if isinstance(self.key, tuple):
+                    p = self.key[2]
+                else:
+                    p = self.key
+                self.force_plus = p in force_plus
 
 
         def __eq__(self, other):
@@ -1545,15 +1612,17 @@ init 1 python in _viewers:
         def get_child(self):
             if self.in_graphic_mode:
                 self.xpos = time_to_pos(self.time)
-                self.ypos = value_to_pos(self.time, self.key, in_graphic_mode=True)
+                self.ypos = value_to_pos(self.time, self.key, self.force_plus)
+                anchor = (0.5, 0.5)
             else:
                 self.xpos = time_to_pos(self.time)
                 self.ypos = 0.
+                anchor = (0.5, 0.0)
             if self.hovered:
                 child = self.hover_child
             else:
                 child = self.child
-            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, xanchor=0.5)
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, anchor=anchor)
 
 
         def event(self, ev, x, y, st):
@@ -1563,17 +1632,9 @@ init 1 python in _viewers:
             if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 to_x = (x - self.last_x)*self.speed + self.last_xpos
-                if to_x < self.width/2.:
-                    to_x = 0
-                if to_x > self.barwidth + self.width/2.:
-                    to_x = self.barwidth + self.width/2.
                 pos = to_x
                 if self.in_graphic_mode:
                     to_y = (y - self.last_y)*self.speed + self.last_ypos
-                    if to_y <= 0:
-                        to_y = 0
-                    if to_y >= self.barheight - self.height:
-                        to_y = self.barheight - self.height
                     pos = (to_x, to_y)
                 last_time = self.time
                 self.time = key_drag_changed(pos, self.key, self.time, \
@@ -1582,7 +1643,7 @@ init 1 python in _viewers:
             self.hovered = False
             if not self.dragging and \
                 x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
-                y >= self.ypos and y <= self.height+self.ypos:
+                y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
                 self.hovered = True
                 if renpy.map_event(ev, "mousedown_1"):
                     if self.get_mods() & self.KMOD_CTRL:
@@ -1640,15 +1701,17 @@ init 1 python in _viewers:
                 for gn, ps in props_groups.items():
                     if p in ps:
                         self.key_list = [(n, l, p) for p in props_groups[gn]]
+                self.force_plus = p in force_plus
             else:
                 for gn, ps in props_groups.items():
                     if key in ps:
                         if gn != "focusing":
                             self.key_list = props_groups[gn]
+                self.force_plus = key in force_plus
 
             if in_graphic_mode:
                 self.width  = config.screen_width-c_box_size-50-key_half_xsize
-                self.height = int(config.screen_height*(1-preview_size)-time_column_height-2*key_half_xsize)
+                self.height = int(config.screen_height*(1-preview_size)-time_column_height-key_ysize-10)
                 self.xpos = key_half_xsize
                 self.ypos = key_half_ysize
             else:
@@ -1697,8 +1760,14 @@ init 1 python in _viewers:
                         raise renpy.display.core.IgnoreEvent()
                 elif renpy.map_event(ev, "button_alternate"):
                     if self.key:
-                        time = pos_to_time(x)
-                        reset(self.key_list, time)
+                        if self.in_graphic_mode:
+                            time = pos_to_time(x)
+                            use_wide_range = is_wide_range(self.key)
+                            value = pos_to_value(y, use_wide_range, self.force_plus)
+                            generate_changed(self.key)(to_changed_value(value, self.force_plus, use_wide_range), time)
+                        else:
+                            time = pos_to_time(x)
+                            reset(self.key_list, time)
                         raise renpy.display.core.IgnoreEvent()
             elif self.clicking and renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
