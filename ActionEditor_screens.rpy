@@ -435,7 +435,7 @@ init -1599 python in _viewers:
     key_hovere_child = Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16))
     insensitive_key_child = Transform(rotate=45)(Solid("#447", xsize=16, ysize=16))
     insensitive_key_hovere_child = Transform(rotate=45)(Solid("#669", xsize=16, ysize=16))
-    interpolate_key_child = Solid("#BBB", xsize=4, ysize=4, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2)
+    interpolate_key_child = Solid("#BBB", xsize=4, ysize=4) #, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2)
 
     c_box_size = 320
     timeline_ysize = 27
@@ -1384,6 +1384,9 @@ init 1 python in _viewers:
 
         def render(self, width, height, st, at):
             new_children = []
+            box = Fixed()
+            box.add(self.background.get_child())
+
             if self.tag is None:
                 _, t, _ = scene_keyframes[self.scene]
                 scene_start = scene_keyframes[self.scene][1]
@@ -1429,8 +1432,10 @@ init 1 python in _viewers:
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
             elif self.tag == "camera" and self.key is not None and self.graphic_mode:
+                last_v, last_t = None, None
+                is_force_plus = self.key in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
-                    _, t, _ = c
+                    v, t, _ = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
@@ -1438,6 +1443,17 @@ init 1 python in _viewers:
                                 change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
+
+                    if last_v is not None:
+                        v_diff = (v - last_v)
+                        t_diff = (t - last_t)
+                        for t2 in range(1, self.mark_num):
+                            xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
+                            ypos = value_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            # box.add(Transform(interpolate_key_child))
+                            box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
+                    last_v, last_t = v, t
+
             elif isinstance(self.tag, tuple) and self.props_set_num is None and self.key is None:
                 tag, layer = self.tag
                 _all_keyframes = all_keyframes[self.scene]
@@ -1465,8 +1481,10 @@ init 1 python in _viewers:
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
             elif isinstance(self.tag, tuple) and self.key is not None and self.graphic_mode:
+                last_v, last_t = None, None
+                is_force_plus = self.key[2] in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
-                    _, t, _ = c
+                    v, t, _ = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
@@ -1474,6 +1492,16 @@ init 1 python in _viewers:
                                 change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
+
+                    if last_v is not None:
+                        v_diff = (v - last_v)
+                        t_diff = (t - last_t)
+                        for t2 in range(1, self.mark_num):
+                            xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
+                            ypos = value_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
+                    last_v, last_t = v, t
+
             elif self.tag == "sounds" and self.key is None:
                 for channel, play_times in sound_keyframes.items():
                     for t in play_times:
@@ -1488,9 +1516,6 @@ init 1 python in _viewers:
                             generate_sound_menu(channel=self.key, time=t),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
-
-            box = Fixed()
-            box.add(self.background.get_child())
 
             children = []
             for new_c in new_children:
