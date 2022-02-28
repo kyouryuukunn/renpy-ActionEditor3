@@ -434,6 +434,8 @@ init -1599 python in _viewers:
 
     key_child = Transform(rotate=45)(Solid("#77A", xsize=16, ysize=16))
     key_hovere_child = Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16))
+    warperkey_child = Transform(rotate=45)(Solid("#07A", xsize=16, ysize=16))
+    warperkey_hovere_child = Transform(rotate=45)(Solid("#4AD", xsize=16, ysize=16))
     insensitive_key_child = Transform(rotate=45)(Solid("#447", xsize=16, ysize=16))
     insensitive_key_hovere_child = Transform(rotate=45)(Solid("#669", xsize=16, ysize=16))
     interpolate_key_child = Solid("#BBB", xsize=4, ysize=4) #, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2)
@@ -1158,13 +1160,8 @@ init 1 python in _viewers:
         return value
 
 
-    def value_to_pos(time, key, force_plus):
+    def value_to_pos(value, range, force_plus):
         barheight = config.screen_height*(1-preview_size)-time_column_height
-        value = get_value(key, time)
-        if is_wide_range(key):
-            range = persistent._graphic_editor_wide_range
-        else:
-            range = persistent._graphic_editor_narrow_range
         if force_plus:
             frac = value/float(range)
         else:
@@ -1175,6 +1172,15 @@ init 1 python in _viewers:
         if pos  < key_half_ysize:
             pos = key_half_ysize
         return pos
+
+
+    def time_and_key_to_pos(time, key, force_plus):
+        value = get_value(key, time)
+        if is_wide_range(key):
+            range = persistent._graphic_editor_wide_range
+        else:
+            range = persistent._graphic_editor_narrow_range
+        return value_to_pos(value, range, force_plus)
 
 
     def key_drag_changed(pos, key, time, is_sound=False, in_graphic_mode=None):
@@ -1373,6 +1379,7 @@ init 1 python in _viewers:
             self.in_graphic_mode = in_graphic_mode
 
             self.children = []
+            self.warpkey_children = []
             self.graphic_mode = self.key in self.in_graphic_mode
             self.background = TimeLineBackground(self.key, self.graphic_mode)
             self.mark_num = 100
@@ -1396,6 +1403,7 @@ init 1 python in _viewers:
 
         def render(self, width, height, st, at):
             new_children = []
+            new_warpkey_children = []
             box = Fixed()
             box.add(self.background.get_child())
 
@@ -1447,7 +1455,7 @@ init 1 python in _viewers:
                 last_v, last_t = None, None
                 is_force_plus = self.key in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
-                    v, t, _ = c
+                    v, t, w = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
@@ -1461,8 +1469,11 @@ init 1 python in _viewers:
                         t_diff = (t - last_t)
                         for t2 in range(1, self.mark_num):
                             xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
-                            ypos = value_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
                             box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
+                        if w.startswith("warper_generator"):
+                            warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
+                            new_warpkey_children.append(warperkey_child)
                     last_v, last_t = v, t
 
             elif isinstance(self.tag, tuple) and self.props_set_num is None and self.key is None:
@@ -1495,7 +1506,7 @@ init 1 python in _viewers:
                 last_v, last_t = None, None
                 is_force_plus = self.key[2] in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
-                    v, t, _ = c
+                    v, t, w = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
@@ -1509,8 +1520,11 @@ init 1 python in _viewers:
                         t_diff = (t - last_t)
                         for t2 in range(1, self.mark_num):
                             xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
-                            ypos = value_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
                             box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
+                        if w.startswith("warper_generator"):
+                            warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
+                            new_warpkey_children.append(warperkey_child)
                     last_v, last_t = v, t
 
             elif self.tag == "sounds" and self.key is None:
@@ -1527,6 +1541,18 @@ init 1 python in _viewers:
                             generate_sound_menu(channel=self.key, time=t),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
+
+            warpkey_children = []
+            for new_c in new_warpkey_children:
+                for old_c in self.warpkey_children:
+                    if new_c == old_c:
+                        warpkey_children.append(old_c)
+                        box.add(old_c.get_child())
+                        break
+                else:
+                    warpkey_children.append(new_c)
+                    box.add(new_c.get_child())
+            self.warpkey_children = warpkey_children
 
             children = []
             for new_c in new_children:
@@ -1548,6 +1574,10 @@ init 1 python in _viewers:
         def event(self, ev, x, y, st):
 #すべてのイベントをオフにするとバーの問題は確認できない
             redraw = False
+            for c in self.warpkey_children:
+                rv = c.event(ev, x, y, st)
+                if rv:
+                    redraw = True
             for c in self.children:
                 rv = c.event(ev, x, y, st)
                 if rv:
@@ -1570,7 +1600,7 @@ init 1 python in _viewers:
     class KeyFrame():
 
 
-        def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, dot=False, is_sound=False):
+        def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, is_sound=False):
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
             self.child = child
@@ -1583,7 +1613,6 @@ init 1 python in _viewers:
             self.clicked = clicked + [QueueEvent("mouseup_1")]
             self.alternate = alternate
             self.in_graphic_mode = in_graphic_mode
-            self.dot = dot
             self.is_sound = is_sound
 
             self.dragging = False
@@ -1619,8 +1648,8 @@ init 1 python in _viewers:
 
 
         def __eq__(self, other):
-            if not isinstance(other, KeyFrame):
-                return False
+            # if not isinstance(other, KeyFrame):
+            #     return False
             if self.child != other.child:
                 return False
             if self.hover_child != other.hover_child:
@@ -1630,8 +1659,6 @@ init 1 python in _viewers:
             if self.key != other.key:
                 return False
             if self.in_graphic_mode != other.in_graphic_mode:
-                return False
-            if self.dot != other.dot:
                 return False
             if self.is_sound != other.is_sound:
                 return False
@@ -1648,7 +1675,7 @@ init 1 python in _viewers:
         def get_child(self):
             if self.in_graphic_mode:
                 self.xpos = time_to_pos(self.time)
-                self.ypos = value_to_pos(self.time, self.key, self.force_plus)
+                self.ypos = time_and_key_to_pos(self.time, self.key, self.force_plus)
                 anchor = (0.5, 0.5)
             else:
                 self.xpos = time_to_pos(self.time)
@@ -1662,9 +1689,6 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
-            if self.dot:
-                return
-
             if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 to_x = (x - self.last_x)*self.speed + self.last_xpos
@@ -1721,6 +1745,125 @@ init 1 python in _viewers:
 
 
 
+    class WarperKey():
+
+
+        def __init__(self, time, key, last_v, v, scene, key_time):
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame.key import get_mods
+            self.child = warperkey_child
+            self.hover_child = warperkey_hovere_child
+            self.time = time
+            self.key = key
+            self.last_v = last_v
+            self.v = v
+            self.scene = scene
+            self.key_time = key_time
+
+            self.dragging = False
+            self.clicking = False
+            self.last_hovered = self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+
+            self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
+            self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            self.width = key_xsize
+            self.height = key_ysize
+            self.yoffset = self.height/2.
+
+            self.key_list = [key]
+            if isinstance(key, tuple):
+                n, l, p = key
+                for gn, ps in props_groups.items():
+                    if p in ps:
+                        self.key_list = [(n, l, p) for p in props_groups[gn]]
+                self.force_plus = p in force_plus
+            else:
+                for gn, ps in props_groups.items():
+                    if key in ps:
+                        if gn != "focusing":
+                            self.key_list = props_groups[gn]
+                self.force_plus = key in force_plus
+
+            if is_wide_range(key):
+                self.range = persistent._graphic_editor_wide_range
+            else:
+                self.range = persistent._graphic_editor_narrow_range
+
+
+        def __eq__(self, other):
+            # if not isinstance(other, WarperKey):
+            #     return False
+            if self.key != other.key:
+                return False
+            if self.time != other.time:
+                return False
+            return True
+
+
+        def get_child(self):
+            self.xpos = time_to_pos(self.time)
+            self.ypos = time_and_key_to_pos(self.time, self.key, self.force_plus)
+            anchor = (0.5, 0.5)
+            if self.hovered:
+                child = self.hover_child
+            else:
+                child = self.child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, anchor=anchor)
+
+
+        def event(self, ev, x, y, st):
+            if ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                last_time = self.time
+                self.warperkey_drag_changed(y)
+                return True
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
+                y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    self.clicking = True
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    self.clicking = False
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                raise renpy.display.core.IgnoreEvent()
+            if self.last_hovered != self.hovered:
+                self.last_hovered = self.hovered
+                return True
+            self.last_hovered = self.hovered
+
+
+        def warperkey_drag_changed(self, y):
+            bottom_pos = value_to_pos(self.last_v, self.range, self.force_plus)
+            top_pos = value_to_pos(self.v, self.range, self.force_plus)
+            if top_pos < bottom_pos:
+                top_pos, bottom_pos = bottom_pos, top_pos
+            if y >= top_pos:
+                y = top_pos
+            if y <= bottom_pos:
+                y = bottom_pos
+            if (top_pos - bottom_pos) == 0:
+                k = 0.5
+            elif self.v > self.last_v:
+                k = (float(y) - bottom_pos) / (top_pos - bottom_pos) 
+            else:
+                k = 1 - (float(y) - bottom_pos) / (top_pos - bottom_pos) 
+            for i, (_, t, _) in enumerate(all_keyframes[self.scene][self.key]):
+                if t == self.key_time:
+                    break
+            for key in self.key_list:
+                v, t, w = all_keyframes[self.scene][key][i]
+                all_keyframes[self.scene][key][i] = (v, t, "warper_generator([(1, 1, {:.2})])".format(k))
+
+
     class TimeLineBackground():
 
 
@@ -1766,8 +1909,8 @@ init 1 python in _viewers:
 
 
         def __eq__(self, other):
-            if not isinstance(other, TimeLineBackground):
-                return False
+            # if not isinstance(other, TimeLineBackground):
+            #     return False
             if self.key != other.key or self.in_graphic_mode != other.in_graphic_mode:
                 return False
             return True
@@ -1940,8 +2083,15 @@ init 1 python in _viewers:
             button_list.append(( _("edit value: {}".format(v)),
                 [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
                 Function(change_time, t)]))
-            button_list.append(( _("open warper selecter: {}".format(w)),
-                [Function(edit_warper, check_points=check_points_list, old=t, value_org=w)]))
+            if w.startswith("warper_generator"):
+                button_list.append(( _("open warper selecter: warper_generator"),
+                    [Function(edit_warper, check_points=check_points_list, old=t, value_org=w)]))
+            else:
+                button_list.append(( _("open warper selecter: {}".format(w)),
+                    [Function(edit_warper, check_points=check_points_list, old=t, value_org=w)]))
+            if i > 0 and in_graphic_mode:
+                button_list.append(( _("use warper generator"),
+                    [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
             if p not in [prop for ps in props_groups.values() for prop in ps]:
                 if i > 0 and not in_graphic_mode:
                     button_list.append(( _("spline editor"),
@@ -1963,6 +2113,17 @@ init 1 python in _viewers:
             [SensitiveIf(t > 0 or len(check_points) == 1), Function(remove_keyframe, remove_time=t, key=k_list)]))
         button_list.append(( _("toggle loop"), loop_button_action))
         return button_list
+
+
+    def use_warper_generator(check_points, old):
+        if not isinstance(check_points[0], list):
+            check_points = [check_points]
+        for cs in check_points:
+            for i, (v, t, w) in enumerate(cs):
+                if t == old:
+                    cs[i] = (v, t, "warper_generator([(1., 1., 0.5)])")
+                    break
+        renpy.restart_interaction()
 
 
     @renpy.pure

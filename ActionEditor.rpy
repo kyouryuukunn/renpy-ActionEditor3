@@ -659,7 +659,11 @@ init -1598 python in _viewers:
                     goal = cs[i]
                     if p != "child":
                         if checkpoint != pre_checkpoint:
-                            g = renpy.atl.warpers[goal[2]]((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
+                            if goal[2].startswith("warper_generator"):
+                                warper = renpy.python.py_eval(goal[2])
+                            else:
+                                warper = renpy.atl.warpers[goal[2]]
+                            g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
                         else:
                             g = 1.
                         default = get_default(p, camera)
@@ -1257,7 +1261,11 @@ init -1598 python in _viewers:
                 start = cs[i-1]
                 goal = cs[i]
                 if checkpoint != pre_checkpoint:
-                    g = renpy.atl.warpers[goal[2]]((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
+                    if goal[2].startswith("warper_generator"):
+                        warper = renpy.python.py_eval(goal[2])
+                    else:
+                        warper = renpy.atl.warpers[goal[2]]
+                    g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
                 else:
                     g = 1.
                 default_vault = get_default(prop, not isinstance(key, tuple))
@@ -2118,7 +2126,11 @@ show %s""" % child
         distance_from_focus = camera_zpos - image_zpos - focusing + config.perspective[1]
         if dof == 0:
             dof = 0.1
-        blur_amount = _camera_blur_amount * renpy.atl.warpers[_camera_blur_warper](distance_from_focus/(float(dof)/2))
+        if _camera_blur_warper.startswith("warper_generator"):
+            warper = renpy.python.py_eval(goal[2])
+        else:
+            warper = renpy.atl.warpers[goal[2]]
+        blur_amount = _camera_blur_amount * warper(distance_from_focus/(float(dof)/2))
         if blur_amount < 0:
             blur_amount = abs(blur_amount)
         return blur_amount
@@ -2311,8 +2323,12 @@ show %s""" % child
                             string += "{} {} ".format(p, cs[0][0])
                         cs = same_time_set[0][1]
                         for i, c in enumerate(cs[1:]):
+                            if c[2].startswith("warper_generator"):
+                                warper = "warp "+ c[2]
+                            else:
+                                warper = c[2]
                             string += """
-        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
+        {}{} {} """.format(add_tab, warper, cs[i+1][1]-cs[i][1])
                             for p2, cs2 in same_time_set:
                                 string += "{} {} ".format(p2, cs2[i+1][0])
                                 if cs2[i+1][1] in splines[s][xy_to_x(p2)] and splines[s][xy_to_x(p2)][cs2[i+1][1]]:
@@ -2436,8 +2452,12 @@ show %s""" % child
                                     string += "{} {} ".format(p, cs[0][0])
                                 cs = same_time_set[0][1]
                                 for i, c in enumerate(cs[1:]):
+                                    if c[2].startswith("warper_generator"):
+                                        warper = "warp "+ c[2]
+                                    else:
+                                        warper = c[2]
                                     string += """
-        {}{} {} """.format(add_tab, c[2], cs[i+1][1]-cs[i][1])
+        {}{} {} """.format(add_tab, warper, cs[i+1][1]-cs[i][1])
                                     for p2, cs2 in same_time_set:
                                         string += "{} {} ".format(p2, cs2[i+1][0])
                                         if cs2[i+1][1] in splines[s][(tag, layer, xy_to_x(p2))] and splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
@@ -2530,8 +2550,12 @@ show %s""" % child
                                 string += """
             {} {}""".format(p, cs[0][0])
                                 for i, c in enumerate(cs[1:]):
+                                    if c[2].startswith("warper_generator"):
+                                        warper = "warp "+ c[2]
+                                    else:
+                                        warper = c[2]
                                     string += """
-            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
                                     if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
                                         for knot in splines[last_camera_scene][p][c[1]]:
                                             string += " knot {}".format(knot)
@@ -2635,8 +2659,12 @@ show %s""" % child
                                 string += """
             {} {}""".format(p, cs[0][0])
                                 for i, c in enumerate(cs[1:]):
+                                    if c[2].startswith("warper_generator"):
+                                        warper = "warp "+ c[2]
+                                    else:
+                                        warper = c[2]
                                     string += """
-            {} {} {} {}""".format(c[2], cs[i+1][1]-cs[i][1], p, c[0])
+            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
                                     if c[1] in splines[last_scene][(tag, layer, p)] and splines[last_scene][(tag, layer, p)][c[1]]:
                                         for knot in splines[last_scene][(tag, layer, p)][c[1]]:
                                             string += " knot {}".format(knot)
@@ -2701,7 +2729,7 @@ show %s""" % child
                 renpy.notify(_("Can't open clipboard"))
             else:
                 #syntax hilight error in vim
-                renpy.notify("Placed\n{}\n\non clipboard".format(string).replace("{", "{{").replace("[", "[["))
+                renpy.notify("Placed\n{}\n\non clipboard".format(string).replace("{", "{{").replace("[", "[["))  #]"
         else:
             renpy.notify(_("Nothing to put"))
 
@@ -2718,3 +2746,35 @@ init python:
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
         return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
+
+    
+    def warper_generator(checkpoints):
+        #checkpoints = [(x, y, k), ... (1, 1, k)]
+        checkpoints = [(0, 0, None)] + checkpoints
+
+        def f(x, x_0, y_0, x_1, y_1, k):
+            if k <= 0:
+                return y_1
+            elif k == 0.5:
+                return ((y_1 - y_0) / (x_1 - x_0)) * (x - x_0) + y_0
+            elif k >= 1:
+                return 0.
+            else:
+                s = -k**2 / (1 - 2*k)
+                t = (k**2 - 2*k + 1) / (1 - 2*k)
+                u = -k**2 * (k - 1)**2 / (2*k - 1)**2
+                x = (x - x_0) / (x_1 - x_0)
+
+                y = (u / (x - s) + t) * (y_1 - y_0) + y_0
+                return y
+
+        def warper(x):
+            if x >= 1:
+                return 1.
+            elif x <= 0:
+                return 0.
+            for i, (x_1, y_1, k) in enumerate(checkpoints):
+                if x_1 > x:
+                    x_0, y_0, _ = checkpoints[i-1]
+                    return f(x, x_0, y_0, x_1, y_1, k)
+        return warper
