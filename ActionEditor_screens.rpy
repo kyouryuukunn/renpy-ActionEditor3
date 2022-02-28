@@ -870,6 +870,7 @@ screen _warper_selecter(current_warper=""):
     key "game_menu" action Return("")
 
     frame:
+        background "#AAAA"
         style_group "action_editor_subscreen"
 
         has vbox
@@ -878,8 +879,6 @@ screen _warper_selecter(current_warper=""):
         viewport:
             mousewheel True
             edgescroll (100, 100)
-            xsize config.screen_width-500
-            ysize config.screen_height-200
             scrollbars "vertical"
             vbox:
                 for warper in sorted(renpy.atl.warpers.keys()):
@@ -894,7 +893,7 @@ screen _warper_graph(warper):
     $ t=120
     $ length=300
     $ xpos=config.screen_width-400
-    $ ypos=100
+    $ ypos=200
     # add Solid("#000", xsize=3, ysize=1.236*length, xpos=xpos+length/2, ypos=length/2+xpos, rotate=45, anchor=(.5, .5)) 
     add Solid("#CCC", xsize=length, ysize=length, xpos=xpos, ypos=ypos ) 
     add Solid("#000", xsize=length, ysize=3, xpos=xpos, ypos=length+ypos ) 
