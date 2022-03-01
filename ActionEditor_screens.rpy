@@ -40,6 +40,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $value_range = persistent._wide_range
     $move_amount1 = 100
     $move_amount2 = 300
+    key "hide_windows" action NullAction()
     if get_value("perspective", scene_keyframes[current_scene][1], True):
         if _viewers.fps_keymap:
             key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
@@ -59,6 +60,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             key "K" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
             key "H" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+        key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
+        key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
 
     if time:
         timer time+_viewers.return_margin action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
@@ -75,7 +78,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
-    key "hide_windows" action NullAction()
 
     $state=_viewers.get_image_state(layer)
     $tag_list =  []
