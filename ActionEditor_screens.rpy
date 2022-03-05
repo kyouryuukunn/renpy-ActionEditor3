@@ -360,7 +360,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 hbox:
                                                                     style_group "new_action_editor_c"
                                                                     textbutton indent*3+"  with [value[1]]":
-                                                                        action [SensitiveIf(key in all_keyframes[s]),
+                                                                        action [
                                                                         SelectedIf(keyframes_exist((tag, layer, "child"))),
                                                                         Function(_viewers.edit_transition, tag, layer)]
                                                                         size_group None

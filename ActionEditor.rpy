@@ -7,6 +7,7 @@
 #新機能
 #サウンド再生に対応
 #pan, tile追加
+
 #変更
 
 #修正
@@ -20,7 +21,9 @@
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
-#画像のドラグ対応
+#vpunch等Move transtion, ATLtranstionが動作しない
+#ATLtransitionのdelayを所得できない
+#動画と同期できない(用本体の最適化)
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -61,10 +64,10 @@ init -1598 python in _viewers:
     # TransitionDisplayble(dissolve(old_widget, new_widget), 0, 0)
 
 
-        def __init__(self, transition, st, at, **properties):
+        def __init__(self, transition, old, new, st, at, **properties):
             super(DuringTransitionDisplayble, self).__init__(**properties)
 
-            self.transition = transition
+            self.transition = transition(old_widget=old, new_widget=new)
             self.st = st
             self.at = at
         
@@ -570,7 +573,7 @@ init -1598 python in _viewers:
                      scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[i], spline=spline[i],
                      subpixel=subpixel, time=time, scene_num=i)), time, at)
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
-                    during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time - checkpoint, 0)
+                    during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, time - checkpoint, 0)
                     child = during_transition_displayable
                 break
         else:
@@ -810,7 +813,7 @@ init -1598 python in _viewers:
                         child = new_widget
                     else:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
-                        during_transition_displayable = DuringTransitionDisplayble(transition(old_widget, new_widget), time-checkpoint, 0)
+                        during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, time-checkpoint, 0)
                         child = during_transition_displayable
                     tran.set_child(child)
                     break
@@ -831,7 +834,7 @@ init -1598 python in _viewers:
                         child = new_widget
                     else:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
-                        child = DuringTransitionDisplayble(transition(old_widget, new_widget), fixed_time, 0)
+                        child = DuringTransitionDisplayble(transition, old_widget, new_widget, fixed_time, 0)
                 tran.set_child(child)
 
         # if not camera:
@@ -998,12 +1001,14 @@ init -1598 python in _viewers:
         if v:
             if v == "None":
                 v = None
-            try:
-                renpy.python.py_eval(v)
-                persistent._viewer_transition = v
-                return
-            except:
-                pass
+            else:
+                try:
+                    renpy.python.py_eval(v)
+                except:
+                    renpy.notify(_("Please Input Transition"))
+                    return
+            persistent._viewer_transition = v
+            return
         renpy.notify(_("Please Input Transition"))
 
 
@@ -1015,20 +1020,25 @@ init -1598 python in _viewers:
             return
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen")
         if v:
+            if (tag, layer, "child") in all_keyframes[current_scene]:
+                cs = all_keyframes[current_scene][(tag, layer, "child")]
+                for i in range(-1, -len(cs)-1, -1):
+                    if time >= cs[i][1]:
+                        (n, tran), t, w = cs[i]
+                        break
+            else:
+                n = get_property((tag, layer, "child"))[0]
             if v == "None":
                 v = None
-            cs = all_keyframes[current_scene][(tag, layer, "child")]
-            for i in range(-1, -len(cs)-1, -1):
-                if time >= cs[i][1]:
-                    (n, tran), t, w = cs[i]
-                    break
-            try:
-                renpy.python.py_eval(v)
-                set_keyframe((tag, layer, "child"), (n, v), time=time)
-                change_time(time)
-                return
-            except:
-                pass
+            else:
+                try:
+                    renpy.python.py_eval(v)
+                except:
+                    renpy.notify(_("Please Input Transition"))
+                    return
+            set_keyframe((tag, layer, "child"), (n, v), time=time)
+            change_time(time)
+            return
         renpy.notify(_("Please Input Transition"))
 
 
@@ -1155,8 +1165,9 @@ init -1598 python in _viewers:
             new_image = tuple(new_image.split())
         for n in images:
             if set(n) == set(new_image) and n[0] == new_image[0]:
-                if org is not None and set(new_image) == set(org.split()):
-                    return
+                # if org is not None and set(new_image) == set(org.split()):
+                #     renpy.notify(_("That is already shown"))
+                #     return
                 string = " ".join(n)
                 set_keyframe((tag, layer, "child"), (string, persistent._viewer_transition), time=time)
                 return
@@ -1709,6 +1720,12 @@ show %s""" % child
         if v:
             if v == "None":
                 v = None
+            else:
+                try:
+                    renpy.python.py_eval(v)
+                except:
+                    renpy.notify(_("Please Input Transition"))
+                    return
             scene_keyframes[scene_num] = (v, t, w)
             change_time(current_time)
             return
@@ -2045,7 +2062,8 @@ show %s""" % child
             tran = renpy.python.py_eval("renpy.store."+tran)
         delay = getattr(tran, "delay", None)
         if delay is None:
-            delay = getattr(tran, "args")[0]
+            delay = tran().delay
+        #can't get delay of ATL transition
         return delay
 
 
