@@ -579,19 +579,14 @@ init -1598 python in _viewers:
              scene_checkpoints=scene_checkpoints, zorder_list=zorder_list, loop=loop[0], spline=spline[0],
              subpixel=subpixel, time=time, scene_num=0))
         if not persistent._viewer_legacy_gui:
-            if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
+            if aspect_16_9():
                 box.add(Transform(zoom=preview_size, xpos=(1 - preview_size)/2)(child))
-                box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
-                box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
-                box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
                 if persistent._viewer_rot:
                     for i in range(1, 3):
                         box.add(Solid("#F00", xsize=preview_size, ysize=1, xpos=(1-preview_size)/2, ypos=preview_size*i/3))
                         box.add(Solid("#F00", xsize=1, ysize=preview_size, xpos=preview_size*i/3+(1-preview_size)/2))
             else:
                 box.add(Transform(zoom=preview_size)(child))
-                box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
-                box.add(Solid(preview_background_color, xsize=(1-preview_size), ysize=preview_size, xalign=1.))
                 if persistent._viewer_rot:
                     for i in range(1, 3):
                         box.add(Solid("#F00", xsize=preview_size, ysize=1, ypos=preview_size*i/3))
@@ -604,6 +599,10 @@ init -1598 python in _viewers:
                     box.add(Solid("#F00", xsize=1, ysize=1., xpos=config.screen_width*i//3))
         tran.set_child(box)
         return 0
+
+
+    def aspect_16_9():
+        return round(float(config.screen_width)/config.screen_height, 2) == 1.78
 
 
     def camera_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, zorder_list, loop, spline=None, subpixel=True, time=None, scene_num=0):
@@ -834,6 +833,13 @@ init -1598 python in _viewers:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
                         child = DuringTransitionDisplayble(transition(old_widget, new_widget), fixed_time, 0)
                 tran.set_child(child)
+
+        # if not camera:
+        #     showing_pool = {
+        #         "scene_num":scene_num
+        #         "tag":tag
+        #         "pos": getattr(tran, "pos")
+        #     }
         # if not camera:
         #     tran.alignaround = (0.5+time*0.1, 0.5)
         #     tran.angle = 0

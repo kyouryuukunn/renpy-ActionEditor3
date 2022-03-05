@@ -20,8 +20,8 @@ init -1600 python in _viewers:
     # If True, simulate defpth of field and focusing is enable by default.
     # Trueならカメラブラーを再現するフォーカシングをデフォルトで有効にします。
     focusing = False
-    # If True, show camera icon which is dragged to move camera by default(In legacy GUI)
-    # Trueならドラッグでカメラを移動できるアイコンをデフォルトで表示します(レガシーGUIのみ)。
+    # If True, show icons which is dragged to move camera or iamges by default
+    # Trueならドラッグでカメラや画像を移動できるアイコンをデフォルトで表示します。
     default_show_camera_icon = True
     # If True, One line includes only one property in clipboard data
     # Trueならクリップボードデータで一行に1つのプロパティーのみ記述します。

@@ -76,6 +76,15 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
         $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
             [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
             Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
+
+        if persistent._show_camera_icon:
+            if _viewers.aspect_16_9():
+                $xpos = int(config.screen_width * (1 - _viewers.preview_size) / 2)
+                $ypos = 0
+            else:
+                $xpos = 0
+                $ypos = 0
+            add _viewers.ImagePins() xpos xpos ypos ypos
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
 
@@ -84,6 +93,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     for tag, z in _viewers.zorder_list[current_scene][layer]:
         if tag in state:
             $tag_list.append(tag)
+
+    add _viewers.screen_background
+
     frame:
         style_group "new_action_editor"
         align (1., 0.)
@@ -101,6 +113,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
         vbox:
             style_group "new_action_editor_a"
             textbutton _("option") action Show("_action_editor_option")
+            textbutton _("show image pins") action ToggleField(persistent, "_show_camera_icon")
             textbutton _("scene editor") action [SensitiveIf(len(scene_keyframes) > 1), Show("_scene_editor")]
             hbox:
                 xalign 1.
@@ -444,6 +457,18 @@ init -1599 python in _viewers:
 
     c_box_size = 320
     timeline_ysize = 27
+
+init python in _viewers:
+    box = Fixed()
+    if aspect_16_9():
+        box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
+        box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
+        box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
+    else:
+        box.add(Transform(zoom=preview_size)(child))
+        box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
+        box.add(Solid(preview_background_color, xsize=(1-preview_size), ysize=preview_size, xalign=1.))
+    screen_background = box
 
 init -1597:
     style new_action_editor_frame:
@@ -842,6 +867,8 @@ screen _action_editor_option():
             textbutton "[persistent._viewer_transition]" action _viewers.edit_default_transition
             text _("the time range of property bar(type float)")
             textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
+            text _("Show/Hide camera and image icon")
+            textbutton _("show icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
             text _("")
             text _("following options have effect for only New GUI")
             text _("Open only one page at once")
@@ -858,8 +885,6 @@ screen _action_editor_option():
             textbutton "[persistent._graphic_editor_narrow_range]" action Function(_viewers.edit_range_value, persistent, "_graphic_editor_narrow_range", False)
             text _("")
             text _("following options have effect for only Legacy GUI")
-            text _("Show/Hide camera icon")
-            textbutton _("camera icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
             text _("the wide range of property bar which is mainly used for int values(type int)")
             textbutton "[persistent._wide_range]" action Function(_viewers.edit_range_value, persistent, "_wide_range", True)
             text _("the narrow range of property bar which is used for float values(type float)")
@@ -1216,7 +1241,7 @@ init 1 python in _viewers:
 
     def absolute_pos(st, at):
         (x, y) = renpy.get_mouse_pos()
-        if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
+        if aspect_16_9():
             x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
             y = int(y/preview_size)
         else:
@@ -1226,7 +1251,7 @@ init 1 python in _viewers:
 
     def rel_pos(st, at):
         (x, y) = renpy.get_mouse_pos()
-        if round(float(config.screen_width)/config.screen_height, 2) == 1.78:
+        if aspect_16_9():
             x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
             y = int(y/preview_size)
         else:
@@ -1258,6 +1283,7 @@ init 1 python in _viewers:
             super(DraggableValue, self).__init__(**properties)
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
+            from pygame.mouse import get_pressed
             # The child.
             self.format = format
             self.key = key
@@ -1288,6 +1314,7 @@ init 1 python in _viewers:
             self.KMOD_SHIFT = KMOD_SHIFT
             self.KMOD_CTRL = KMOD_CTRL
             self.get_mods = get_mods
+            self.get_pressed = get_pressed
 
 
             self.speed = 1.0
@@ -1314,6 +1341,12 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
@@ -1604,6 +1637,7 @@ init 1 python in _viewers:
         def __init__(self, child, time, hover_child=None, draggable=True, key=None, clicked=None, alternate=None, in_graphic_mode=False, is_sound=False):
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
+            from pygame.mouse import get_pressed
             self.child = child
             self.hover_child = hover_child
             self.time = time
@@ -1628,6 +1662,7 @@ init 1 python in _viewers:
             self.KMOD_SHIFT = KMOD_SHIFT
             self.KMOD_CTRL = KMOD_CTRL
             self.get_mods = get_mods
+            self.get_pressed = get_pressed
 
             self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
             if in_graphic_mode:
@@ -1690,6 +1725,15 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+                self.last_xpos = self.xpos
+                self.last_ypos = self.ypos
+                self.last_x = None
+                self.last_y = None
+
             if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 to_x = (x - self.last_x)*self.speed + self.last_xpos
@@ -1752,6 +1796,7 @@ init 1 python in _viewers:
         def __init__(self, time, key, last_v, v, scene, key_time):
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
+            from pygame.mouse import get_pressed
             self.child = warperkey_child
             self.hover_child = warperkey_hovere_child
             self.time = time
@@ -1766,6 +1811,7 @@ init 1 python in _viewers:
             self.last_hovered = self.hovered = False
 
             self.MOUSEMOTION = MOUSEMOTION
+            self.get_pressed = get_pressed
 
             self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
             self.barheight = config.screen_height*(1-preview_size)-time_column_height
@@ -1815,6 +1861,11 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 last_time = self.time
@@ -1870,6 +1921,7 @@ init 1 python in _viewers:
 
         def __init__(self, key=None, in_graphic_mode=False):
             from pygame import MOUSEMOTION
+            from pygame.mouse import get_pressed
             from renpy.store import Function, Solid, Fixed
             self.key = key
             # self.scene = scene
@@ -1902,6 +1954,7 @@ init 1 python in _viewers:
             self.child = Solid(time_line_background_color, xsize=self.width, ysize=self.height,  xoffset=self.xpos, yoffset=self.ypos)
 
             self.MOUSEMOTION = MOUSEMOTION
+            self.get_pressed = get_pressed
 
             self.dragging = False
             self.clicking = False
@@ -1922,6 +1975,11 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
 
@@ -1952,6 +2010,509 @@ init 1 python in _viewers:
             elif self.clicking and renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
                 self.clicking = False
+
+
+    class ImagePins(renpy.Displayable):
+
+        def __init__(self):
+            super(ImagePins, self).__init__()
+            from pygame import MOUSEMOTION
+            from renpy.store import Fixed
+            if aspect_16_9():
+                self.xpos = int(config.screen_width * (1 - preview_size) / 2)
+                self.ypos = 0
+            else:
+                self.xpos = 0
+                self.ypos = 0
+            self.width = int(preview_size*config.screen_width)
+            self.height = int(preview_size*config.screen_height)
+
+            self.children = []
+            self.camera = CameraPin(current_scene)
+
+
+        def __eq__(self, other):
+            if not isinstance(other, ImagePins):
+                return False
+            return True
+
+
+        def render(self, width, height, st, at):
+            new_children = []
+            box = Fixed()
+
+            for l in ["master"]:
+                state = get_image_state(l)
+                for tag in state:
+                    child = ImagePin(tag, l, current_scene)
+                    new_children.append(child)
+
+            children = []
+            for new_c in new_children:
+                for old_c in self.children:
+                    if new_c == old_c:
+                        old_c.update(new_c)
+                        children.append(old_c)
+                        box.add(old_c.get_child())
+                        break
+                else:
+                    children.append(new_c)
+                    box.add(new_c.get_child())
+            self.children = children
+
+            child = CameraPin(current_scene)
+            if self.camera == child:
+                self.camera.update(child)
+            else:
+                self.camera = child
+            box.add(self.camera.get_child())
+
+            render = box.render(width, height, st, at)
+            return render
+
+
+        def event(self, ev, x, y, st):
+            redraw = False
+            for c in self.children:
+                rv = c.event(ev, x, y, st)
+                if rv:
+                    redraw = True
+            rv = self.camera.event(ev, x, y, st)
+            if rv:
+                redraw = True
+            if redraw:
+                renpy.redraw(self, 0)
+
+
+        def per_interact(self):
+            if not playing:
+                renpy.redraw(self, 0)
+
+
+    class ImagePin():
+
+
+        def __init__(self, tag, layer, scene_num):
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT, KMOD_ALT
+            from pygame.key import get_mods
+            from pygame.mouse import get_pressed
+            from renpy.store import Show, QueueEvent, Function, NullAction
+            self.tag = tag
+            self.layer = layer
+            self.scene_num = scene_num
+
+            self.clicked = [Show("_new_action_editor", opened={scene_num:[tag, (tag, layer, "Child/Pos    ")]})] + [QueueEvent("mouseup_1")]
+            xpos   = get_value((tag, layer, "xpos"), current_time, True, self.scene_num)
+            if isinstance(xpos, float):
+                xpos = round(xpos, 2)
+            ypos   = get_value((tag, layer, "ypos"), current_time, True, self.scene_num)
+            if isinstance(ypos, float):
+                ypos = round(ypos, 2)
+            zpos   = get_value((tag, layer, "zpos"), current_time, True, self.scene_num)
+            if isinstance(zpos, float):
+                zpos = round(zpos, 2)
+            rotate = get_value((tag, layer, "rotate"), current_time, True, self.scene_num)
+            if isinstance(rotate, float):
+                rotate = round(rotate, 2)
+            self.draggable = scene_num == current_scene
+            if self.draggable:
+                self.x_changed = generate_changed((self.tag, self.layer, "xpos"))
+                self.y_changed = generate_changed((self.tag, self.layer, "ypos"))
+                self.z_changed = generate_changed((self.tag, self.layer, "zpos"))
+                self.r_changed = generate_changed((self.tag, self.layer, "rotate"))
+                self.alternate = ShowAlternateMenu(
+                        [("{}".format(tag), NullAction()),
+                        ("edit: xpos {}".format(xpos), 
+                         [Function(edit_value, self.x_changed, is_wide_range((tag, layer, "xpos")), xpos, "xpos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: ypos {}".format(ypos),
+                         [Function(edit_value, self.y_changed, is_wide_range((tag, layer, "ypos")), ypos, "ypos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: zpos {}".format(zpos),
+                         [Function(edit_value, self.z_changed, is_wide_range((tag, layer, "zpos")), zpos, "zpos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: rotate {}".format(rotate), 
+                         [Function(edit_value, self.r_changed, is_wide_range((tag, layer, "rotate")), rotate, "rotate" in force_plus, current_time), Function(change_time, current_time)])],
+                        style_prefix="_viewers_alternate_menu")
+
+            self.dragging = False
+            self.clicking = False
+            self.last_hovered = self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+            self.KMOD_SHIFT = KMOD_SHIFT
+            self.KMOD_CTRL = KMOD_CTRL
+            self.KMOD_ALT = KMOD_ALT
+            self.get_mods = get_mods
+            self.get_pressed = get_pressed
+
+            self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
+            self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            self.child = Transform(rotate=45)(Solid("#0CF", xsize=16, ysize=16))
+            self.hover_child = Transform(rotate=45)(Solid("#2EF", xsize=16, ysize=16))
+            self.other_child = Transform(rotate=45)(Solid("#09B", xsize=16, ysize=16))
+            self.other_hover_child = Transform(rotate=45)(Solid("#2BC", xsize=16, ysize=16))
+            self.width = key_xsize
+            self.height = key_ysize
+
+
+        def __eq__(self, other):
+            if self.tag != other.tag:
+                return False
+            if self.layer != other.layer:
+                return False
+            if self.scene_num != other.scene_num:
+                return False
+            if self.draggable != other.draggable:
+                return False
+            return True
+
+
+        def update(self, other):
+            self.alternate = other.alternate
+
+
+        def value_to_pos(self):
+            xpos = get_value((self.tag, self.layer, "xpos"), current_time, True, self.scene_num)
+            if isinstance(xpos, float):
+                xpos *= config.screen_width
+            xpos *= preview_size
+
+            ypos = get_value((self.tag, self.layer, "ypos"), current_time, True, self.scene_num)
+            if isinstance(ypos, float):
+                ypos *= config.screen_height
+            ypos *= preview_size
+
+            return (xpos, ypos)
+
+
+        def pos_to_value(self, x, y):
+            state = get_image_state(self.layer, self.scene_num)[self.tag]
+            r = sqrt((x - self.last_x)**2 + (y - self.last_y)**2)
+            if x - self.last_x >= 0:
+                r *= -1
+            if isinstance(self.last_zpos, int):
+                z = int(r)
+            else:
+                z = round(r, 2)
+            if isinstance(self.last_rotate, int):
+                r = int(r)
+            else:
+                r = round(r, 2)
+
+            if "xpos" in state:
+                xpos_org = state["xpos"]
+            else:
+                xpos_org = get_default("xpos")
+            x /= preview_size
+            if isinstance(xpos_org, int):
+                x = int(x)
+            else:
+                x /= config.screen_width
+
+            if "ypos" in state:
+                ypos_org = state["ypos"]
+            else:
+                ypos_org = get_default("ypos")
+            y /= preview_size
+            if isinstance(ypos_org, int):
+                y = int(y)
+            else:
+                y /= config.screen_height
+
+
+            mods = self.get_mods()
+            if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
+                self.r_changed(to_changed_value(z+self.last_rotate, "rotate" in force_plus, is_wide_range((self.tag, self.layer, "rotate"))))
+            elif mods & self.KMOD_CTRL:
+                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range((self.tag, self.layer, "ypos"))))
+            elif mods & self.KMOD_SHIFT:
+                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range((self.tag, self.layer, "xpos"))))
+            elif mods & self.KMOD_ALT:
+                self.z_changed(to_changed_value(z+self.last_zpos, "zpos" in force_plus, is_wide_range((self.tag, self.layer, "zpos"))))
+            else:
+                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range((self.tag, self.layer, "xpos"))))
+                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range((self.tag, self.layer, "ypos"))))
+
+
+        def get_child(self):
+            self.xpos, self.ypos = self.value_to_pos()
+            anchor = (0.5, 0.5)
+            if self.hovered:
+                if self.scene_num == current_scene:
+                    child = self.hover_child
+                else:
+                    child = self.other_scene_hover_child
+            else:
+                if self.scene_num == current_scene:
+                    child = self.child
+                else:
+                    child = self.other_scene_child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, anchor=anchor)
+
+
+        def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+                self.last_y = None
+                self.last_zpos = None
+                self.last_rotate = None
+
+            if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                self.pos_to_value(x, y)
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
+                y >= self.ypos - self.height/2. and y <= self.height/2.+self.ypos and \
+                self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
+                self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    self.clicking = True
+                    self.last_x = x
+                    self.last_y = y
+                    self.last_zpos = get_value((self.tag, self.layer, "zpos"), scene_num=self.scene_num)
+                    self.last_rotate = get_value((self.tag, self.layer, "rotate"), default=True, scene_num=self.scene_num)
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    if self.clicking == True:
+                        self.clicking = False
+                        rv = renpy.run(self.clicked)
+                        if rv is not None:
+                            return rv
+                        raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    rv = renpy.run(self.alternate)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+                self.last_y = None
+                self.last_zpos = None
+                self.last_rotate = None
+                raise renpy.display.core.IgnoreEvent()
+            if self.last_hovered != self.hovered:
+                self.last_hovered = self.hovered
+                return True
+            self.last_hovered = self.hovered
+
+
+    class CameraPin():
+
+
+        def __init__(self, scene_num):
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT, KMOD_ALT
+            from pygame.key import get_mods
+            from pygame.mouse import get_pressed
+            from renpy.store import Show, QueueEvent, Function, NullAction
+            self.scene_num = scene_num
+
+            self.clicked = [Show("_new_action_editor", opened={scene_num:["camera", "Child/Pos    "]})] + [QueueEvent("mouseup_1")]
+            xpos   = get_value("xpos", current_time, True, self.scene_num)
+            if isinstance(xpos, float):
+                xpos = round(xpos, 2)
+            ypos   = get_value("ypos", current_time, True, self.scene_num)
+            if isinstance(ypos, float):
+                ypos = round(ypos, 2)
+            zpos   = get_value("zpos", current_time, True, self.scene_num)
+            if isinstance(zpos, float):
+                zpos = round(zpos, 2)
+            rotate = get_value("rotate", current_time, True, self.scene_num)
+            if isinstance(rotate, float):
+                rotate = round(rotate, 2)
+            self.draggable = scene_num == current_scene
+            if self.draggable:
+                self.x_changed = generate_changed("xpos")
+                self.y_changed = generate_changed("ypos")
+                self.z_changed = generate_changed("zpos")
+                self.r_changed = generate_changed("rotate")
+                self.alternate = ShowAlternateMenu([
+                        ("camera", NullAction()),
+                        ("edit: xpos {}".format(xpos), 
+                         [Function(edit_value, self.x_changed, is_wide_range("xpos"), xpos, "xpos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: ypos {}".format(ypos),
+                         [Function(edit_value, self.y_changed, is_wide_range("ypos"), ypos, "ypos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: zpos {}".format(zpos),
+                         [Function(edit_value, self.z_changed, is_wide_range("zpos"), zpos, "zpos" in force_plus, current_time), Function(change_time, current_time)]),
+                        ("edit: rotate {}".format(rotate), 
+                         [Function(edit_value, self.r_changed, is_wide_range("rotate"), rotate, "rotate" in force_plus, current_time), Function(change_time, current_time)])],
+                        style_prefix="_viewers_alternate_menu")
+
+            self.dragging = False
+            self.clicking = False
+            self.last_hovered = self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+            self.KMOD_SHIFT = KMOD_SHIFT
+            self.KMOD_CTRL = KMOD_CTRL
+            self.KMOD_ALT = KMOD_ALT
+            self.get_mods = get_mods
+            self.get_pressed = get_pressed
+
+            self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
+            self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            self.child = Transform(rotate=45)(Solid("#222", xsize=16, ysize=16))
+            self.hover_child = Transform(rotate=45)(Solid("#555", xsize=16, ysize=16))
+            # self.other_child = Transform(rotate=45)(Solid("#09B", xsize=16, ysize=16))
+            # self.other_hover_child = Transform(rotate=45)(Solid("#2BC", xsize=16, ysize=16))
+            self.width = key_xsize
+            self.height = key_ysize
+            self.xoffset = int(preview_size * config.screen_width / 2)
+            self.yoffset = int(preview_size * config.screen_height / 2)
+
+
+        def __eq__(self, other):
+            if self.scene_num != other.scene_num:
+                return False
+            if self.draggable != other.draggable:
+                return False
+            return True
+
+
+        def update(self, other):
+            self.alternate = other.alternate
+
+
+        def value_to_pos(self):
+            xpos = get_value("xpos", current_time, True, self.scene_num)
+            if isinstance(xpos, float):
+                xpos *= config.screen_width
+            xpos *= preview_size
+            xpos += self.xoffset
+
+            ypos = get_value("ypos", current_time, True, self.scene_num)
+            if isinstance(ypos, float):
+                ypos *= config.screen_height
+            ypos *= preview_size
+            ypos += self.yoffset
+
+            return (xpos, ypos)
+
+
+        def pos_to_value(self, x, y):
+            state = camera_state_org[self.scene_num]
+            r = sqrt((x - self.last_x)**2 + (y - self.last_y)**2)
+            if x - self.last_x >= 0:
+                r *= -1
+            if isinstance(self.last_zpos, int):
+                z = int(r)
+            else:
+                z = round(r, 2)
+            if isinstance(self.last_rotate, int):
+                r = int(r)
+            else:
+                r = round(r, 2)
+
+            x -= self.xoffset
+            if "xpos" in state:
+                xpos_org = state["xpos"]
+            else:
+                xpos_org = get_default("xpos", True)
+            x /= preview_size
+            if isinstance(xpos_org, int):
+                x = int(x)
+            else:
+                x /= config.screen_width
+
+            y -= self.yoffset
+            if "ypos" in state:
+                ypos_org = state["ypos"]
+            else:
+                ypos_org = get_default("ypos", True)
+            y /= preview_size
+            if isinstance(ypos_org, int):
+                y = int(y)
+            else:
+                y /= config.screen_height
+
+
+            mods = self.get_mods()
+            if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
+                self.r_changed(to_changed_value(z+self.last_rotate, "rotate" in force_plus, is_wide_range("rotate")))
+            elif mods & self.KMOD_CTRL:
+                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range("ypos")))
+            elif mods & self.KMOD_SHIFT:
+                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range("xpos")))
+            elif mods & self.KMOD_ALT:
+                self.z_changed(to_changed_value(z+self.last_zpos, "zpos" in force_plus, is_wide_range("zpos")))
+            else:
+                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range("xpos")))
+                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range("ypos")))
+
+
+        def get_child(self):
+            self.xpos, self.ypos = self.value_to_pos()
+            anchor = (0.5, 0.5)
+            if self.hovered:
+                if self.scene_num == current_scene:
+                    child = self.hover_child
+                # else:
+                #     child = self.other_scene_hover_child
+            else:
+                if self.scene_num == current_scene:
+                    child = self.child
+                # else:
+                #     child = self.other_scene_child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, anchor=anchor)
+
+
+        def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+                self.last_y = None
+                self.last_zpos = None
+                self.last_rotate = None
+
+            if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                self.pos_to_value(x, y)
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
+                y >= self.ypos - self.height/2. and y <= self.height/2.+self.ypos and \
+                self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
+                self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1"):
+                    self.clicking = True
+                    self.last_x = x
+                    self.last_y = y
+                    self.last_zpos = get_value("zpos", default=True, scene_num=self.scene_num)
+                    self.last_rotate = get_value("rotate", default=True, scene_num=self.scene_num)
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    if self.clicking == True:
+                        self.clicking = False
+                        rv = renpy.run(self.clicked)
+                        if rv is not None:
+                            return rv
+                        raise renpy.display.core.IgnoreEvent()
+                elif renpy.map_event(ev, "button_alternate"):
+                    rv = renpy.run(self.alternate)
+                    if rv is not None:
+                        return rv
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                self.last_x = None
+                self.last_y = None
+                self.last_zpos = None
+                self.last_rotate = None
+                raise renpy.display.core.IgnoreEvent()
+            if self.last_hovered != self.hovered:
+                self.last_hovered = self.hovered
+                return True
+            self.last_hovered = self.hovered
 
 
     class CameraIcon(renpy.Displayable):
