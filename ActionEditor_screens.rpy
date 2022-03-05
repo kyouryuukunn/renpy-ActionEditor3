@@ -1276,6 +1276,15 @@ init 1 python in _viewers:
         return prop not in force_float and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
 
 
+    def out_of_viewport():
+        #check if there is out of showing range of viewport
+        x, y = renpy.get_mouse_pos()
+        if y < config.screen_height * preview_size + time_column_height or y > config.screen_height:
+            return True
+        else:
+            return False
+
+
     class DraggableValue(renpy.Displayable):
 
 
@@ -1357,7 +1366,7 @@ init 1 python in _viewers:
             self.hovered = False
             if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -1750,7 +1759,7 @@ init 1 python in _viewers:
                 x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
                 y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -1877,7 +1886,7 @@ init 1 python in _viewers:
                 x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
                 y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
                     self.clicking = True
                     raise renpy.display.core.IgnoreEvent()
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
@@ -1987,7 +1996,7 @@ init 1 python in _viewers:
             if not self.dragging and x >= self.xpos and x <= self.width + self.xpos \
                 and y >= self.ypos and y <= self.height + self.ypos:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
                     self.clicking = True
                     raise renpy.display.core.IgnoreEvent()
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
