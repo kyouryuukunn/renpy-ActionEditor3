@@ -24,6 +24,8 @@
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
 #動画と同期できない(用本体の最適化)
+#ShowAlternateMenuが採用されればなくす
+#関数リストが採用されればリスト指定可能にする？そもそもRen'pyでエフェクトをどうするかという問題になる with ではハック的で美しくない。ATL?
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -1791,20 +1793,15 @@ show %s""" % child
                 if remove_time in sound_keyframes[k]:
                     del sound_keyframes[k][remove_time]
             else:
-                remove_list = []
                 if k in all_keyframes[current_scene]:
-                    for (v, t, w) in all_keyframes[current_scene][k]:
-                        if t == remove_time:
-                            if remove_time != scene_keyframes[current_scene][1] \
-                                or (remove_time == scene_keyframes[current_scene][1]
-                                 and len(all_keyframes[current_scene][k]) == 1):
-                                remove_list.append((v, t, w))
-                for c in remove_list:
-                    if c[1] in splines[current_scene][k]:
-                        del splines[current_scene][k][c[1]]
-                    all_keyframes[current_scene][k].remove(c)
-                    if not all_keyframes[current_scene][k]:
-                        del all_keyframes[current_scene][k]
+                    for (v, t, w) in all_keyframes[current_scene][k][:]:
+                        if (t == remove_time) and (remove_time != scene_keyframes[current_scene][1] \
+                            or (remove_time == scene_keyframes[current_scene][1] and len(all_keyframes[current_scene][k]) == 1)):
+                            all_keyframes[current_scene][k].remove((v, t, w))
+                            if not all_keyframes[current_scene][k]:
+                                del all_keyframes[current_scene][k]
+                            if t in splines[current_scene][k]:
+                                del splines[current_scene][k][t]
         change_time(current_time)
 
 
