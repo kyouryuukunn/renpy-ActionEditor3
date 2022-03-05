@@ -24,7 +24,6 @@
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
 #動画と同期できない(用本体の最適化)
-#ShowAlternateMenuが採用されればなくす
 #関数リストが採用されればリスト指定可能にする？そもそもRen'pyでエフェクトをどうするかという問題になる with ではハック的で美しくない。ATL?
 
 #極座標表示対応
@@ -2799,3 +2798,20 @@ init python:
                     x_0, y_0, _ = checkpoints[i-1]
                     return f(x, x_0, y_0, x_1, y_1, k)
         return warper
+
+
+    # class mfn(object):
+    #     # show test:
+    #     #     function mfn(func1, func2)
+    #     def __init__(*args):
+    #         self.fns = args
+    #
+    #     def __call__(self, trans, st, at):
+    #         min_fr = None
+    #         for i in reversed(range(len(self.fns))):
+    #             fr = self.fns[i](tran, st, at)
+    #             if fr is not None and (min_fr is None or fr < min_fr):
+    #                 min_fr = fr
+    #             elif fr is None:
+    #                 del self.function[i]
+    #         return min_fr
