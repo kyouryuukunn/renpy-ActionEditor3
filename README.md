@@ -24,6 +24,8 @@ lemma forum
  * loading last action
 
  To install, copy all files in the camera directory into your game directory.
+ ActionEditor.rpy is required for release version if you use camera blur or warper_generator.
+ 00warper.rpy is also required if you use added warpers. Ohter files arenot required.
 
  Action Editor
 ================
@@ -96,6 +98,8 @@ lemma forum
  * エクスプレッション function transform プロパティで代用してください。 <https://ja.renpy.org/doc/html/atl.html#function-statement>
 
  使用にはフォルダ内のファイルをgameフォルダにコピーしてください。
+ カメラブラー、ワーパージェネレータを使用している場合にはActionEditor.rpyを、追加ワーパーを使用している場合は00warper.rpyをリリース版にも含めてください。
+ 他のファイルは必要ありません。
 
  演出エディター(Action Editor)
 ================
