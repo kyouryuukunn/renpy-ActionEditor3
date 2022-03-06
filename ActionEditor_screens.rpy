@@ -466,7 +466,6 @@ init python in _viewers:
         box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
         box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
     else:
-        box.add(Transform(zoom=preview_size)(child))
         box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
         box.add(Solid(preview_background_color, xsize=(1-preview_size), ysize=preview_size, xalign=1.))
     screen_background = box
