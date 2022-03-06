@@ -19,12 +19,15 @@
 #colormatrix, transformmatrixは十分再現できない
 
 #課題
+#現行のwarper_generatorでは接線の傾きが一致しないので中間点でがたつく
+#意図的にそういうカーブにしたいときはよいが、別でベジェ曲線が欲しい(解が2つにならないかは個別にチェックする?チェックしきれない、何方を優先させる)
+#ImagePinも複数時間のものを表示できるようにしてベジェ曲線していできるように(実際のATLではベジェ曲線のワーパー使用)
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
+#動画と同期できない(用本体の最適化)
+#リスト指定可能にする？そもそもRen'pyでエフェクトをどうするかという問題になる with ではハック的で美しくない。ATL?
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
-#動画と同期できない(用本体の最適化)
-#関数リストが採用されればリスト指定可能にする？そもそもRen'pyでエフェクトをどうするかという問題になる with ではハック的で美しくない。ATL?
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -420,8 +423,7 @@ init -1598 python in _viewers:
             for channel, times in sound_keyframes.items():
                 time = 0
                 files = []
-                sorted_times = times.keys()
-                sorted_times.sort()
+                sorted_times = sorted(times.keys())
                 if sorted_times:
                     for t in sorted_times:
                         duration = t - time
@@ -1424,8 +1426,7 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            sorted_times = times.keys()
-            sorted_times.sort()
+            sorted_times = sorted(times.keys())
             if sorted_times:
                 for t in sorted_times:
                     duration = t - time
@@ -1821,8 +1822,7 @@ show %s""" % child
             for t in cs:
                 if t not in sorted_keyframes:
                     sorted_keyframes.append(t)
-        sorted_keyframes.sort()
-        return sorted_keyframes
+        return sorted(sorted_keyframes)
 
 
     def move_all_keyframe(new, old):
@@ -1952,8 +1952,7 @@ show %s""" % child
 
 
     def is_playing(channel, new_time, old_time):
-        times = sound_keyframes[channel].keys()
-        times.sort()
+        times = sorted(sound_keyframes[channel].keys())
         if new_time in times:
             return True
         if old_time in times:
@@ -2080,8 +2079,7 @@ show %s""" % child
                         animation_time = t
         for channel, times in sound_keyframes.items():
             if times:
-                time_list = times.keys()
-                time_list.sort()
+                time_list = sorted(times.keys())
                 start_time = time_list[-1]
                 files = times[start_time]
                 try:
@@ -2273,8 +2271,7 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            sorted_times = times.keys()
-            sorted_times.sort()
+            sorted_times = sorted(times.keys())
             if sorted_times:
                 for t in sorted_times:
                     duration = t - time
