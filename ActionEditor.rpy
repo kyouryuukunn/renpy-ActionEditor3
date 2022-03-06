@@ -19,9 +19,6 @@
 #colormatrix, transformmatrixは十分再現できない
 
 #課題
-#現行のwarper_generatorでは接線の傾きが一致しないので中間点でがたつく
-#意図的にそういうカーブにしたいときはよいが、別でベジェ曲線が欲しい(解が2つにならないかは個別にチェックする?チェックしきれない、何方を優先させる)
-#ImagePinも複数時間のものを表示できるようにしてベジェ曲線していできるように(実際のATLではベジェ曲線のワーパー使用)
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
 #動画と同期できない(用本体の最適化)
@@ -2168,13 +2165,13 @@ show %s""" % child
 
     def put_prop_togetter(keyframes, layer=None, tag=None):
         #時間軸とx, yを纏める キーフレームが一つのみのものは含めない
-        sorted = []
+        sorted_list = []
         for p in sort_ref_list:
             if p in keyframes:
-                sorted.append((p, keyframes[p]))
+                sorted_list.append((p, keyframes[p]))
         result = []
         already_added = []
-        for i, (p, cs) in enumerate(sorted):
+        for i, (p, cs) in enumerate(sorted_list):
             same_time_set = []
             if p in already_added or len(cs) == 1:
                 continue
@@ -2185,7 +2182,7 @@ show %s""" % child
                     key = (tag, layer, p)
                 else:
                     key = p
-            for (p2, cs2) in sorted[i+1:]:
+            for (p2, cs2) in sorted_list[i+1:]:
                 if p2 not in already_added and len(cs) == len(cs2):
                     if layer is not None and tag is not None:
                         key2 = (tag, layer, p2)
@@ -2322,14 +2319,14 @@ show %s""" % child
                         string += "\n        "
                     else:
                         string += " "
-                sorted = put_prop_togetter(camera_keyframes)
-                if len(sorted):
-                    if len(sorted) > 1 or loops[s][xy_to_x(sorted[0][0][0])]:
+                sorted_list = put_prop_togetter(camera_keyframes)
+                if len(sorted_list):
+                    if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])]:
                         add_tab = "    "
                     else:
                         add_tab = ""
-                    for same_time_set in sorted:
-                        if len(sorted) > 1 or loops[s][xy_to_x(sorted[0][0][0])]:
+                    for same_time_set in sorted_list:
+                        if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])]:
                             string += """
         parallel:
             """
@@ -2404,9 +2401,9 @@ show %s""" % child
                                     string += "\n        "
                                 else:
                                     string += " "
-                        sorted = put_prop_togetter(image_keyframes, layer, tag)
+                        sorted_list = put_prop_togetter(image_keyframes, layer, tag)
                         if "child" in image_keyframes:
-                            if len(sorted) >= 1 or loops[s][(tag, layer, "child")] or (persistent._viewer_focusing \
+                            if len(sorted_list) >= 1 or loops[s][(tag, layer, "child")] or (persistent._viewer_focusing \
                                  and get_value("perspective", scene_keyframes[s][1], True, s)):
                                 add_tab = "    "
                                 string += """
@@ -2452,14 +2449,14 @@ show %s""" % child
                             if loops[s][(tag,layer,"child")]:
                                 string += """
             repeat"""
-                        if len(sorted):
-                            if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes \
+                        if len(sorted_list):
+                            if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] or "child" in image_keyframes \
                                 or (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
                                 add_tab = "    "
                             else:
                                 add_tab = ""
-                            for same_time_set in sorted:
-                                if len(sorted) > 1 or loops[s][(tag, layer, xy_to_x(sorted[0][0][0]))] or "child" in image_keyframes \
+                            for same_time_set in sorted_list:
+                                if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] or "child" in image_keyframes \
                                     or (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
                                     string += """
         parallel:"""

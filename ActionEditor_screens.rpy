@@ -450,6 +450,8 @@ init -1599 python in _viewers:
     key_hovere_child = Transform(rotate=45)(Solid("#AAD", xsize=16, ysize=16))
     warperkey_child = Transform(rotate=45)(Solid("#07A", xsize=16, ysize=16))
     warperkey_hovere_child = Transform(rotate=45)(Solid("#4AD", xsize=16, ysize=16))
+    knot_child = Transform(rotate=45)(Solid("#04A", xsize=16, ysize=16))
+    knot_hovere_child = Transform(rotate=45)(Solid("#48D", xsize=16, ysize=16))
     insensitive_key_child = Transform(rotate=45)(Solid("#447", xsize=16, ysize=16))
     insensitive_key_hovere_child = Transform(rotate=45)(Solid("#669", xsize=16, ysize=16))
     interpolate_key_child = Solid("#BBB", xsize=4, ysize=4) #, xoffset=key_half_xsize-2, yoffset=key_half_ysize-2)
@@ -1422,6 +1424,7 @@ init 1 python in _viewers:
 
             self.children = []
             self.warpkey_children = []
+            self.knot_children = []
             self.graphic_mode = self.key in self.in_graphic_mode
             self.background = TimeLineBackground(self.key, self.graphic_mode)
             self.mark_num = 100
@@ -1446,6 +1449,7 @@ init 1 python in _viewers:
         def render(self, width, height, st, at):
             new_children = []
             new_warpkey_children = []
+            new_knot_children = []
             box = Fixed()
             box.add(self.background.get_child())
 
@@ -1516,6 +1520,11 @@ init 1 python in _viewers:
                         if w.startswith("warper_generator"):
                             warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
                             new_warpkey_children.append(warperkey_child)
+                        if t in splines[self.scene][self.key]:
+                            knots = splines[self.scene][self.key][t]
+                            for i in range(1, len(knots)+1):
+                                knot_child = KnotKey(i*t_diff/(len(knots)+1) + last_t, self.key, i-1, self.scene, t)
+                                new_knot_children.append(knot_child)
                     last_v, last_t = v, t
 
             elif isinstance(self.tag, tuple) and self.props_set_num is None and self.key is None:
@@ -1567,6 +1576,11 @@ init 1 python in _viewers:
                         if w.startswith("warper_generator"):
                             warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
                             new_warpkey_children.append(warperkey_child)
+                        if t in splines[self.scene][self.key]:
+                            knots = splines[self.scene][self.key][t]
+                            for i in range(1, len(knots)+1):
+                                knot_child = KnotKey(i*t_diff/(len(knots)+1) + last_t, self.key, i-1, self.scene, t)
+                                new_knot_children.append(knot_child)
                     last_v, last_t = v, t
 
             elif self.tag == "sounds" and self.key is None:
@@ -1596,6 +1610,18 @@ init 1 python in _viewers:
                     box.add(new_c.get_child())
             self.warpkey_children = warpkey_children
 
+            knot_children = []
+            for new_c in new_knot_children:
+                for old_c in self.knot_children:
+                    if new_c == old_c:
+                        knot_children.append(old_c)
+                        box.add(old_c.get_child())
+                        break
+                else:
+                    knot_children.append(new_c)
+                    box.add(new_c.get_child())
+            self.knot_children = knot_children
+
             children = []
             for new_c in new_children:
                 for old_c in self.children:
@@ -1617,6 +1643,10 @@ init 1 python in _viewers:
 #すべてのイベントをオフにするとバーの問題は確認できない
             redraw = False
             for c in self.warpkey_children:
+                rv = c.event(ev, x, y, st)
+                if rv:
+                    redraw = True
+            for c in self.knot_children:
                 rv = c.event(ev, x, y, st)
                 if rv:
                     redraw = True
@@ -1925,6 +1955,127 @@ init 1 python in _viewers:
             renpy.restart_interaction()
 
 
+    class KnotKey():
+
+
+        def __init__(self, time, key, knot_num, scene, key_time):
+            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame.key import get_mods
+            from pygame.mouse import get_pressed
+            self.child = knot_child
+            self.hover_child = knot_hovere_child
+            self.time = time
+            self.key = key
+            self.knot_num = knot_num
+            self.scene = scene
+            self.key_time = key_time
+
+            self.dragging = False
+            self.clicking = False
+            self.last_hovered = self.hovered = False
+
+            self.MOUSEMOTION = MOUSEMOTION
+            self.get_pressed = get_pressed
+
+            self.barwidth = config.screen_width - c_box_size-50 - key_half_xsize
+            self.barheight = config.screen_height*(1-preview_size)-time_column_height
+            self.width = key_xsize
+            self.height = key_ysize
+            self.yoffset = self.height/2.
+
+            # self.key_list = [key]
+            if isinstance(key, tuple):
+                n, l, p = key
+                # for gn, ps in props_groups.items():
+                #     if p in ps:
+                #         self.key_list = [(n, l, p) for p in props_groups[gn]]
+                self.force_plus = p in force_plus
+            else:
+                # for gn, ps in props_groups.items():
+                #     if key in ps:
+                #         if gn != "focusing":
+                #             self.key_list = props_groups[gn]
+                self.force_plus = key in force_plus
+
+            if is_wide_range(key):
+                self.range = persistent._graphic_editor_wide_range
+            else:
+                self.range = persistent._graphic_editor_narrow_range
+
+
+        def __eq__(self, other):
+            # if not isinstance(other, WarperKey):
+            #     return False
+            if self.key != other.key:
+                return False
+            if self.time != other.time:
+                return False
+            if self.knot_num != other.knot_num:
+                return False
+            if self.scene != other.scene:
+                return False
+            if self.key_time != other.key_time:
+                return False
+            return True
+
+
+        def get_child(self):
+            self.xpos = time_to_pos(self.time)
+            self.ypos = self.knot_num_to_pos()
+            anchor = (0.5, 0.5)
+            if self.hovered:
+                child = self.hover_child
+            else:
+                child = self.child
+            return Transform(child, xoffset=self.xpos, yoffset=self.ypos, anchor=anchor)
+
+
+        def knot_num_to_pos(self):
+            knots = splines[self.scene][self.key][self.key_time]
+            knot = knots[self.knot_num]
+            return value_to_pos(knot, self.range, self.force_plus)
+
+
+        def knot_drag_changed(self, y):
+            v = pos_to_value(y, is_wide_range(self.key), self.force_plus)
+            if isinstance(v, float):
+                v = round(v, 2)
+            splines[self.scene][self.key][self.key_time][self.knot_num] = v
+            renpy.restart_interaction()
+
+
+        def event(self, ev, x, y, st):
+            clicking, _, _ = self.get_pressed()
+            if not clicking and self.dragging:
+                self.dragging = False
+                self.clicking = False
+
+            if ev.type == self.MOUSEMOTION and self.clicking:
+                self.dragging = True
+                self.knot_drag_changed(y)
+                return True
+
+            self.hovered = False
+            if not self.dragging and \
+                x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
+                y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
+                self.hovered = True
+                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
+                    self.clicking = True
+                    raise renpy.display.core.IgnoreEvent()
+                elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
+                    self.clicking = False
+                    raise renpy.display.core.IgnoreEvent()
+            elif self.clicking and renpy.map_event(ev, "mouseup_1"):
+                self.dragging = False
+                self.clicking = False
+                raise renpy.display.core.IgnoreEvent()
+            if self.last_hovered != self.hovered:
+                self.last_hovered = self.hovered
+                return True
+            self.last_hovered = self.hovered
+
+
     class TimeLineBackground():
 
 
@@ -2137,7 +2288,7 @@ init 1 python in _viewers:
             result = set()
             for p in ["xpos", "ypos", "zpos"]:
                 if (tag, layer, p) not in all_keyframes[current_scene]:
-                    break
+                    continue
                 else:
                     for _, t, _ in all_keyframes[current_scene][(tag, layer, p)]:
                         result.add(t)
@@ -2149,7 +2300,7 @@ init 1 python in _viewers:
             result = set()
             for p in ["xpos", "ypos", "zpos"]:
                 if p not in all_keyframes[current_scene]:
-                    break
+                    continue
                 else:
                     for _, t, _ in all_keyframes[current_scene][p]:
                         result.add(t)
@@ -2797,7 +2948,7 @@ init 1 python in _viewers:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
             if p not in [prop for ps in props_groups.values() for prop in ps]:
-                if i > 0 and not in_graphic_mode:
+                if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 
                         Show("_spline_editor", change_func=change_func, 
