@@ -1,12 +1,3 @@
-#課題
-
-#再現条件不明
-#hideが動作しないときがある
-#ホイールが片側動作しない, warper選択画面でのスクロールもできなかった
-
-#新機能
-#サウンド再生に対応
-#pan, tile追加
 
 #変更
 
@@ -2142,9 +2133,9 @@ show %s""" % child
         if dof == 0:
             dof = 0.1
         if _camera_blur_warper.startswith("warper_generator"):
-            warper = renpy.python.py_eval(goal[2])
+            warper = renpy.python.py_eval(_camera_blur_warper)
         else:
-            warper = renpy.atl.warpers[goal[2]]
+            warper = renpy.atl.warpers[_camera_blur_warper]
         blur_amount = _camera_blur_amount * warper(distance_from_focus/(float(dof)/2))
         if blur_amount < 0:
             blur_amount = abs(blur_amount)
