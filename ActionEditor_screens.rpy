@@ -470,6 +470,7 @@ init python in _viewers:
         box.add(Solid(preview_background_color, xsize=(1-preview_size), ysize=preview_size, xalign=1.))
     screen_background = box
 
+
 init -1597:
     style new_action_editor_frame:
         background None
@@ -1246,7 +1247,7 @@ init 1 python in _viewers:
             y = int(y/preview_size)
         else:
             (x, y) = (x/preview_size, y/preview_size)
-        return Text("({:>4}, {:>4})".format(x, y), size=16), 0.1
+        return Text("({:>4}, {:>4})".format(x, y), style="new_action_editor_text"), 0.1
 
 
     def rel_pos(st, at):
@@ -1258,7 +1259,7 @@ init 1 python in _viewers:
             (x, y) = (x/preview_size, y/preview_size)
         rx = x/float(config.screen_width)
         ry = y/float(config.screen_height)
-        return Text("({:>.3}, {:>.3})".format(rx, ry), size=16), 0.1
+        return Text("({:>.3}, {:>.3})".format(rx, ry), style="new_action_editor_text"), 0.1
 
 
     def show_current_time(st, at):
@@ -2321,7 +2322,10 @@ init 1 python in _viewers:
 
             self.width = 6
             self.height = 6
-            self.child =(Solid("#333",xsize=self.width, ysize=self.height))
+            box = Fixed(xsize=self.width, ysize=self.height)
+            box.add(Solid("#AAA",xsize=self.width, ysize=self.height))
+            box.add(Solid("#333",xpos=1, ypos=1, xsize=self.width-2, ysize=self.height-2))
+            self.child =box
 
 
         def value_to_pos(self):
@@ -2401,14 +2405,38 @@ init 1 python in _viewers:
             self.get_mods = get_mods
             self.get_pressed = get_pressed
 
-            self.current_child = Transform(rotate=45)(Solid("#0CF", xsize=16, ysize=16))
-            self.current_hover_child = Transform(rotate=45)(Solid("#2EF", xsize=16, ysize=16))
-            self.current_other_child = Transform(rotate=45)(Solid("#09B", xsize=16, ysize=16))
-            self.current_other_hover_child = Transform(rotate=45)(Solid("#2BC", xsize=16, ysize=16))
-            self.child = Transform(rotate=45)(Solid("#09C", xsize=16, ysize=16))
-            self.hover_child = Transform(rotate=45)(Solid("#2BE", xsize=16, ysize=16))
-            self.other_child = Transform(rotate=45)(Solid("#069", xsize=16, ysize=16))
-            self.other_hover_child = Transform(rotate=45)(Solid("#28B", xsize=16, ysize=16))
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#07A", xsize=16, ysize=16))
+            box.add(Solid("#0CF", align=(.5, .5), xsize=14, ysize=14))
+            self.current_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#09A", xsize=16, ysize=16))
+            box.add(Solid("#2EF", align=(.5, .5), xsize=14, ysize=14))
+            self.current_hover_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#047", xsize=16, ysize=16))
+            box.add(Solid("#09B", align=(.5, .5), xsize=14, ysize=14))
+            self.current_other_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#078", xsize=16, ysize=16))
+            box.add(Solid("#2BC", align=(.5, .5), xsize=14, ysize=14))
+            self.current_other_hover_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#059", xsize=16, ysize=16))
+            box.add(Solid("#09C", align=(.5, .5), xsize=14, ysize=14))
+            self.child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#078", xsize=16, ysize=16))
+            box.add(Solid("#2BE", align=(.5, .5), xsize=14, ysize=14))
+            self.hover_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#014", xsize=16, ysize=16))
+            box.add(Solid("#069", align=(.5, .5), xsize=14, ysize=14))
+            self.other_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#037", xsize=16, ysize=16))
+            box.add(Solid("#28B", align=(.5, .5), xsize=14, ysize=14))
+            self.other_hover_child = Transform(rotate=45)(box)
 
             self.width = key_xsize
             self.height = key_ysize
@@ -2575,7 +2603,10 @@ init 1 python in _viewers:
 
             self.width = 6
             self.height = 6
-            self.child = Solid("#333", xsize=self.width, ysize=self.height)
+            box = Fixed(xsize=self.width, ysize=self.height)
+            box.add(Solid("#AAA",xsize=self.width, ysize=self.height))
+            box.add(Solid("#333",xpos=1, ypos=1, xsize=self.width-2, ysize=self.height-2))
+            self.child = box
             self.xoffset = int(preview_size * config.screen_width / 2)
             self.yoffset = int(preview_size * config.screen_height / 2)
 
@@ -2660,8 +2691,25 @@ init 1 python in _viewers:
             self.current_hover_child = Transform(rotate=45)(Solid("#555", xsize=16, ysize=16))
             self.child = Transform(rotate=45)(Solid("#444", xsize=16, ysize=16))
             self.hover_child = Transform(rotate=45)(Solid("#666", xsize=16, ysize=16))
-            # self.other_child = Transform(rotate=45)(Solid("#09B", xsize=16, ysize=16))
-            # self.other_hover_child = Transform(rotate=45)(Solid("#2BC", xsize=16, ysize=16))
+
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#555", xsize=16, ysize=16))
+            box.add(Solid("#222", align=(.5, .5), xsize=14, ysize=14))
+            self.current_child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#888", xsize=16, ysize=16))
+            box.add(Solid("#555", align=(.5, .5), xsize=14, ysize=14))
+            self.current_hover_child = Transform(rotate=45)(box)
+
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#777", xsize=16, ysize=16))
+            box.add(Solid("#444", align=(.5, .5), xsize=14, ysize=14))
+            self.child = Transform(rotate=45)(box)
+            box = Fixed(xsize=16,ysize=16)
+            box.add(Solid("#999", xsize=16, ysize=16))
+            box.add(Solid("#666", align=(.5, .5), xsize=14, ysize=14))
+            self.hover_child = Transform(rotate=45)(box)
+
             self.width = key_xsize
             self.height = key_ysize
 
