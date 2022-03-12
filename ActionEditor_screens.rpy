@@ -1273,7 +1273,7 @@ init 1 python in _viewers:
         else:
             prop = key
             d = get_default(prop, True)
-        value = get_property(prop)
+        value = get_property(key)
         return prop not in force_float and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
 
 
@@ -2550,6 +2550,7 @@ init 1 python in _viewers:
             if self.draggable and ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 self.pos_to_value(x, y)
+                
 
             self.hovered = False
             if not self.dragging and \

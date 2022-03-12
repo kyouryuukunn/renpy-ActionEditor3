@@ -37,6 +37,22 @@ init -1600 python in _viewers:
     from renpy import config
 init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
+    # coordinate_icon = Fixed()
+    # coordinate_icon.add(Solid("#00F", xsize=50, ysize=6, anchor=(0., .5)))
+    # coordinate_icon.add(Solid("#0F0", xsize=6, ysize=50, anchor=(.5, 1.)))
+    # coordinate_icon.add(Transform(matrixtransform=renpy.store.Matrix.offset(0, 25, -25)*renpy.store.Matrix.rotate(90, 0, 0))(Solid("#F00", xsize=6, ysize=50, anchor=(.5, 1.))))
+    # coordinate_icon = Transform(xpos=0.05, ypos=0.1)(coordinate_icon)
+    #
+    # stage = Fixed()
+    # # step = 200
+    # # max_num = 100
+    # # for i in range(1, max_num):
+    # #     stage.add(Solid("#000", xsize=5, ysize=step*max_num, xpos=i*50,  ypos=0, anchor=(.5, .5)))
+    # #     stage.add(Solid("#000", xsize=5, ysize=step*max_num, xpos=-i*50, ypos=0, anchor=(.5, .5)))
+    # #     stage.add(Solid("#000", xsize=step*max_num, ysize=5, xpos=0, ypos=i*50, anchor=(.5, .5)))
+    # #     stage.add(Solid("#000", xsize=step*max_num, ysize=5, xpos=0, ypos=-i*50, anchor=(.5, .5)))
+    # stage.add(Solid("#000"))
+    # stage = Transform(matrixtransform=renpy.store.Matrix.offset(0, config.screen_width/2, 0)*renpy.store.Matrix.rotate(90, 0, 0))(stage)
 
 init -1598 python in _viewers:
     from copy import deepcopy
