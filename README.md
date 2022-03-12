@@ -1,7 +1,14 @@
  youtube sample
-<https://www.youtube.com/watch?v=h2Zdhugiho>
-<https://www.youtube.com/watch?v=VMMBj4-7k_Q>
-<https://www.youtube.com/watch?v=lhA8Ib3iKE8>
+
+Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=h2Zdhugiho8>
+
+Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
+
+Ren'Py Action Editor Introduction <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
+
+How to use spline in Action Editor with graphic editor <https://www.youtube.com/watch?v=qmGSsJbTYx4>
+
+Quick Overview of the 3D Camera for Ren'Py <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
 
 lemma forum
 <https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
