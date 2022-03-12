@@ -1,8 +1,8 @@
  youtube sample
 
-Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=h2Zdhugiho8>
+Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=7Mosa88gY-c>
 
-Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
+Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
 
 Ren'Py Action Editor Introduction <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
 
