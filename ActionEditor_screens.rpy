@@ -19,8 +19,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $force_plus = _viewers.force_plus
     $force_float = _viewers.force_float
     $force_wide_range = _viewers.force_wide_range
-    $props_set = _viewers.props_set
-    $props_set_names = _viewers.props_set_names
+    $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
     $generate_sound_menu = _viewers.generate_sound_menu
@@ -175,7 +174,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     fixed:
                         # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
                         ysize None
-                        add TimeLine(s, tag, key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                        add TimeLine(current_scene, tag, key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
             else:
                 viewport:
                     mousewheel True
@@ -229,7 +228,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                 textbutton _(indent*2+"  perspective"):
                                     action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
                                     Function(_viewers.toggle_perspective)]
-                                for i, props_set_name in enumerate(props_set_names):
+                                for props_set_name, props_set in props_sets:
                                     if props_set_name in opened[s]:
                                         hbox:
                                             hbox:
@@ -239,8 +238,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 $new_opened[s].remove(props_set_name)
                                                 textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
-                                                add TimeLine(s, "camera", props_set_num=i)
-                                        for p in props_set[i]:
+                                                add TimeLine(s, "camera", props_set=props_set)
+                                        for p in props_set:
                                             if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                                 (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
                                                 $key = p
@@ -276,7 +275,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $new_opened[s] = new_opened[s] + [props_set_name]
                                                 textbutton indent*2+"+ "+props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
-                                                add TimeLine(s, "camera", props_set_num=i)
+                                                add TimeLine(s, "camera", props_set=props_set)
                             for tag in tag_list:
                                 if tag not in opened[s]:
                                     hbox:
@@ -309,7 +308,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                     textbutton _(indent*2+"  zzoom"):
                                         action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
                                         Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
-                                    for i, props_set_name in enumerate(props_set_names):
+                                    for props_set_name, props_set in props_sets:
                                         if (tag, layer, props_set_name) not in opened[s]:
                                             hbox:
                                                 hbox:
@@ -322,7 +321,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     textbutton indent*2+"+ "+props_set_name:
                                                         action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                                 fixed:
-                                                    add TimeLine(s, (tag, layer), props_set_num=i)
+                                                    add TimeLine(s, (tag, layer), props_set=props_set)
                                         else:
                                             hbox:
                                                 hbox:
@@ -330,11 +329,11 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $new_opened = opened.copy()
                                                     $new_opened[s] = opened[s].copy()
                                                     $new_opened[s].remove((tag, layer, props_set_name))
-                                                    textbutton indent*2+"- " + props_set_names[i]:
+                                                    textbutton indent*2+"- " + props_set_name:
                                                         action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                                 fixed:
-                                                    add TimeLine(s, (tag, layer), props_set_num=i)
-                                            for p in props_set[i]:
+                                                    add TimeLine(s, (tag, layer), props_set=props_set)
+                                            for p in props_set:
                                                 if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                     and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
                                                     or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
@@ -553,8 +552,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $force_plus = _viewers.force_plus
     $force_float = _viewers.force_float
     $force_wide_range = _viewers.force_wide_range
-    $props_set = _viewers.props_set
-    $props_set_names = _viewers.props_set_names
+    $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
 
@@ -662,102 +660,96 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                 action [SensitiveIf(len(page_list) != page+1), Show("_action_editor", tab=tab, layer=layer, page=page+1), renpy.restart_interaction]
 
         if tab == "camera":
-            for i, props_set_name in enumerate(props_set_names):
-                if i < opened:
-                    hbox:
-                        textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
-            textbutton "- " + props_set_names[opened] action [SelectedIf(True), NullAction()]
-            for p, d in _viewers.camera_props:
-                if p in props_set[opened] and (p not in props_groups["focusing"] or 
-                    (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True))):
-                    $value = get_property(p)
-                    $f = generate_changed(p)
-                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
-                    if use_wide_range:
-                        $value_range = persistent._wide_range
-                        $bar_page = 1
-                    else:
-                        $value_range = persistent._narrow_range
-                        $bar_page = .05
-                    if p in force_plus:
-                        $bar_value = value
-                    else:
-                        $bar_value = value + value_range
-                        $value_range = value_range*2
-                    if not use_wide_range or isinstance(value, float):
-                        $value_format = float_format
-                    else:
-                        $value_format = int_format
-                    hbox:
-                        textbutton "  [p]":
-                            action [SensitiveIf(p in all_keyframes[current_scene]),
-                            SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
-                        textbutton value_format.format(value):
-                            action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
-                            alternate Function(reset, p) style_group "action_editor_b"
-                        bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                            xalign 1. yalign .5 style "action_editor_bar"
-            for i, props_set_name in enumerate(props_set_names):
-                if i > opened:
-                    hbox:
-                        textbutton "+ "+props_set_name:
-                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
-        else:
-            for i, props_set_name in enumerate(props_set_names):
-                if i < opened:
-                    hbox:
-                        textbutton "+ "+props_set_name:
-                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
-            textbutton "- " + props_set_names[opened] action [SelectedIf(True), NullAction()]
-            for p, d in _viewers.transform_props:
-                if p in props_set[opened] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
-                    and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") 
-                    or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
-                    $key = (tab, layer, p)
-                    $value = get_property(key)
-                    $f = generate_changed(key)
-                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
-                    if use_wide_range:
-                        $value_range = persistent._wide_range
-                        $bar_page = 1
-                    else:
-                        $value_range = persistent._narrow_range
-                        $bar_page = .05
-                    if not use_wide_range or isinstance(value, float):
-                        $value_format = float_format
-                    else:
-                        $value_format = int_format
-                    hbox:
-                        textbutton "  [p]":
-                            action [SensitiveIf(key in all_keyframes[current_scene]), 
-                            SelectedIf(keyframes_exist(key)), 
-                            Show("_edit_keyframe", key=key, use_wide_range=use_wide_range, change_func=f)]
-                        if p == "child":
-                            textbutton "[value[0]]":
-                                action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
-                                Function(_viewers.change_child, tab, layer, default=value[0])]
-                                size_group None
-                            textbutton "with" action None size_group None
-                            textbutton "[value[1]]":
-                                action [SensitiveIf(key in all_keyframes[current_scene]), 
-                                SelectedIf(keyframes_exist((tab, layer, "child"))), 
-                                Function(_viewers.edit_transition, tab, layer)]
-                                size_group None
-                        else:
+            for i, (props_set_name, props_set) in enumerate(props_sets):
+                if i == opened:
+                    textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
+                    for p, d in _viewers.camera_props:
+                        if p in props_set and (p not in props_groups["focusing"] or 
+                            (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True))):
+                            $value = get_property(p)
+                            $f = generate_changed(p)
+                            $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            if use_wide_range:
+                                $value_range = persistent._wide_range
+                                $bar_page = 1
+                            else:
+                                $value_range = persistent._narrow_range
+                                $bar_page = .05
                             if p in force_plus:
                                 $bar_value = value
                             else:
                                 $bar_value = value + value_range
                                 $value_range = value_range*2
-                            textbutton value_format.format(value):
-                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
-                                alternate Function(reset, key) style_group "action_editor_b"
-                            bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                xalign 1. yalign .5 style "action_editor_bar"
-            for i, props_set_name in enumerate(props_set_names):
-                if i > opened:
+                            if not use_wide_range or isinstance(value, float):
+                                $value_format = float_format
+                            else:
+                                $value_format = int_format
+                            hbox:
+                                textbutton "  [p]":
+                                    action [SensitiveIf(p in all_keyframes[current_scene]),
+                                    SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
+                                textbutton value_format.format(value):
+                                    action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                                    alternate Function(reset, p) style_group "action_editor_b"
+                                bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                    xalign 1. yalign .5 style "action_editor_bar"
+                else:
                     hbox:
-                        textbutton "+ "+props_set_name action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+                        textbutton "+ "+props_set_name:
+                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
+        else:
+            for i, (props_set_name, props_set) in enumerate(props_sets):
+                if i == opened:
+                    textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
+                    for p, d in _viewers.transform_props:
+                        if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
+                            and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") 
+                            or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
+                            $key = (tab, layer, p)
+                            $value = get_property(key)
+                            $f = generate_changed(key)
+                            $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            if use_wide_range:
+                                $value_range = persistent._wide_range
+                                $bar_page = 1
+                            else:
+                                $value_range = persistent._narrow_range
+                                $bar_page = .05
+                            if not use_wide_range or isinstance(value, float):
+                                $value_format = float_format
+                            else:
+                                $value_format = int_format
+                            hbox:
+                                textbutton "  [p]":
+                                    action [SensitiveIf(key in all_keyframes[current_scene]), 
+                                    SelectedIf(keyframes_exist(key)), 
+                                    Show("_edit_keyframe", key=key, use_wide_range=use_wide_range, change_func=f)]
+                                if p == "child":
+                                    textbutton "[value[0]]":
+                                        action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                        Function(_viewers.change_child, tab, layer, default=value[0])]
+                                        size_group None
+                                    textbutton "with" action None size_group None
+                                    textbutton "[value[1]]":
+                                        action [SensitiveIf(key in all_keyframes[current_scene]), 
+                                        SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                        Function(_viewers.edit_transition, tab, layer)]
+                                        size_group None
+                                else:
+                                    if p in force_plus:
+                                        $bar_value = value
+                                    else:
+                                        $bar_value = value + value_range
+                                        $value_range = value_range*2
+                                    textbutton value_format.format(value):
+                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                                        alternate Function(reset, key) style_group "action_editor_b"
+                                    bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                        xalign 1. yalign .5 style "action_editor_bar"
+                else:
+                    hbox:
+                        textbutton "+ "+props_set_name:
+                            action Show("_action_editor", tab=tab, layer=layer, opened=i, page=page)
         hbox:
             xfill False
             xalign 1.
@@ -1409,13 +1401,13 @@ init 1 python in _viewers:
     class TimeLine(renpy.Displayable):
 
 
-        def __init__(self, scene, tag, props_set_num=None, key=None, changed=None, use_wide_range=None, opened=None, in_graphic_mode=[]):
+        def __init__(self, scene, tag, props_set=None, key=None, changed=None, use_wide_range=None, opened=None, in_graphic_mode=[]):
             super(TimeLine, self).__init__()
             from pygame import MOUSEMOTION
             from renpy.store import Function, Solid, Fixed
             self.scene = scene
             self.tag = tag
-            self.props_set_num = props_set_num
+            self.props_set = props_set
             self.key = key
             self.changed=changed
             self.use_wide_range=use_wide_range
@@ -1437,7 +1429,7 @@ init 1 python in _viewers:
                 return False
             if self.tag != other.tag:
                 return False
-            if self.props_set_num != other.props_set_num:
+            if self.props_set != other.props_set:
                 return False
             if self.key != other.key:
                 return False
@@ -1469,7 +1461,7 @@ init 1 python in _viewers:
                             _, t, _ = c
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
-            elif self.tag == "camera" and self.props_set_num is None and self.key is None:
+            elif self.tag == "camera" and self.props_set is None and self.key is None:
                 scene_start = scene_keyframes[self.scene][1]
                 for p, d in camera_props:
                     _all_keyframes = all_keyframes[self.scene]
@@ -1478,10 +1470,10 @@ init 1 python in _viewers:
                         for _, t, _ in _all_keyframes.get(p, []):
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
-            elif self.tag == "camera" and self.props_set_num is not None:
+            elif self.tag == "camera" and self.props_set is not None:
                 _all_keyframes = all_keyframes[self.scene]
                 scene_start = scene_keyframes[self.scene][1]
-                for p in props_set[self.props_set_num]:
+                for p in self.props_set:
                     if (p not in props_groups["focusing"] or \
                         (persistent._viewer_focusing and get_value("perspective", scene_start, True))):
                         for _, t, _ in _all_keyframes.get(p, []):
@@ -1527,7 +1519,7 @@ init 1 python in _viewers:
                                 new_knot_children.append(knot_child)
                     last_v, last_t = v, t
 
-            elif isinstance(self.tag, tuple) and self.props_set_num is None and self.key is None:
+            elif isinstance(self.tag, tuple) and self.props_set is None and self.key is None:
                 tag, layer = self.tag
                 _all_keyframes = all_keyframes[self.scene]
                 for p, d in transform_props:
@@ -1535,10 +1527,10 @@ init 1 python in _viewers:
                         child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
                             clicked=Function(change_time, t))
                         new_children.append(child)
-            elif isinstance(self.tag, tuple) and self.props_set_num is not None:
+            elif isinstance(self.tag, tuple) and self.props_set is not None:
                 tag, layer = self.tag
                 _all_keyframes = all_keyframes[self.scene]
-                for p in props_set[self.props_set_num]:
+                for p in self.props_set:
                     for _, t, _ in _all_keyframes.get((tag, layer, p), []):
                         child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
                             clicked=Function(change_time, t))
