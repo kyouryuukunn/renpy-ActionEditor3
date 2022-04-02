@@ -74,6 +74,20 @@ lemma forum
  * ActionEditor Can't get colormatrix property.
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
 
+ How to add desired properties to the editor.
+ Add the names of the properties you want to add to props_set, sort_order_list
+ and transform_props or camera_props in ActionEditor_config.rpy. If the type of
+ the property you want to add is int or float, add it to force_float,
+ force_wide_range, or force_plus as needed. if it is a boolean value, add it to
+ boolean_props. If it is not one of those, add it to any_props where any type
+ can be entered.  Please note that error checking is not available when using
+ this function, so please be careful about the order of input.
+
+ For tuples and other properties with multiple values, you can use props_groups
+ where key is the property name and value is tuple of each element name, so
+ that they can be edited individually. Also set generate_groups_clipboard and
+ generate_groups_value to combine individual values into one.
+
  Image Viewer
 ================
  Showing defined images and filtering that by tag and atrribute.
@@ -153,7 +167,14 @@ lemma forum
  *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
-   
+
+ 任意のプロパティーをエディターに追加する方法
+ ActionEditor_config.rpyのprops_set, sort_order_listとtransform_propsまたはcamera_propsに追加したいプロパティー名を加えます。
+ さらに追加したいプロパティーの型が整数または浮動小数ならば必要に応じてforce_float, force_wide_range, force_plusに、真偽値ならばboolean_propsに追加します。プロパティーの型がそれら以外ならばどのような型も入力できるany_propsに追加してください。 
+ 使用時はエラーチェックを行なえないので入力順番等に注意してください。
+
+ タプルなど複数の値で1つのプロパティーを設定するものはprops_groupsでプロパティー名をキーに、各要素名を値にして登録すれば個別に編集できるようになります。
+ 個別の値を1つにまとめるためにgenerate_groups_clipboard, generate_groups_valueも設定してください。
 
  画像ビューワー
 ================

@@ -95,13 +95,16 @@ init -1600 python in _viewers:
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     not_used_by_default = ("rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan")
     boolean_props = ["zzoom"]
+    any_props = []
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
 
-    sort_ref_list = (
+    #The order of properties in clipboard data.
+    #この順番でクリップボードデータが出力されます
+    sort_order_list = (
     "pos",
     "anchor",
     "offset",
@@ -133,6 +136,9 @@ init -1600 python in _viewers:
     )
 
 init 1600 python in _viewers:
+    #The properties used in image tag tab
+    #画像タブに表示されるプロパティー
+    #(property name,  default value)
     transform_props = (
     ("child", (None, None)), 
     ("xpos", 0), 
@@ -179,7 +185,9 @@ init 1600 python in _viewers:
     ("ytile", 1), 
     )
 
-    #perspetve competes crop
+    #The properties used in camera tab
+    #カメラタブに表示されるプロパティー
+    #(property name,  default value)
     camera_props = (
     ("xpos", 0.), 
     ("ypos", 0.), 

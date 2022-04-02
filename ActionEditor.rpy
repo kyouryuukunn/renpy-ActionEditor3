@@ -659,7 +659,7 @@ init -1598 python in _viewers:
                 if time >= scene_start and time < checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
-                    if p != "child":
+                    if p != "child" :
                         if checkpoint != pre_checkpoint:
                             if goal[2].startswith("warper_generator"):
                                 warper = renpy.python.py_eval(goal[2])
@@ -669,7 +669,7 @@ init -1598 python in _viewers:
                         else:
                             g = 1.
                         default = get_default(p, camera)
-                        if goal[0] is not None:
+                        if goal[0] is not None or p in boolean_props + any_props:
                             if start[0] is None:
                                 start_v = default
                             else:
@@ -681,6 +681,8 @@ init -1598 python in _viewers:
                                     knots = [start_v] + knots + [goal[0]]
                             if knots:
                                 v = renpy.atl.interpolate_spline(g, knots)
+                            elif p in boolean_props + any_props:
+                                v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[p])
                             else:
                                 v = g*(goal[0]-start_v)+start_v
                             if isinstance(goal[0], int) and p not in force_float:
@@ -928,11 +930,11 @@ init -1598 python in _viewers:
             state = camera_state_org[scene_num]
         if key in all_keyframes[scene_num]:
             return get_value(key, scene_num=scene_num)
-        elif prop in state and state[prop] is not None:
-                if prop == "child":
-                    return state[prop][0], None
-                else:
-                    return state[prop]
+        elif (prop in state and state[prop] is not None) or (prop in boolean_props + any_props):
+            if prop == "child":
+                return state[prop][0], None
+            else:
+                return state[prop]
         elif default:
             return get_default(prop, not isinstance(key, tuple))
         else:
@@ -1147,12 +1149,29 @@ init -1598 python in _viewers:
             return
 
 
+    def edit_any(key, time=None):
+        if time is None:
+            time = current_time
+        value = get_value(key, time)
+        if isinstance(value, str):
+            value = "'" + value + "'"
+        value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
+        if value:
+            try:
+                value = renpy.python.py_eval(value)
+            except:
+                renpy.notify(_("Please type a valid data"))
+                return
+            set_keyframe(key, value, time=time)
+            change_time(current_time)
+
+
     def toggle_boolean_property(key):
         if isinstance(key, tuple):
             tag, layer, prop = key
             value_org = get_image_state(layer)[tag][prop]
         else:
-            value_org = camera_state_org[key]
+            value_org = camera_state_org[current_scene][key]
         value = get_value(key, scene_keyframes[current_scene][1], True)
         #assume default is False
         if value == value_org or (not value and not value_org):
@@ -1254,7 +1273,7 @@ init -1598 python in _viewers:
                 else:
                     g = 1.
                 default_vault = get_default(prop, not isinstance(key, tuple))
-                if goal[0] is not None:
+                if goal[0] is not None or prop in boolean_props + any_props:
                     if start[0] is None:
                         start_v = default_vault
                     else:
@@ -1266,6 +1285,8 @@ init -1598 python in _viewers:
                             knots = [start_v] + knots + [goal[0]]
                     if knots:
                         v = renpy.atl.interpolate_spline(g, knots)
+                    elif prop in boolean_props + any_props:
+                        v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[prop])
                     else:
                         v = g*(goal[0]-start_v)+start_v
                     if isinstance(goal[0], int) and prop not in force_float:
@@ -2035,9 +2056,13 @@ show %s""" % child
             delay = get_transition_delay(tran)
             if delay + scene_start  > animation_time:
                 animation_time = delay + scene_start
-            for cs in all_keyframes[s].values():
+            for key, cs in all_keyframes[s].items():
+                if isinstance(key, tuple):
+                    prop = key[2]
+                else:
+                    prop = key
                 for (v, t, w) in cs:
-                    if isinstance(v, tuple):
+                    if prop == "child":
                         delay = get_transition_delay(v[1])
                         t += delay
                     if t > animation_time:
@@ -2063,9 +2088,13 @@ show %s""" % child
         (tran, scene_start, _) = scene_keyframes[scene_num]
         delay = get_transition_delay(tran)
         animation_time = delay + scene_start
-        for cs in all_keyframes[scene_num].values():
+        for key, cs in all_keyframes[scene_num].items():
+            if isinstance(key, tuple):
+                prop = key[2]
+            else:
+                prop = key
             for (v, t, w) in cs:
-                if isinstance(v, tuple):
+                if prop == "child":
                     delay = get_transition_delay(v[1])
                     t += delay
                 if t > animation_time:
@@ -2121,13 +2150,13 @@ show %s""" % child
 
 
     def sort_props(keyframes):
-        return [(p, keyframes[p]) for p in sort_ref_list if p in keyframes]
+        return [(p, keyframes[p]) for p in sort_order_list if p in keyframes]
 
 
     def put_prop_togetter(keyframes, layer=None, tag=None):
         #時間軸とx, yを纏める キーフレームが一つのみのものは含めない
         sorted_list = []
-        for p in sort_ref_list:
+        for p in sort_order_list:
             if p in keyframes:
                 sorted_list.append((p, keyframes[p]))
         result = []
@@ -2163,7 +2192,7 @@ show %s""" % child
         if persistent._one_line_one_prop:
             result_dict = {k:v for same_time_set in result for (k, v) in same_time_set}
             result.clear()
-            for p in sort_ref_list:
+            for p in sort_order_list:
                 if p in result_dict:
                     result.append([(p, result_dict[p])])
         return result
