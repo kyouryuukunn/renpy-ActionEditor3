@@ -75,7 +75,7 @@ init -1600 python in _viewers:
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
             ("Effect       ", ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")),
-            ("Misc         ", ("xpan", "ypan", "xtile", "ytile")),
+            ("Misc         ", ("zzoom", "perspective", "xpan", "ypan", "xtile", "ytile")),
             )
 
     props_groups = {
@@ -94,10 +94,12 @@ init -1600 python in _viewers:
     force_plus = ("additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile")
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     not_used_by_default = ("rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan")
+    boolean_props = ["zzoom"]
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
+    xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
 
     sort_ref_list = (
     "pos",
@@ -129,8 +131,6 @@ init -1600 python in _viewers:
     "xtile", 
     "ytile", 
     )
-
-    xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
 
 init 1600 python in _viewers:
     transform_props = (

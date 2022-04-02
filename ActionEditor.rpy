@@ -1191,7 +1191,7 @@ init -1598 python in _viewers:
     def toggle_boolean_property(key):
         if isinstance(key, tuple):
             tag, layer, prop = key
-            value_org = get_image_state(layer)[tag]["zzoom"]
+            value_org = get_image_state(layer)[tag][prop]
         else:
             value_org = camera_state_org[key]
         value = get_value(key, scene_keyframes[current_scene][1], True)

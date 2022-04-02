@@ -225,9 +225,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             style_group "new_action_editor_b"
                                     fixed:
                                         add TimeLine(s, "camera")
-                                textbutton _(indent*2+"  perspective"):
-                                    action [SelectedIf(get_value("perspective", scene_keyframes[s][1], True)),
-                                    Function(_viewers.toggle_perspective)]
                                 for props_set_name, props_set in props_sets:
                                     if props_set_name in opened[s]:
                                         hbox:
@@ -251,19 +248,28 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $value_format = float_format
                                                 else:
                                                     $value_format = int_format
-                                                hbox:
+                                                if p == "perspective":
+                                                    textbutton indent*3+"  [p]":
+                                                        action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                        Function(_viewers.toggle_perspective)]
+                                                elif p in _viewers.boolean_props:
+                                                    textbutton indent*3+"  [p]":
+                                                        action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                        Function(_viewers.toggle_boolean_property, key)]
+                                                else:
                                                     hbox:
-                                                        style_group "new_action_editor_c"
-                                                        textbutton indent*3+"  [p]" action None text_color "#CCC"
-                                                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
-                                                            text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                    # if key not in in_graphic_mode:
-                                                    fixed:
-                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
-                                                    # else:
-                                                    #     fixed:
-                                                    #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
-                                                    #         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                        # if key not in in_graphic_mode:
+                                                        fixed:
+                                                            add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                        # else:
+                                                        #     fixed:
+                                                        #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                        #         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
                                     else:
                                         hbox:
                                             hbox:
@@ -305,9 +311,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 size_group None
                                         fixed:
                                             add TimeLine(s, (tag, layer))
-                                    textbutton _(indent*2+"  zzoom"):
-                                        action [SelectedIf(get_value((tag, layer, "zzoom"), scene_keyframes[s][1], True)),
-                                        Function(_viewers.toggle_boolean_property, (tag, layer, "zzoom"))]
                                     for props_set_name, props_set in props_sets:
                                         if (tag, layer, props_set_name) not in opened[s]:
                                             hbox:
@@ -363,6 +366,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         SelectedIf(keyframes_exist((tag, layer, "child"))),
                                                                         Function(_viewers.edit_transition, tag, layer)]
                                                                         size_group None
+                                                        elif p in _viewers.boolean_props:
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*3+"  [p]":
+                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                    Function(_viewers.toggle_boolean_property, key)]
                                                         else:
                                                             hbox:
                                                                 style_group "new_action_editor_c"
@@ -675,11 +684,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             else:
                                 $value_range = persistent._narrow_range
                                 $bar_page = .05
-                            if p in force_plus:
-                                $bar_value = value
-                            else:
-                                $bar_value = value + value_range
-                                $value_range = value_range*2
                             if not use_wide_range or isinstance(value, float):
                                 $value_format = float_format
                             else:
@@ -688,11 +692,25 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 textbutton "  [p]":
                                     action [SensitiveIf(p in all_keyframes[current_scene]),
                                     SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
-                                textbutton value_format.format(value):
-                                    action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
-                                    alternate Function(reset, p) style_group "action_editor_b"
-                                bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                    xalign 1. yalign .5 style "action_editor_bar"
+                                if p == "perspective":
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
+                                        Function(_viewers.toggle_perspective)]
+                                elif p in _viewers.boolean_props:
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                        Function(_viewers.toggle_boolean_property, p)]
+                                else:
+                                    if p in force_plus:
+                                        $bar_value = value
+                                    else:
+                                        $bar_value = value + value_range
+                                        $value_range = value_range*2
+                                    textbutton value_format.format(value):
+                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                                        alternate Function(reset, p) style_group "action_editor_b"
+                                    bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                        xalign 1. yalign .5 style "action_editor_bar"
                 else:
                     hbox:
                         textbutton "+ "+props_set_name:
@@ -735,6 +753,10 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         SelectedIf(keyframes_exist((tab, layer, "child"))), 
                                         Function(_viewers.edit_transition, tab, layer)]
                                         size_group None
+                                elif p in _viewers.boolean_props:
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                        Function(_viewers.toggle_boolean_property, key)]
                                 else:
                                     if p in force_plus:
                                         $bar_value = value
@@ -754,9 +776,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             xfill False
             xalign 1.
             if tab == "camera":
-                textbutton _("perspective"):
-                    action [SelectedIf(get_value("perspective", scene_keyframes[current_scene][1], True)), Function(_viewers.toggle_perspective)]
-                    size_group None
                 textbutton _("clipboard") action Function(_viewers.put_camera_clipboard) size_group None
                 # textbutton _("reset") action [_viewers.camera_reset, renpy.restart_interaction] size_group None
             else:
@@ -764,10 +783,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     SensitiveIf(tab in _viewers.image_state[current_scene][layer]), 
                     Show("_action_editor", tab="camera", layer=layer, opened=opened, page=page), 
                     Function(_viewers.remove_image, layer, tab)] size_group None
-                textbutton _("zzoom"):
-                    action [SelectedIf(get_value((tab, layer, "zzoom"), scene_keyframes[current_scene][1], True)), 
-                    Function(_viewers.toggle_boolean_property, (tab, layer, "zzoom"))]
-                    size_group None
                 textbutton _("clipboard"):
                     action Function(_viewers.put_image_clipboard, tab, layer)
                     size_group None
