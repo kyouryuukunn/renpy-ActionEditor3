@@ -255,18 +255,11 @@ init -1598 python in _viewers:
 
             return rx*180.0/pi, ry*180.0/pi, rz*180.0/pi, ox, oy, oz
 
-        elif group_name == "matrixanchor":
-            return group
         elif group_name == "matrixcolor":
             #can't get properties from matrixcolor
             return 0., 1., 1., 0., 0.
-
-        elif group_name == "crop":
-            return group
-        elif group_name == "alignaround":
-            return group
         else:
-            return None
+            return group
 
 
     def reset(key_list, time=None):
@@ -696,26 +689,9 @@ init -1598 python in _viewers:
                                 if p in ps:
                                     group_cache[gn][p] = v
                                     if len(group_cache[gn]) == len(props_groups[gn]):
-                                        if gn == "matrixtransform":
-                                            rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
-                                            ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                            result = Matrix.offset(ox, oy, oz)*Matrix.rotate(rx, ry, rz)
-                                            setattr(tran, gn, result)
-                                        elif gn == "matrixanchor":
-                                            mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
-                                            result = (mxa, mya)
-                                            setattr(tran, gn, result)
-                                        elif gn ==  "matrixcolor":
-                                            i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                                            result = InvertMatrix(i)*ContrastMatrix(c)*SaturationMatrix(s)*BrightnessMatrix(b)*HueMatrix(h)
-                                            setattr(tran, gn, result)
-                                        elif gn == "crop":
-                                            result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                                            setattr(tran, gn, result)
-                                        elif gn == "alignaround":
-                                            result = (group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])
-                                            setattr(tran, gn, result)
-                                        elif gn == "focusing":
+                                        if gn != "focusing":
+                                            setattr(tran, gn, generate_groups_value[gn](**group_cache[gn]))
+                                        else:
                                             focusing = group_cache["focusing"]["focusing"]
                                             dof = group_cache["focusing"]["dof"]
                                             image_zpos = 0
@@ -748,26 +724,9 @@ init -1598 python in _viewers:
                     if p in ps:
                         group_cache[gn][p] = cs[fixed_index][0]
                         if len(group_cache[gn]) == len(props_groups[gn]):
-                            if gn == "matrixtransform":
-                                rx, ry, rz = group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"]
-                                ox, oy, oz = group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"]
-                                result = Matrix.offset(ox, oy, oz)*Matrix.rotate(rx, ry, rz)
-                                setattr(tran, gn, result)
-                            elif gn == "matrixanchor":
-                                mxa, mya = group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"]
-                                result = (mxa, mya)
-                                setattr(tran, gn, result)
-                            elif gn ==  "matrixcolor":
-                                i, c, s, b, h = group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"]
-                                result = InvertMatrix(i)*ContrastMatrix(c)*SaturationMatrix(s)*BrightnessMatrix(b)*HueMatrix(h)
-                                setattr(tran, gn, result)
-                            elif gn == "crop":
-                                result = (group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])
-                                setattr(tran, gn, result)
-                            elif gn == "alignaround":
-                                result = (group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])
-                                setattr(tran, gn, result)
-                            elif gn == "focusing":
+                            if gn != "focusing":
+                                setattr(tran, gn, generate_groups_value[gn](**group_cache[gn]))
+                            else:
                                 focusing = group_cache["focusing"]["focusing"]
                                 dof = group_cache["focusing"]["dof"]
                                 image_zpos = 0
@@ -2123,21 +2082,14 @@ show %s""" % child
                     group_cache[gn][p] = cs
                     if len(group_cache[gn]) == len(props_groups[gn]):
                         r = None
-                        if gn == "matrixtransform":
-                            v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
-                            r = [(v%(oxc[0], oyc[0], ozc[0], rxc[0], ryc[0], rzc[0]), oxc[1], oxc[2]) for oxc, oyc, ozc, rxc, ryc, rzc  in zip(group_cache[gn]["offsetX"], group_cache[gn]["offsetY"], group_cache[gn]["offsetZ"], group_cache[gn]["rotateX"], group_cache[gn]["rotateY"], group_cache[gn]["rotateZ"])]
-                        elif gn == "matrixanchor":
-                            v = "(%s, %s)"
-                            r = [(v%(mxa[0], mya[0]), mxa[1], mxa[2]) for mxa, mya  in zip(group_cache[gn]["matrixanchorX"], group_cache[gn]["matrixanchorY"])]
-                        elif gn ==  "matrixcolor":
-                            v = "InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)"
-                            r = [(v%(ic[0], cc[0], sc[0], bc[0], hc[0]), ic[1], ic[2]) for ic, cc, sc, bc, hc in zip(group_cache[gn]["invert"], group_cache[gn]["contrast"], group_cache[gn]["saturate"], group_cache[gn]["bright"], group_cache[gn]["hue"])]
-                        elif gn == "crop":
-                            v = "(%s, %s, %s, %s)"
-                            r = [(v%(xc[0], yc[0], wc[0], hc[0]), xc[1], xc[2]) for xc, yc, wc, hc in zip(group_cache[gn]["cropX"], group_cache[gn]["cropY"], group_cache[gn]["cropW"], group_cache[gn]["cropH"])]
-                        elif gn == "alignaround":
-                            v = "(%s, %s)"
-                            r = [(v%(xa[0], ya[0]), xa[1], xa[2]) for xa, ya in zip(group_cache[gn]["xalignaround"], group_cache[gn]["yalignaround"])]
+                        if gn != "focusing:":
+                            r = []
+                            sample = group_cache[gn].values()[0]
+                            for i in range(len(sample)):
+                                kwargs = {k:v[i][0] for k, v in group_cache[gn].items()}
+                                t = sample[i][1]
+                                w = sample[i][2]
+                                r.append((generate_groups_clipboard[gn](**kwargs), t, w))
                         if r:
                             result[gn] = r
                     break
