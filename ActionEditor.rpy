@@ -1302,11 +1302,13 @@ init -1598 python in _viewers:
 
     def put_camera_clipboard():
         camera_keyframes = {}
-        for k, v in all_keyframes[current_scene].items():
+        for k in all_keyframes[current_scene]:
             if not isinstance(k, tuple):
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
+                elif k in any_props and isinstance(value, str):
+                    value = "'" + value + "'"
                 camera_keyframes[k] = [(value, 0, None)]
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
@@ -1344,11 +1346,13 @@ camera"""
 
     def put_image_clipboard(tag, layer):
         image_keyframes = {}
-        for k, v in all_keyframes[current_scene].items():
+        for k in all_keyframes[current_scene]:
             if isinstance(k, tuple) and k[0] == tag and k[1] == layer:
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
+                elif k in any_props and isinstance(value, str):
+                    value = "'" + value + "'"
                 image_keyframes[k[2]] = [(value, 0, None)]
         image_keyframes = set_group_keyframes(image_keyframes)
         if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) \
@@ -2276,6 +2280,15 @@ show %s""" % child
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
             camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
             camera_keyframes = set_group_keyframes(camera_keyframes)
+            for k, v in camera_keyframes.items():
+                if k in any_props:
+                    formated_v = []
+                    for c in v:
+                        if isinstance(c[0], str):
+                            formated_v.append(("'" + c[0] + "'", c[1], c[2]))
+                        else:
+                            formated_v.append(c)
+                    camera_keyframes[k] = formated_v
             camera_properties = []
             for p, d in camera_props:
                 for gn, ps in props_groups.items():
@@ -2348,6 +2361,15 @@ show %s""" % child
                     value_org = state[tag]
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
+                    for k, v in image_keyframes.items():
+                        if k in any_props:
+                            formated_v = []
+                            for c in v:
+                                if isinstance(c[0], str):
+                                    formated_v.append(("'" + c[0] + "'", c[1], c[2]))
+                                else:
+                                    formated_v.append(c)
+                            image_keyframes[k] = formated_v
                     if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) \
                         and "blur" in image_keyframes:
                         del image_keyframes["blur"]
@@ -2525,6 +2547,15 @@ show %s""" % child
                     if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
                         camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]
             camera_keyframes = set_group_keyframes(camera_keyframes)
+            for k, v in camera_keyframes.items():
+                if k in any_props:
+                    formated_v = []
+                    for c in v:
+                        if isinstance(c[0], str):
+                            formated_v.append(("'" + c[0] + "'", c[1], c[2]))
+                        else:
+                            formated_v.append(c)
+                    camera_keyframes[k] = formated_v
             if camera_keyframes:
                 for p, cs in camera_keyframes.items():
                     if len(cs) > 1:
@@ -2573,6 +2604,15 @@ show %s""" % child
                 for tag, _ in zorder_list[last_scene][layer]:
                     image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
+                    for k, v in image_keyframes.items():
+                        if k in any_props:
+                            formated_v = []
+                            for c in v:
+                                if isinstance(c[0], str):
+                                    formated_v.append(("'" + c[0] + "'", c[1], c[2]))
+                                else:
+                                    formated_v.append(c)
+                            image_keyframes[k] = formated_v
                     if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)) \
                         and "blur" in image_keyframes:
                         del image_keyframes["blur"]
