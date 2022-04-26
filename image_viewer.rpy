@@ -18,7 +18,7 @@ screen _image_selecter(default=""):
                 scrollbars "vertical"
                 vbox:
                     for image_name in filtered_list:
-                        textbutton image_name action Return(tuple(image_name.split())) hovered _viewers.ShowImage(tuple(image_name.split())) unhovered Function(renpy.hide, "preview", layer="screens")
+                        textbutton image_name action _viewers.Add_tag_or_Return(tuple(image_name.split())) hovered _viewers.ShowImage(tuple(image_name.split())) unhovered Function(renpy.hide, "preview", layer="screens")
             textbutton _("clipboard") action [SensitiveIf(filter_string), Function(_viewers.put_clipboard_text, filter_string)] xalign 1.0 idle_background None insensitive_background None
     if filter_string_cache != filter_string:
         if len(filtered_list) == 1:
@@ -28,7 +28,7 @@ screen _image_selecter(default=""):
         elif "preview" in renpy.get_showing_tags("screens"):
             $filter_string_cache = filter_string
             $_viewers._image_viewer_hide()
-    key "K_TAB" action Function(_viewers.completion, filter_string, filtered_list)
+    key "K_TAB" action Function(_viewers.tag_completion, filter_string, filtered_list)
 
 init:
     style image_selecter_frame:
@@ -81,7 +81,7 @@ init -2000 python in _viewers:
                         else:
                             filtered_list.append(" ".join(name))
         else:
-            filtered_list = [name[0] for name in renpy.display.image.images]
+            filtered_list = list({name[0] for name in renpy.display.image.images})
         return filtered_list
 
     def put_clipboard_text(s):
@@ -89,7 +89,7 @@ init -2000 python in _viewers:
         scrap.put(locals.SCRAP_TEXT, s)
         renpy.notify("'{}'\nis copied to clipboard".format(s))
 
-    def completion(filter_string, filtered_list):
+    def tag_completion(filter_string, filtered_list):
         if filter_string and filter_string[-1] != " ":
             completed_string = filter_string.split()[-1]
             candidate = []
@@ -137,3 +137,32 @@ init -1 python in _viewers:
             except:
                 renpy.show("preview", what=renpy.text.text.Text("No files", color="#F00"), at_list=[renpy.store.truecenter], layer="screens")
             renpy.restart_interaction()
+
+
+    @renpy.pure
+    class Add_tag_or_Return(renpy.store.Action, renpy.store.DictEquality):
+        def __init__(self, image_name_tuple):
+            self.image_name_tuple = image_name_tuple
+            self.string = " ".join(image_name_tuple)
+            self.check = None
+
+        def __call__(self):
+            if self.check is None:
+                for n in get_image_name_candidates():
+                    if set(n) == set(self.string.split()) and n[0] == self.string.split()[0]:
+                        self.string = " ".join(n)
+                        try:
+                            for fn in renpy.display.image.images[n].predict_files():
+                                if not renpy.loader.loadable(fn):
+                                    self.check = False
+                                    break
+                            else:
+                                self.check = True
+                        except:
+                            self.check = False #text displayable or Live2D
+            if self.check:
+                return self.image_name_tuple
+            else:
+                cs = renpy.current_screen()
+                cs.scope["filter_string"] = self.string + " "
+                # renpy.restart_interaction()
