@@ -165,4 +165,4 @@ init -1 python in _viewers:
             else:
                 cs = renpy.current_screen()
                 cs.scope["filter_string"] = self.string + " "
-                # renpy.restart_interaction()
+                renpy.restart_interaction()
