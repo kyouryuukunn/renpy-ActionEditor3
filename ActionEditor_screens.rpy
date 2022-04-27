@@ -384,6 +384,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         action [SelectedIf(keyframes_exist((tag, layer, "child"))),
                                                                         Function(_viewers.change_child, tag, layer, default=value[0])]
                                                                         size_group None
+                                                                        text_language "unicode"
                                                                 hbox:
                                                                     style_group "new_action_editor_c"
                                                                     textbutton indent*3+"  with [value[1]]":
@@ -391,6 +392,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         SelectedIf(keyframes_exist((tag, layer, "child"))),
                                                                         Function(_viewers.edit_transition, tag, layer)]
                                                                         size_group None
+                                                                        text_language "unicode"
                                                         elif p in _viewers.any_props:
                                                             hbox:
                                                                 style_group "new_action_editor_c"
@@ -537,6 +539,8 @@ init -1597:
         color "#CCC"
         outlines [ (absolute(2), "#000", absolute(0), absolute(0)) ]
         size 16
+    if (renpy.version_tuple[0] == 7 and renpy.version_tuple[1] >= 5) or renpy.version_tuple[0] > 7:
+        style new_action_editor_text language "unicode"
     style new_action_editor_button_text is new_action_editor_text:
         hover_underline True
         selected_color "#FFF"
