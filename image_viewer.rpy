@@ -11,7 +11,7 @@ screen _image_selecter(default=""):
         style_group "image_selecter"
         vbox:
             label _("Type a image name") style "image_selecter_input"
-            input value ScreenVariableInputValue("filter_string", default=True, returnable=True) copypaste True style "image_selecter_input" #changed _tag_input
+            input value ScreenVariableInputValue("filter_string", default=True, returnable=True) copypaste True style "image_selecter_input" id "input_filter_strings"
             $filtered_list = _viewers.filter_image_name(filter_string)
             viewport:
                 mousewheel True
@@ -103,6 +103,8 @@ init -2000 python in _viewers:
                             candidate.append(e)
             cs = renpy.current_screen()
             cs.scope["filter_string"] += candidate[0][len(completed_string):] + " "
+            input = renpy.get_displayable("_image_selecter", "input_filter_strings")
+            input.caret_pos = len(cs.scope["filter_string"])
 
     def _image_viewer_hide():
         renpy.hide("preview", layer="screens")
@@ -165,4 +167,6 @@ init -1 python in _viewers:
             else:
                 cs = renpy.current_screen()
                 cs.scope["filter_string"] = self.string + " "
+                input = renpy.get_displayable("_image_selecter", "input_filter_strings")
+                input.caret_pos = len(cs.scope["filter_string"])
                 renpy.restart_interaction()
