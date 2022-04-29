@@ -140,8 +140,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                 hbox:
                     style_group "new_action_editor_c"
                     imagebutton:
-                        idle DynamicDisplayable(_viewers.show_current_time)
-                        hover DynamicDisplayable(_viewers.show_current_time)
+                        idle DynamicDisplayable(_viewers.show_current_time_idle)
+                        hover DynamicDisplayable(_viewers.show_current_time_hover)
                         action Function(_viewers.edit_time)
                         xalign 1.
                         size_group None
@@ -168,7 +168,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     #他と同時にグラフィックモードで表示するとタイムバーが反応しないことがある
                     hbox:
                         style_group "new_action_editor_c"
-                        textbutton "  [key]" action None text_color "#CCC"
+                        textbutton "  [key]" action None text_color "#FFF"
                         add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                             text_size=16, text_color="#CCC", text_hover_underline=True)
                     fixed:
@@ -253,16 +253,25 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
-                                                                action None text_color "#CCC"
+                                                                action None text_color "#FFF"
                                                             textbutton "[value]":
                                                                 action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
                                                                 Function(_viewers.toggle_perspective)]
+                                                                size_group None
+                                                    elif p == "function":
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#FFF"
+                                                            textbutton "[value]":
+                                                                action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                Function(_viewers.edit_function, key)]
                                                                 size_group None
                                                     elif p in _viewers.any_props:
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
-                                                                action None text_color "#CCC"
+                                                                action None text_color "#FFF"
                                                             if isinstance(value, str):
                                                                 textbutton "'[value]'":
                                                                     action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
@@ -277,7 +286,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
-                                                                action None text_color "#CCC"
+                                                                action None text_color "#FFF"
                                                             textbutton "[value]":
                                                                 action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
                                                                 Function(_viewers.toggle_boolean_property, key)]
@@ -285,7 +294,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     else:
                                                         hbox:
                                                             style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action None text_color "#CCC"
+                                                            textbutton indent*3+"  [p]" action None text_color "#FFF"
                                                             add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
@@ -393,11 +402,20 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         Function(_viewers.edit_transition, tag, layer)]
                                                                         size_group None
                                                                         text_language "unicode"
+                                                        elif p == "function":
+                                                            hbox:
+                                                                style_group "new_action_editor_c"
+                                                                textbutton indent*3+"  [p]":
+                                                                    action None text_color "#FFF"
+                                                                textbutton "[value]":
+                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                    Function(_viewers.edit_function, key)]
+                                                                    size_group None
                                                         elif p in _viewers.any_props:
                                                             hbox:
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
-                                                                    action None text_color "#CCC"
+                                                                    action None text_color "#FFF"
                                                                 if isinstance(value, str):
                                                                     textbutton "'[value]'":
                                                                         action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
@@ -412,7 +430,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             hbox:
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
-                                                                    action None text_color "#CCC"
+                                                                    action None text_color "#FFF"
                                                                 textbutton "[value]":
                                                                     action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
                                                                     Function(_viewers.toggle_boolean_property, key)]
@@ -421,7 +439,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             hbox:
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
-                                                                    action None text_color "#CCC"
+                                                                    action None text_color "#FFF"
                                                                 add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
                                                         fixed:
@@ -474,7 +492,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                 hbox:
                                     style_group "new_action_editor_c"
                                     textbutton indent*1+"  [channel]":
-                                        action None text_color "#CCC"
+                                        action None text_color "#FFF"
                                         size_group None
                                 fixed:
                                     add TimeLine(s, "sounds", key=channel)
@@ -1334,8 +1352,12 @@ init 1 python in _viewers:
         return Text("({:>.3}, {:>.3})".format(rx, ry), style="new_action_editor_text"), 0.1
 
 
-    def show_current_time(st, at):
+    def show_current_time_idle(st, at):
         return Text(_("time: {:>05.2f} s").format(current_time), style="new_action_editor_text"), 0.01
+
+
+    def show_current_time_hover(st, at):
+        return Text(_("time: {:>05.2f} s").format(current_time), style="new_action_editor_text", underline=True), 0.01
 
 
     def is_wide_range(key):
@@ -1453,7 +1475,7 @@ init 1 python in _viewers:
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
                     if self.clicking == True:
                         self.clicking = False
-                        action=Function(edit_value, self.changed, self.use_wide_range, self.value, self.force_plus),
+                        action=Function(edit_value, self.changed, self.value, self.use_wide_range, self.force_plus),
                         rv = renpy.run(action)
                         if rv is not None:
                             return rv
@@ -2457,13 +2479,13 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu(
                         [("{}".format(tag), NullAction()),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, is_wide_range((tag, layer, "xpos")), xpos, "xpos" in force_plus, time), Function(change_time, time)]),
-                        ("edit: ypos {}".format(ypos),
-                         [Function(edit_value, self.y_changed, is_wide_range((tag, layer, "ypos")), ypos, "ypos" in force_plus, time), Function(change_time, time)]),
-                        ("edit: zpos {}".format(zpos),
-                         [Function(edit_value, self.z_changed, is_wide_range((tag, layer, "zpos")), zpos, "zpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), "xpos" in force_plus, time), Function(change_time, time)]),
+                        ("edit: ypos {}".format(ypos),             
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range((tag, layer, "ypos")), "ypos" in force_plus, time), Function(change_time, time)]),
+                        ("edit: zpos {}".format(zpos),             
+                         [Function(edit_value, self.z_changed, zpos, is_wide_range((tag, layer, "zpos")), "zpos" in force_plus, time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
-                         [Function(edit_value, self.r_changed, is_wide_range((tag, layer, "rotate")), rotate, "rotate" in force_plus, time), Function(change_time, time)])],
+                         [Function(edit_value, self.r_changed, rotate, is_wide_range((tag, layer, "rotate")), "rotate" in force_plus, time), Function(change_time, time)])],
                         style_prefix="_viewers_alternate_menu")
 
             self.dragging = False
@@ -2740,13 +2762,13 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu([
                         ("camera", NullAction()),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, is_wide_range("xpos"), xpos, "xpos" in force_plus, time), Function(change_time, time)]),
-                        ("edit: ypos {}".format(ypos),
-                         [Function(edit_value, self.y_changed, is_wide_range("ypos"), ypos, "ypos" in force_plus, time), Function(change_time, time)]),
-                        ("edit: zpos {}".format(zpos),
-                         [Function(edit_value, self.z_changed, is_wide_range("zpos"), zpos, "zpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range("xpos"), "xpos" in force_plus, time), Function(change_time, time)]),
+                        ("edit: ypos {}".format(ypos),             
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range("ypos"), "ypos" in force_plus, time), Function(change_time, time)]),
+                        ("edit: zpos {}".format(zpos),             
+                         [Function(edit_value, self.z_changed, zpos, is_wide_range("zpos"), "zpos" in force_plus, time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
-                         [Function(edit_value, self.r_changed, is_wide_range("rotate"), rotate, "rotate" in force_plus, time), Function(change_time, time)])],
+                         [Function(edit_value, self.r_changed, rotate, is_wide_range("rotate"), "rotate" in force_plus, time), Function(change_time, time)])],
                         style_prefix="_viewers_alternate_menu")
 
             self.dragging = False

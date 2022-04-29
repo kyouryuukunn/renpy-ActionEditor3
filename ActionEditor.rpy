@@ -941,25 +941,28 @@ init -1598 python in _viewers:
             return None
 
 
-    def edit_value(function, use_wide_range=False, default="", force_plus=False, time=None):
+    def edit_value(function, default, use_wide_range=False, force_plus=False, time=None):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
         if v:
             try:
                 v = renpy.python.py_eval(v)
-            except:
-                renpy.notify(_("Please type value"))
-            if default != "":
                 if isinstance(default, int):
                     v = int(v)
                 else:
                     v = float(v)
-            if force_plus:
-                v = v
-            else:
-                if use_wide_range:
-                    v = v + persistent._wide_range
+                if force_plus:
+                    v = v
                 else:
-                    v = v + persistent._narrow_range
+                    if use_wide_range:
+                        v = v + persistent._wide_range
+                    else:
+                        v = v + persistent._narrow_range
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
+                return
             if not force_plus or 0 <= v:
                 function(v, time=time)
             else:
@@ -974,8 +977,11 @@ init -1598 python in _viewers:
             else:
                 try:
                     renpy.python.py_eval(v)
-                except:
-                    renpy.notify(_("Please Input Transition"))
+                except Exception as e:
+                    message = _("Please Input Transition") + "\n" \
+                    + 'type:' + str(type(e)) + "\n" \
+                    + 'message:' + e.message + "\n"
+                    renpy.notify(message)
                     return
             persistent._viewer_transition = v
             return
@@ -1003,8 +1009,11 @@ init -1598 python in _viewers:
             else:
                 try:
                     renpy.python.py_eval(v)
-                except:
-                    renpy.notify(_("Please Input Transition"))
+                except Exception as e:
+                    message = _("Please Input Transition") + "\n" \
+                    + 'type:' + str(type(e)) + "\n" \
+                    + 'message:' + e.message + "\n"
+                    renpy.notify(message)
                     return
             set_keyframe((tag, layer, "child"), (n, v), time=time)
             change_time(time)
@@ -1149,6 +1158,22 @@ init -1598 python in _viewers:
             return
 
 
+    def edit_function(key):
+        value = get_value(key)
+        value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
+        if value:
+            try:
+                renpy.python.py_eval(value)
+            except Exception as e:
+                message = _("Please type a valid data") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
+                return
+            set_keyframe(key, value, time=scene_keyframes[current_scene][1])
+            change_time(current_time)
+
+
     def edit_any(key, time=None):
         if time is None:
             time = current_time
@@ -1159,8 +1184,11 @@ init -1598 python in _viewers:
         if value:
             try:
                 value = renpy.python.py_eval(value)
-            except:
-                renpy.notify(_("Please type a valid data"))
+            except Exception as e:
+                message = _("Please type a valid data") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
                 return
             set_keyframe(key, value, time=time)
             change_time(current_time)
@@ -1338,8 +1366,11 @@ camera"""
         try:
             from pygame import scrap, locals
             scrap.put(locals.SCRAP_TEXT, string)
-        except:
-            renpy.notify(_("Can't open clipboard"))
+        except Exception as e:
+            message = _("Can't open clipboard") + "\n" \
+            + 'type:' + str(type(e)) + "\n" \
+            + 'message:' + e.message + "\n"
+            renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
@@ -1404,8 +1435,11 @@ show %s""" % child
         try:
             from pygame import scrap, locals
             scrap.put(locals.SCRAP_TEXT, string)
-        except:
-            renpy.notify(_("Can't open clipboard"))
+        except Exception as e:
+            message = _("Can't open clipboard") + "\n" \
+            + 'type:' + str(type(e)) + "\n" \
+            + 'message:' + e.message + "\n"
+            renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
@@ -1436,8 +1470,11 @@ show %s""" % child
         try:
             from pygame import scrap, locals
             scrap.put(locals.SCRAP_TEXT, string)
-        except:
-            renpy.notify(_("Can't open clipboard"))
+        except Exception as e:
+            message = _("Can't open clipboard") + "\n" \
+            + 'type:' + str(type(e)) + "\n" \
+            + 'message:' + e.message + "\n"
+            renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
@@ -1465,8 +1502,11 @@ show %s""" % child
                 if not isinstance(keys, list):
                     keys = [keys]
                 move_keyframe(v, old, keys, is_sound)
-            except:
-                renpy.notify(_("Please type value"))
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
 
 
     def edit_move_all_keyframe():
@@ -1477,8 +1517,11 @@ show %s""" % child
                 if v < scene_keyframes[current_scene][1]:
                     return
                 move_all_keyframe(v, moved_time)
-            except:
-                renpy.notify(_("Please type value"))
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
 
 
     def edit_time():
@@ -1489,8 +1532,11 @@ show %s""" % child
                 if v < scene_keyframes[current_scene][1]:
                     return
                 change_time(v)
-            except:
-                renpy.notify(_("Please type value"))
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
 
 
     def edit_range_value(object, field, use_int):
@@ -1508,8 +1554,11 @@ show %s""" % child
                         renpy.notify(_("Please type float value"))
                     else:
                         renpy.notify(_("Please type int value"))
-            except:
-                renpy.notify(_("Please type value"))
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
 
 
     def next_time():
@@ -1702,8 +1751,11 @@ show %s""" % child
                     renpy.notify(_("Please type plus value"))
                     return
                 move_scene(v, scene_num)
-            except:
-                renpy.notify(_("Please type value"))
+            except Exception as e:
+                message = _("Please type value") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
 
 
     def edit_scene_transition(scene_num):
@@ -1715,8 +1767,11 @@ show %s""" % child
             else:
                 try:
                     renpy.python.py_eval(v)
-                except:
-                    renpy.notify(_("Please Input Transition"))
+                except Exception as e:
+                    message = _("Please Input Transition") + "\n" \
+                    + 'type:' + str(type(e)) + "\n" \
+                    + 'message:' + e.message + "\n"
+                    renpy.notify(message)
                     return
             scene_keyframes[scene_num] = (v, t, w)
             change_time(current_time)
@@ -1744,9 +1799,11 @@ show %s""" % child
                     evaled = renpy.python.py_eval(f, locals=renpy.python.store_dicts["store.audio"])
                     if not renpy.loadable(evaled):
                         raise
-        except:
-            # raise Exception(f)
-            renpy.notify(_("Please Input filenames"))
+        except Exception as e:
+            message = _("Please Input filenames") + "\n" \
+            + 'type:' + str(type(e)) + "\n" \
+            + 'message:' + e.message + "\n"
+            renpy.notify(message)
             return
         duration = 0
         for f in renpy.python.py_eval(v, locals=renpy.python.store_dicts["store.audio"]):
@@ -2769,8 +2826,11 @@ show %s""" % child
             try:
                 from pygame import scrap, locals
                 scrap.put(locals.SCRAP_TEXT, string)
-            except:
-                renpy.notify(_("Can't open clipboard"))
+            except Exception as e:
+                message = _("Can't open clip board") + "\n" \
+                + 'type:' + str(type(e)) + "\n" \
+                + 'message:' + e.message + "\n"
+                renpy.notify(message)
             else:
                 #syntax hilight error in vim
                 renpy.notify("Placed\n{}\n\non clipboard".format(string).replace("{", "{{").replace("[", "[["))  #]"
