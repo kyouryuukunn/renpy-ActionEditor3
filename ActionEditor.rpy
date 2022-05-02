@@ -659,7 +659,7 @@ init -1598 python in _viewers:
                 if time >= scene_start and time < checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
-                    if p != "child" :
+                    if p not in ("child", "function"):
                         if checkpoint != pre_checkpoint:
                             if goal[2].startswith("warper_generator"):
                                 warper = renpy.python.py_eval(goal[2])
@@ -750,16 +750,15 @@ init -1598 python in _viewers:
                                 setattr(tran, "blur", result)
                         break
                 else:
-                    if p != "child":
+                    if p not in ("child", "function"):
                         setattr(tran, p, cs[fixed_index][0])
 
-        if "child" in check_points:
+        if "child" in check_points and check_points["child"]:
             cs = check_points["child"]
-            if not cs:
-                return 0
             for i in range(-1, -len(cs), -1):
                 checkpoint = cs[i][1]
                 pre_checkpoint = cs[i-1][1]
+                scene_start = cs[0][1]
                 if time >= scene_start and time >= checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
@@ -805,6 +804,12 @@ init -1598 python in _viewers:
                         child = DuringTransitionDisplayble(transition, old_widget, new_widget, fixed_time, 0)
                 tran.set_child(child)
 
+        if "function" in check_points and check_points["function"]:
+            f = check_points["function"][0][0]
+            if f:
+                f = renpy.python.py_eval("renpy.store."+f)
+                if callable(f):
+                    f(tran, time, at)
         # if not camera:
         #     showing_pool = {
         #         "scene_num":scene_num

@@ -75,7 +75,7 @@ init -1600 python in _viewers:
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
             ("Effect       ", ("alpha", "blur", "additive", "invert", "contrast", "saturate", "bright", "hue", "dof", "focusing")),
-            ("Misc         ", ("zzoom", "perspective", "xpan", "ypan", "xtile", "ytile")),
+            ("Misc         ", ("zzoom", "perspective", "function", "xpan", "ypan", "xtile", "ytile")),
             )
 
     props_groups = {
@@ -104,6 +104,7 @@ init -1600 python in _viewers:
 
     #The order of properties in clipboard data.
     #この順番でクリップボードデータが出力されます
+    #ないものは最後となります
     sort_order_list = (
     "pos",
     "anchor",
@@ -183,6 +184,7 @@ init 1600 python in _viewers:
     ("ypan", 0.), 
     ("xtile", 1), 
     ("ytile", 1), 
+    ("function", None), 
     )
 
     #The properties used in camera tab
@@ -231,6 +233,7 @@ init 1600 python in _viewers:
     ("xtile", 1), 
     ("ytile", 1), 
     ("perspective", None),
+    ("function", None), 
     )
 
     generate_groups_value = {}

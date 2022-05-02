@@ -298,8 +298,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
-                                                    fixed:
-                                                        add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                    if p not in _viewers.boolean_props+["function"]:
+                                                        fixed:
+                                                            add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
                                                     # else:
                                                     #     fixed:
                                                     #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
@@ -442,12 +443,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action None text_color "#FFF"
                                                                 add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                        fixed:
-                                                            # if key not in in_graphic_mode:
-                                                            add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
-                                                            # else:
-                                                                # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
-                                                                # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                        if p not in _viewers.boolean_props+["function"]:
+                                                            fixed:
+                                                                # if key not in in_graphic_mode:
+                                                                add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                                # else:
+                                                                    # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                                    # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
                                     $new_opened = opened.copy()
                                     $new_opened[s] = opened[s].copy()
                                     $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
@@ -761,6 +763,10 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     textbutton "[value]":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
                                         Function(_viewers.toggle_perspective)]
+                                elif p == "function":
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                        Function(_viewers.edit_function, p)]
                                 elif p in _viewers.any_props:
                                     if isinstance(value, str):
                                         textbutton "'[value]'":
@@ -827,15 +833,19 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         SelectedIf(keyframes_exist((tab, layer, "child"))), 
                                         Function(_viewers.edit_transition, tab, layer)]
                                         size_group None
+                                elif p == "function":
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                        Function(_viewers.edit_function, key)]
                                 elif p in _viewers.any_props:
                                     if isinstance(value, str):
                                         textbutton "'[value]'":
-                                            action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, p)]
+                                            action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                            Function(_viewers.edit_any, key)]
                                     else:
                                         textbutton "[value]":
-                                            action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, p)]
+                                            action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                            Function(_viewers.edit_any, key)]
                                 elif p in _viewers.boolean_props:
                                     textbutton "[value]":
                                         action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
