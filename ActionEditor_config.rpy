@@ -87,8 +87,6 @@ init -1600 python in _viewers:
         "focusing":["focusing", "dof"], 
     }
 
-    special_props = ["child"]
-
     force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround")
     force_wide_range = ("rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan")
     force_plus = ("additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile")
@@ -136,6 +134,9 @@ init -1600 python in _viewers:
     "ytile", 
     )
 
+
+    special_props = ["child", "function"]
+
 init 1600 python in _viewers:
     #The properties used in image tag tab
     #画像タブに表示されるプロパティー
@@ -170,7 +171,7 @@ init 1600 python in _viewers:
     ("rotateY", 0.),
     ("rotateZ", 0.),
     ("dof", 400),
-    ("focusing", renpy.config.perspective[1]), 
+    ("focusing", round(renpy.config.perspective[1], 2)), 
     ("alpha", 1.), 
     ("additive", 0.), 
     ("blur", 0.), 
@@ -219,7 +220,7 @@ init 1600 python in _viewers:
     ("rotateY", 0.),
     ("rotateZ", 0.),
     ("dof", 400),
-    ("focusing", renpy.config.perspective[1]), 
+    ("focusing", round(renpy.config.perspective[1], 2)), 
     ("alpha", 1.), 
     ("additive", 0.), 
     ("blur", 0.), 

@@ -1167,19 +1167,22 @@ init -1598 python in _viewers:
         value = get_value(key)
         value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
         if value:
-            try:
-                f = renpy.python.py_eval("renpy.store."+value)
-                if not callable(f):
-                    renpy.notify(_(value + " is not callable."))
+            if value == "None":
+                remove_keyframe(scene_keyframes[current_scene][1], key)
+            else:
+                try:
+                    f = renpy.python.py_eval("renpy.store."+value)
+                    if not callable(f):
+                        renpy.notify(_(value + " is not callable."))
+                        return
+                except Exception as e:
+                    message = _("Please type a valid data") + "\n" \
+                    + 'type:' + str(type(e)) + "\n" \
+                    + 'message:' + e.message + "\n"
+                    renpy.notify(message)
                     return
-            except Exception as e:
-                message = _("Please type a valid data") + "\n" \
-                + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
-                renpy.notify(message)
-                return
-            set_keyframe(key, value, time=scene_keyframes[current_scene][1])
-            change_time(current_time)
+                set_keyframe(key, value, time=scene_keyframes[current_scene][1])
+                change_time(current_time)
 
 
     def edit_any(key, time=None):
@@ -2208,6 +2211,8 @@ show %s""" % child
         blur_amount = _camera_blur_amount * warper(distance_from_focus/(float(dof)/2))
         if blur_amount < 0:
             blur_amount = abs(blur_amount)
+        if blur_amount < 0.1:
+            blur_amount = 0
         return blur_amount
 
 
@@ -2318,7 +2323,7 @@ show %s""" % child
     def check_focusing_used(scene_num = None):
         if scene_num is None:
             scene_num = current_scene
-        return (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s))
+        return (persistent._viewer_focusing and get_value("perspective", scene_keyframes[scene_num][1], True, scene_num))
 
 
     def put_clipboard():
@@ -2590,7 +2595,7 @@ show %s""" % child
                                     focusing_loop["dof_loop"] = loops[s]["dof"]
                                     focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
                                 else:
-                                    focusing_func_string = "camera_blur({}, {})".format(focusing_cs)
+                                    focusing_func_string = "camera_blur({})".format(focusing_cs)
                                 if "function" in image_keyframes:
                                     function_string = image_keyframes["function"][0][0]
                                     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
@@ -2939,15 +2944,15 @@ init python:
     class mfn(object):
         # show test:
         #     function mfn(func1, func2)
-        def __init__(*args):
-            self.fns = args
+        def __init__(self, *args):
+            self.fns = list(args)
 
         def __call__(self, trans, st, at):
             min_fr = None
             for i in reversed(range(len(self.fns))):
-                fr = self.fns[i](tran, st, at)
+                fr = self.fns[i](trans, st, at)
                 if fr is not None and (min_fr is None or fr < min_fr):
                     min_fr = fr
                 elif fr is None:
-                    del self.function[i]
+                    del self.fns[i]
             return min_fr
