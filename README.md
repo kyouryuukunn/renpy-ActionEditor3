@@ -72,21 +72,51 @@ lemma forum
     OffsetMatrix
     RotateMatrix
  * ActionEditor Can't get colormatrix property.
+ * The behavior of functions for function property isn't same as ATL.
+   There are some different points.
+  1. inherited_<property> have no value.
+  2. Setting properties have no affect when it is called next time.
+  3. The return value from it have no affect.
+   You should note it isn't always called in time.
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
+   When using functions other than camera_blur, these may cause malfunction after skip.
 
  How to add desired properties to the editor.
  Add the names of the properties you want to add to props_set, sort_order_list
  and transform_props or camera_props in ActionEditor_config.rpy. If the type of
- the property you want to add is int or float, add it to force_float,
+ the property you want to add is int or float, also add it to force_float,
  force_wide_range, or force_plus as needed. if it is a boolean value, add it to
  boolean_props. If it is not one of those, add it to any_props where any type
- can be entered.  Please note that error checking is not available when using
+ can be entered. Please note that error checking is not available when using
  this function, so please be careful about the order of input.
 
- For tuples and other properties with multiple values, you can use props_groups
- where key is the property name and value is tuple of each element name, so
- that they can be edited individually. Also set generate_groups_clipboard and
- generate_groups_value to combine individual values into one.
+ For tuples, you can use props_groups where key is the property name and value
+ is tuple of each element name, so that they can be edited individually. Also
+ set generate_groups_clipboard and generate_groups_value to combine individual
+ values into one. example:
+    props_groups = {
+        "alignaround":["xalignaround", "yalignaround"], 
+        "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
+        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
+        "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
+        "crop":["cropX", "cropY", "cropW", "cropH"], 
+        "focusing":["focusing", "dof"], 
+    }
+
+    def generate_matrixtransform_value(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
+        return Matrix.offset(offsetX, offsetY, offsetZ)*Matrix.rotate(rotateX, rotateY, rotateZ)
+    generate_groups_value["matrixtransform"] = generate_matrixtransform_value
+
+    def generate_matrixtransform_clipboard(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
+        v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
+        return v % (offsetX, offsetY, offsetZ, rotateX, rotateY, rotateZ)
+    generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
+
+ Exclusive proparties like tile and pan should be set in exclusive. example:
+    exclusive = (
+            ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
+            ({"xtile", "ytile"}, {"xpan", "ypan"}), 
+        )
 
  Image Viewer
 ================
@@ -157,24 +187,54 @@ lemma forum
 
  注意
  *focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
- *funtion transform propertyにcamera_blurを使用して表示している画像にはblurをかけられません。既に表示している画像の
- focusingを無効にしたい場合はfunctionプロパティーをいったんNoneにしてください
  *matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
     OffsetMatrix * RotateMatrix
     OffsetMatrix
     RotateMatrix
  *colormatrixプロパティーは現在の値をエディターでは読み込めません。
- *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
+ *function プロパティーに関数を指定してもActionEditorとATL中では同じ動作をしないことに注意してください。
+  以下の制限があります。
+  1. inherited_<property>では値を取得できません。
+  2. プロパティーを変更しても次のその関数呼び出し時には反映されない。
+  3. 返り値は機能しない。
+  また時間どおりの順に呼び出されるとは限りません。
+ *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。
+  アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
+  また、camera_blur 以外を function プロパティーに使用しているとスキップ後に誤作動する可能性があります。
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
 
  任意のプロパティーをエディターに追加する方法
  ActionEditor_config.rpyのprops_set, sort_order_listとtransform_propsまたはcamera_propsに追加したいプロパティー名を加えます。
- さらに追加したいプロパティーの型が整数または浮動小数ならば必要に応じてforce_float, force_wide_range, force_plusに、真偽値ならばboolean_propsに追加します。プロパティーの型がそれら以外ならばどのような型も入力できるany_propsに追加してください。 
+ さらに追加したいプロパティーの型が整数または浮動小数ならば必要に応じてforce_float, force_wide_range, force_plusに、
+ 真偽値ならばboolean_propsにプロパティー名を追加します。プロパティーの型がそれら以外ならばどのような型も入力できるany_propsに追加してください。 
  使用時はエラーチェックを行なえないので入力順番等に注意してください。
 
  タプルなど複数の値で1つのプロパティーを設定するものはprops_groupsでプロパティー名をキーに、各要素名を値にして登録すれば個別に編集できるようになります。
- 個別の値を1つにまとめるためにgenerate_groups_clipboard, generate_groups_valueも設定してください。
+ 個別の値を1つにまとめるためにgenerate_groups_clipboard, generate_groups_valueも設定してください。例:
+    props_groups = {
+        "alignaround":["xalignaround", "yalignaround"], 
+        "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
+        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
+        "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
+        "crop":["cropX", "cropY", "cropW", "cropH"], 
+        "focusing":["focusing", "dof"], 
+    }
+
+    def generate_matrixtransform_value(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
+        return Matrix.offset(offsetX, offsetY, offsetZ)*Matrix.rotate(rotateX, rotateY, rotateZ)
+    generate_groups_value["matrixtransform"] = generate_matrixtransform_value
+
+    def generate_matrixtransform_clipboard(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
+        v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
+        return v % (offsetX, offsetY, offsetZ, rotateX, rotateY, rotateZ)
+    generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
+
+ tileとpanのような排他的なプロパティーはexclusiveにも登録してください。例:
+    exclusive = (
+            ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
+            ({"xtile", "ytile"}, {"xpan", "ypan"}), 
+        )
 
  画像ビューワー
 ================

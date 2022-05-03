@@ -13,9 +13,9 @@
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
 #動画と同期できない(用本体の最適化)
-#リスト指定可能にする？そもそもRen'pyでエフェクトをどうするかという問題になる with ではハック的で美しくない。ATL?
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
+#ベジュ曲線
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -1168,7 +1168,10 @@ init -1598 python in _viewers:
         value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
         if value:
             try:
-                renpy.python.py_eval(value)
+                f = renpy.python.py_eval("renpy.store."+value)
+                if not callable(f):
+                    renpy.notify(_(value + " is not callable."))
+                    return
             except Exception as e:
                 message = _("Please type a valid data") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
@@ -1336,7 +1339,7 @@ init -1598 python in _viewers:
     def put_camera_clipboard():
         camera_keyframes = {}
         for k in all_keyframes[current_scene]:
-            if not isinstance(k, tuple):
+            if not isinstance(k, tuple) and k != "function":
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
@@ -1352,7 +1355,8 @@ init -1598 python in _viewers:
                         camera_properties.append(gn)
                     break
             else:
-                camera_properties.append(p)
+                if p not in special_props:
+                    camera_properties.append(p)
 
         string = """
 camera"""
@@ -1383,7 +1387,7 @@ camera"""
     def put_image_clipboard(tag, layer):
         image_keyframes = {}
         for k in all_keyframes[current_scene]:
-            if isinstance(k, tuple) and k[0] == tag and k[1] == layer:
+            if isinstance(k, tuple) and k[0] == tag and k[1] == layer and k[2] != "function":
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
@@ -2311,6 +2315,12 @@ show %s""" % child
         return [(tag, state[tag]) for tag, _ in zorder]
 
 
+    def check_focusing_used(scene_num = None):
+        if scene_num is None:
+            scene_num = current_scene
+        return (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s))
+
+
     def put_clipboard():
         string = ""
         if (persistent._viewer_hide_window and get_animation_delay() > 0
@@ -2359,7 +2369,8 @@ show %s""" % child
                             camera_properties.append(gn)
                         break
                 else:
-                    camera_properties.append(p)
+                    if p not in special_props:
+                        camera_properties.append(p)
             if s > 0:
                 string += """
     scene"""
@@ -2386,16 +2397,14 @@ show %s""" % child
                         string += " "
                 sorted_list = put_prop_togetter(camera_keyframes)
                 if len(sorted_list):
-                    if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])]:
-                        add_tab = "    "
-                    else:
-                        add_tab = ""
                     for same_time_set in sorted_list:
-                        if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])]:
+                        if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])] or "function" in camera_keyframes:
+                            add_tab = "    "
                             string += """
         parallel:
             """
                         else:
+                            add_tab = ""
                             string += """
         """
                         for p, cs in same_time_set:
@@ -2416,6 +2425,17 @@ show %s""" % child
                         if loops[s][xy_to_x(p)]:
                             string += """
             repeat"""
+                if "function" in camera_keyframes:
+                    for p, cs in camera_keyframes.items():
+                        if len(cs) > 1:
+                            string += """
+        parallel:
+            """
+                            break
+                    else:
+                        string += "\n        "
+                    string += "{} {} ".format("function", camera_keyframes["function"][0][0])
+
 
             for layer in image_state_org[s]:
                 state = get_image_state(layer, s)
@@ -2432,8 +2452,7 @@ show %s""" % child
                                 else:
                                     formated_v.append(c)
                             image_keyframes[k] = formated_v
-                    if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) \
-                        and "blur" in image_keyframes:
+                    if check_focusing_used(s) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
                     for p, d in transform_props:
@@ -2445,8 +2464,7 @@ show %s""" % child
                         else:
                             if p not in special_props:
                                 image_properties.append(p)
-                    if image_keyframes or (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)) \
-                        or tag in image_state[s][layer]:
+                    if image_keyframes or check_focusing_used(s) or tag in image_state[s][layer]:
                         image_name = state[tag]["child"][0]
                         if "child" in image_keyframes:
                             last_child = image_keyframes["child"][-1][0][0]
@@ -2477,8 +2495,7 @@ show %s""" % child
                                     string += " "
                         sorted_list = put_prop_togetter(image_keyframes, layer, tag)
                         if "child" in image_keyframes:
-                            if len(sorted_list) >= 1 or loops[s][(tag, layer, "child")] or (persistent._viewer_focusing \
-                                 and get_value("perspective", scene_keyframes[s][1], True, s)):
+                            if len(sorted_list) >= 1 or loops[s][(tag, layer, "child")] or check_focusing_used(s) or "function" in image_keyframes:
                                 add_tab = "    "
                                 string += """
         parallel:"""
@@ -2524,18 +2541,17 @@ show %s""" % child
                                 string += """
             repeat"""
                         if len(sorted_list):
-                            if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] or "child" in image_keyframes \
-                                or (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
-                                add_tab = "    "
-                            else:
-                                add_tab = ""
                             for same_time_set in sorted_list:
-                                if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] or "child" in image_keyframes \
-                                    or (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
+                                if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] \
+                                    or "child" in image_keyframes  or check_focusing_used(s) or "function" in image_keyframes:
+                                    add_tab = "    "
                                     string += """
-        parallel:"""
-                                string += """
-        """+add_tab
+        parallel:
+            """
+                                else:
+                                    add_tab = ""
+                                    string += """
+        """
                                 for p, cs in same_time_set:
                                     string += "{} {} ".format(p, cs[0][0])
                                 cs = same_time_set[0][1]
@@ -2554,8 +2570,7 @@ show %s""" % child
                                 if loops[s][(tag,layer,xy_to_x(p))]:
                                     string += """
             repeat"""
-                        if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True, s)):
-                            focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
+                        if check_focusing_used(s) or "function" in image_keyframes:
                             for p, cs in image_keyframes.items():
                                 if len(cs) > 1 or "child" in image_keyframes:
                                     string += """
@@ -2564,16 +2579,25 @@ show %s""" % child
                                     break
                             else:
                                 string += "\n        "
-                            for p in props_groups["focusing"]:
-                                if p in all_keyframes[s]:
-                                    focusing_cs[p] = [(v, t-scene_start, w) for (v, t, w) in all_keyframes[s][p]]
-                            if loops[s]["focusing"] or loops[s]["dof"]:
-                                focusing_loop = {}
-                                focusing_loop["focusing_loop"] = loops[s]["focusing"]
-                                focusing_loop["dof_loop"] = loops[s]["dof"]
-                                string += "{} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
+                            if check_focusing_used(s):
+                                focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
+                                for p in props_groups["focusing"]:
+                                    if p in all_keyframes[s]:
+                                        focusing_cs[p] = [(v, t-scene_start, w) for (v, t, w) in all_keyframes[s][p]]
+                                if loops[s]["focusing"] or loops[s]["dof"]:
+                                    focusing_loop = {}
+                                    focusing_loop["focusing_loop"] = loops[s]["focusing"]
+                                    focusing_loop["dof_loop"] = loops[s]["dof"]
+                                    focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
+                                else:
+                                    focusing_func_string = "camera_blur({}, {})".format(focusing_cs)
+                                if "function" in image_keyframes:
+                                    function_string = image_keyframes["function"][0][0]
+                                    string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
+                                else:
+                                    string += "{} {} ".format("function", focusing_func_string)
                             else:
-                                string += "{} camera_blur({}) ".format("function", focusing_cs)
+                                string += "{} {} ".format("function", image_keyframes["function"][0][0])
             if s != 0:
                 string += """
     with {}""".format(scene_tran)
@@ -2618,47 +2642,59 @@ show %s""" % child
                         else:
                             formated_v.append(c)
                     camera_keyframes[k] = formated_v
-            if camera_keyframes:
-                for p, cs in camera_keyframes.items():
-                    if len(cs) > 1:
-                        string += """
+            if [cs for cs in camera_keyframes.values() if len(cs) > 1]:
+                string += """
     camera:"""
-                        for p, cs in camera_keyframes.items():
-                            if len(cs) > 1 and loops[last_camera_scene][p]:
-                                string += """
+                for p, cs in camera_keyframes.items():
+                    if len(cs) > 1 and loops[last_camera_scene][p]:
+                        string += """
         animation"""
-                                break
-                        first = True
-                        for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
-                            if len(cs) > 1 and not loops[last_camera_scene][xy_to_x(p)]:
-                                if first:
-                                    first = False
-                                    string += """
-        """
-                                string += "{} {}".format(p, cs[-1][0])
-                                if persistent._one_line_one_prop:
-                                    string += "\n        "
-                                else:
-                                    string += " "
-                        for p, cs in sort_props(camera_keyframes):
-                            if len(cs) > 1 and loops[last_camera_scene][p]:
-                                string += """
-        parallel:"""
-                                string += """
-            {} {}""".format(p, cs[0][0])
-                                for i, c in enumerate(cs[1:]):
-                                    if c[2].startswith("warper_generator"):
-                                        warper = "warp "+ c[2]
-                                    else:
-                                        warper = c[2]
-                                    string += """
-            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
-                                    if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
-                                        for knot in splines[last_camera_scene][p][c[1]]:
-                                            string += " knot {}".format(knot)
-                                string += """
-            repeat"""
                         break
+                first = True
+                for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
+                    if p not in special_props:
+                        if len(cs) > 1 and not loops[last_camera_scene][xy_to_x(p)]:
+                            if first:
+                                first = False
+                                string += """
+        """
+                            string += "{} {}".format(p, cs[-1][0])
+                            if persistent._one_line_one_prop:
+                                string += "\n        "
+                            else:
+                                string += " "
+
+                for p, cs in sort_props(camera_keyframes):
+                    if p not in special_props:
+                        if len(cs) > 1 and loops[last_camera_scene][p]:
+                            string += """
+        parallel:
+            {} {}""".format(p, cs[0][0])
+                            for i, c in enumerate(cs[1:]):
+                                if c[2].startswith("warper_generator"):
+                                    warper = "warp "+ c[2]
+                                else:
+                                    warper = c[2]
+                                string += """
+            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
+                                if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
+                                    for knot in splines[last_camera_scene][p][c[1]]:
+                                        string += " knot {}".format(knot)
+                            string += """
+            repeat"""
+
+        #         if "function" in camera_keyframes:
+        #             for p, cs in sort_props(camera_keyframes):
+        #                 if p not in special_props:
+        #                     if len(cs) > 1 and loops[last_camera_scene][p]:
+        #                         string += """
+        # parallel:
+        #     """
+        #                         break
+        #             else:
+        #                 string += """
+        # """
+        #             string += "{} {}".format("function", camera_keyframes["function"][0][0])
 
             last_scene = len(scene_keyframes)-1
             for layer in image_state_org[last_scene]:
@@ -2675,19 +2711,8 @@ show %s""" % child
                                 else:
                                     formated_v.append(c)
                             image_keyframes[k] = formated_v
-                    if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)) \
-                        and "blur" in image_keyframes:
+                    if check_focusing_used(last_scene) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
-                    image_properties = []
-                    for p, d in transform_props:
-                        for gn, ps in props_groups.items():
-                            if p in ps:
-                                if gn not in image_properties:
-                                    image_properties.append(gn)
-                                break
-                        else:
-                            if p not in special_props:
-                                image_properties.append(p)
 
                     if not image_keyframes:
                         continue
@@ -2738,31 +2763,11 @@ show %s""" % child
                                 else:
                                     string += " "
 
-                    if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[last_scene][1], True, last_scene)):
-                        focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
-                        if "focusing" in all_keyframes[last_scene]:
-                            focusing_cs["focusing"] = all_keyframes[last_scene]["focusing"]
-                        if "dof" in all_keyframes[last_scene]:
-                            focusing_cs["dof"] = all_keyframes[last_scene]["dof"]
-                        if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
-                            if not loops[last_scene]["focusing"]:
-                                focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
-                            if not loops[last_scene]["dof"]:
-                                focusing_cs["dof"] = [focusing_cs["dof"][-1]]
-                            if loops[last_scene]["focusing"] or loops[last_scene]["dof"]:
-                                focusing_loop = {}
-                                focusing_loop["focusing_loop"] = loops[last_scene]["focusing"]
-                                focusing_loop["dof_loop"] = loops[last_scene]["dof"]
-                                string += "\n        {} camera_blur({}, {}) ".format("function", focusing_cs, focusing_loop)
-                            else:
-                                string += "\n        {} camera_blur({}) ".format("function", focusing_cs)
-
                     for p, cs in sort_props(image_keyframes):
                         if p not in special_props:
                             if len(cs) > 1 and loops[last_scene][(tag, layer, p)]:
                                 string += """
-        parallel:"""
-                                string += """
+        parallel:
             {} {}""".format(p, cs[0][0])
                                 for i, c in enumerate(cs[1:]):
                                     if c[2].startswith("warper_generator"):
@@ -2818,6 +2823,48 @@ show %s""" % child
                             last_time = t
                         string += """
             repeat"""
+
+                    if check_focusing_used(last_scene):# or "function" in image_keyframes:
+                        # if check_focusing_used(last_scene):
+                        focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
+                        if "focusing" in all_keyframes[last_scene]:
+                            focusing_cs["focusing"] = all_keyframes[last_scene]["focusing"]
+                        if "dof" in all_keyframes[last_scene]:
+                            focusing_cs["dof"] = all_keyframes[last_scene]["dof"]
+                        if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
+                            for p, cs in sort_props(image_keyframes):
+                                if p not in special_props:
+                                    if len(cs) > 1 and loops[last_scene][(tag, layer, p)]:
+                                        string += """
+        parallel:
+            {}"""
+                                        break
+                            else:
+                                if "child" in image_keyframes and loops[last_scene][(tag,layer,"child")]:
+                                    string += """
+        parallel:
+            {}"""
+                                else:
+                                    string += """
+        """
+                            if not loops[last_scene]["focusing"]:
+                                focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
+                            if not loops[last_scene]["dof"]:
+                                focusing_cs["dof"] = [focusing_cs["dof"][-1]]
+                            if loops[last_scene]["focusing"] or loops[last_scene]["dof"]:
+                                focusing_loop = {}
+                                focusing_loop["focusing_loop"] = loops[last_scene]["focusing"]
+                                focusing_loop["dof_loop"] = loops[last_scene]["dof"]
+                                focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
+                            else:
+                                focusing_func_string = "camera_blur({}, {})".format(focusing_cs)
+                            # if "function" in image_keyframes:
+                            #     function_string = image_keyframes["function"][0][0]
+                            #     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
+                            # else:
+                            string += "{} {} ".format("function", focusing_func_string)
+                        # else:
+                        #     string += "{} {} ".format("function", image_keyframes["function"][0][0])
 
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and len(scene_keyframes) == 1) \
             or len(scene_keyframes) > 1:
@@ -2889,18 +2936,18 @@ init python:
         return warper
 
 
-    # class mfn(object):
-    #     # show test:
-    #     #     function mfn(func1, func2)
-    #     def __init__(*args):
-    #         self.fns = args
-    #
-    #     def __call__(self, trans, st, at):
-    #         min_fr = None
-    #         for i in reversed(range(len(self.fns))):
-    #             fr = self.fns[i](tran, st, at)
-    #             if fr is not None and (min_fr is None or fr < min_fr):
-    #                 min_fr = fr
-    #             elif fr is None:
-    #                 del self.function[i]
-    #         return min_fr
+    class mfn(object):
+        # show test:
+        #     function mfn(func1, func2)
+        def __init__(*args):
+            self.fns = args
+
+        def __call__(self, trans, st, at):
+            min_fr = None
+            for i in reversed(range(len(self.fns))):
+                fr = self.fns[i](tran, st, at)
+                if fr is not None and (min_fr is None or fr < min_fr):
+                    min_fr = fr
+                elif fr is None:
+                    del self.function[i]
+            return min_fr
