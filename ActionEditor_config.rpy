@@ -136,6 +136,7 @@ init -1600 python in _viewers:
 
 
     special_props = ["child", "function"]
+    in_editor = False
 
 init 1600 python in _viewers:
     #The properties used in image tag tab

@@ -631,7 +631,7 @@ init -1598 python in _viewers:
         return 0
 
 
-    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, in_editor=True, scene_num=None, scene_checkpoints=None):
+    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, scene_num=None, scene_checkpoints=None):
         # check_points = { prop: [ (value, time, warper).. ] }
         if subpixel is not None:
             tran.subpixel = subpixel
@@ -2039,7 +2039,7 @@ show %s""" % child
 
 
     def open_action_editor():
-        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing
+        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing, in_editor
         if not config.developer:
             return
         playing = False
@@ -2095,6 +2095,7 @@ show %s""" % child
         for c in renpy.audio.audio.channels:
             renpy.music.stop(c)
         action_editor_init()
+        in_editor = True
         camera_icon.init(True, True)
         _window = renpy.store._window
         renpy.store._window = False
@@ -2906,7 +2907,7 @@ init python:
             loop["focusing_loop"] = False
         if "dof_loop" not in loop:
             loop["dof_loop"] = False
-        return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None, in_editor=False)
+        return renpy.curry(_viewers.transform)(check_points=check_points, loop=loop, subpixel=None, crop_relative=None)
 
     
     def warper_generator(checkpoints):
@@ -2939,20 +2940,3 @@ init python:
                     x_0, y_0, _ = checkpoints[i-1]
                     return f(x, x_0, y_0, x_1, y_1, k)
         return warper
-
-
-    class mfn(object):
-        # show test:
-        #     function mfn(func1, func2)
-        def __init__(self, *args):
-            self.fns = list(args)
-
-        def __call__(self, trans, st, at):
-            min_fr = None
-            for i in reversed(range(len(self.fns))):
-                fr = self.fns[i](trans, st, at)
-                if fr is not None and (min_fr is None or fr < min_fr):
-                    min_fr = fr
-                elif fr is None:
-                    del self.fns[i]
-            return min_fr
