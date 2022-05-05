@@ -255,7 +255,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#FFF"
                                                             textbutton "[value]":
-                                                                action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                action [SelectedIf(keyframes_exist(key)),
                                                                 Function(_viewers.toggle_perspective)]
                                                                 size_group None
                                                     elif p == "function":
@@ -264,7 +264,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#FFF"
                                                             textbutton "[value[0]]":
-                                                                action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                action [SelectedIf(keyframes_exist(key)),
                                                                 Function(_viewers.edit_function, key)]
                                                                 size_group None
                                                     elif p in _viewers.any_props:
@@ -274,12 +274,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 action None text_color "#FFF"
                                                             if isinstance(value, str):
                                                                 textbutton "'[value]'":
-                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                    action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.edit_any, key)]
                                                                     size_group None
                                                             else:
                                                                 textbutton "[value]":
-                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                    action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.edit_any, key)]
                                                                     size_group None
                                                     elif p in _viewers.boolean_props:
@@ -288,7 +288,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#FFF"
                                                             textbutton "[value]":
-                                                                action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                action [SelectedIf(keyframes_exist(key)),
                                                                 Function(_viewers.toggle_boolean_property, key)]
                                                                 size_group None
                                                     else:
@@ -409,7 +409,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
                                                                 textbutton "[value[0]]":
-                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1])),
+                                                                    action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.edit_function, key)]
                                                                     size_group None
                                                         elif p in _viewers.any_props:
@@ -419,12 +419,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action None text_color "#FFF"
                                                                 if isinstance(value, str):
                                                                     textbutton "'[value]'":
-                                                                        action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                        action [SelectedIf(keyframes_exist(key)),
                                                                         Function(_viewers.edit_any, key)]
                                                                         size_group None
                                                                 else:
                                                                     textbutton "[value]":
-                                                                        action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                        action [SelectedIf(keyframes_exist(key)),
                                                                         Function(_viewers.edit_any, key)]
                                                                         size_group None
                                                         elif p in _viewers.boolean_props:
@@ -433,7 +433,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
                                                                 textbutton "[value]":
-                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                    action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.toggle_boolean_property, key)]
                                                                     size_group None
                                                         else:
