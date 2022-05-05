@@ -72,11 +72,12 @@ lemma forum
     OffsetMatrix
     RotateMatrix
  * ActionEditor Can't get colormatrix property.
- * The behavior of functions for function property isn't same as ATL.
+ * Unfortunately, The behavior of functions for function property isn't same as ATL.
    There are some different points.
   1. inherited_<property> have no value.
   2. Setting properties have no affect when it is called next time.
   3. The return value from it have no affect.
+
    You should note it isn't always called in time.
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
    When using functions other than camera_blur, these may cause malfunction after skip.
@@ -132,6 +133,10 @@ lemma forum
  
  Press Shift+S to open Sound Viewer and view all currently generated displayables.
 
+ ATL functions
+================
+ ATL_funcctions.rpy adds usefull functions which are intended to be used for
+ function statement in ATL block. For more information, see that file.
 
 
 
@@ -139,7 +144,8 @@ lemma forum
 
 
 
- 本ライブラリでは3Dステージ対応のGUI上で設定できる演出エディター、画像ビューワー、サウンドビューワーさらに便利なワーパー関数を追加します。
+
+ 本ライブラリでは3Dステージ対応のGUI上で設定できる演出エディター、画像ビューワー、サウンドビューワーさらに便利なワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数を追加します。
  Ren'Py v7.4.5から追加された3Dステージ機能により、旧版にあった自作の3Dカメラ再現関数は不要になりました。
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
@@ -192,12 +198,15 @@ lemma forum
     OffsetMatrix
     RotateMatrix
  *colormatrixプロパティーは現在の値をエディターでは読み込めません。
- *function プロパティーに関数を指定してもActionEditorとATL中では同じ動作をしないことに注意してください。
+ *function ステートメントに関数を指定できますが、ActionEditorとATL中で関数が同じ動作をしないことに注意してください。
   以下の制限があります。
-  1. inherited_<property>では値を取得できません。
-  2. プロパティーを変更しても次のその関数呼び出し時には反映されない。
-  3. 返り値は機能しない。
-  また時間どおりの順に呼び出されるとは限りません。
+  1. inherited_<property>では値を取得できません
+  2. プロパティーを変更しても次のその関数呼び出し時の値には反映されません
+  3. 返り値は機能しません
+  また時間どおりの順に呼び出されるとは限りません。これらの制限のため、プロパティーの値に対するオフセットとして
+  動作させるには癖があり、もっぱらx,yoffsetへの値の代入が主な用途となるでしょう。
+ 参考リンク
+ https://akakyouryuu.com/renpy/atl-%e3%81%aefunction%e3%82%b9%e3%83%86%e3%83%bc%e3%83%88%e3%83%a1%e3%83%b3%e3%83%88%e3%81%a7%e3%83%97%e3%83%ad%e3%83%91%e3%83%86%e3%82%a3%e3%83%bc%e3%81%ae%e5%80%a4%e3%82%92%e3%82%aa%e3%83%95/
  *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。
   アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
   また、camera_blur 以外を function プロパティーに使用しているとスキップ後に誤作動する可能性があります。
@@ -251,3 +260,9 @@ lemma forum
 
  config.developer が True なら、Shift+Sで起動します。
 
+
+
+ ATL functions
+================
+ ATL_funcctions.rpy に ATL function ステートメントでの使用を意図した関数群を用意しました。
+ 使用方法は該当ファイルを参照してください。

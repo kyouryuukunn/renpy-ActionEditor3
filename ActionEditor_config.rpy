@@ -91,7 +91,7 @@ init -1600 python in _viewers:
     force_wide_range = ("rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan")
     force_plus = ("additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile")
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
-    not_used_by_default = ("rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan")
+    not_used_by_default = ("rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function")
     boolean_props = ["zzoom"]
     any_props = []
     exclusive = (
@@ -186,7 +186,7 @@ init 1600 python in _viewers:
     ("ypan", 0.), 
     ("xtile", 1), 
     ("ytile", 1), 
-    ("function", None), 
+    ("function", (None, None)), 
     )
 
     #The properties used in camera tab
@@ -235,7 +235,7 @@ init 1600 python in _viewers:
     ("xtile", 1), 
     ("ytile", 1), 
     ("perspective", None),
-    ("function", None), 
+    ("function", (None, None)), 
     )
 
     generate_groups_value = {}

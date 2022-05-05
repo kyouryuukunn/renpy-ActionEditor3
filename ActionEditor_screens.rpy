@@ -263,7 +263,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#FFF"
-                                                            textbutton "[value]":
+                                                            textbutton "[value[0]]":
                                                                 action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
                                                                 Function(_viewers.edit_function, key)]
                                                                 size_group None
@@ -408,8 +408,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
-                                                                textbutton "[value]":
-                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1], True)),
+                                                                textbutton "[value[0]]":
+                                                                    action [SelectedIf(get_value(key, scene_keyframes[s][1])),
                                                                     Function(_viewers.edit_function, key)]
                                                                     size_group None
                                                         elif p in _viewers.any_props:
@@ -764,7 +764,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
                                         Function(_viewers.toggle_perspective)]
                                 elif p == "function":
-                                    textbutton "[value]":
+                                    textbutton "[value[0]]":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
                                         Function(_viewers.edit_function, p)]
                                 elif p in _viewers.any_props:
@@ -834,7 +834,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         Function(_viewers.edit_transition, tab, layer)]
                                         size_group None
                                 elif p == "function":
-                                    textbutton "[value]":
+                                    textbutton "[value[0]]":
                                         action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
                                         Function(_viewers.edit_function, key)]
                                 elif p in _viewers.any_props:
@@ -923,7 +923,7 @@ init -1598:
     style action_editor_b_button_text is action_editor_button_text:
         xalign 1.0
 
-screen _input_screen(message="type value", default=""):
+screen _input_screen(message=_("type value"), default=""):
     modal True
     key "game_menu" action Return("")
 

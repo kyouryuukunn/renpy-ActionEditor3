@@ -180,6 +180,7 @@ init -1598 python in _viewers:
                         for p, v in zip(ps, p2):
                             image_state_org[current_scene][layer][tag][p] = v
 
+        # init camera and images
         renpy.scene()
         kwargs = {}
         for p, d in camera_props:
@@ -187,7 +188,7 @@ init -1598 python in _viewers:
                 if p in ps:
                     break
             else:
-                if p != "rotate":
+                if p not in not_used_by_default:
                     kwargs[p]=d
         renpy.exports.show_layer_at(Transform(**kwargs), camera=True)
 
@@ -805,11 +806,9 @@ init -1598 python in _viewers:
                 tran.set_child(child)
 
         if "function" in check_points and check_points["function"]:
-            f = check_points["function"][0][0]
-            if f:
-                f = renpy.python.py_eval("renpy.store."+f)
-                if callable(f):
-                    f(tran, time, at)
+            f = check_points["function"][0][0][1]
+            if f is not None:
+                f(tran, time, at)
         # if not camera:
         #     showing_pool = {
         #         "scene_num":scene_num
@@ -975,7 +974,7 @@ init -1598 python in _viewers:
 
 
     def edit_default_transition():
-        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", message="Type transition")
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", message=_("Type transition"))
         if v:
             if v == "None":
                 v = None
@@ -1027,7 +1026,7 @@ init -1598 python in _viewers:
 
 
     def edit_channel_list():
-        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=persistent._viewer_channel_list , message="Please type the list of channel names(ex [['sound', 'sound2'])")
+        v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=persistent._viewer_channel_list , message=_("Please type the list of channel names(ex [['sound', 'sound2'])"))
         message1 = _("Please type the list of channel names(ex ['sound', 'sound2'])")
         try:
             v = renpy.python.py_eval(v)
@@ -1165,6 +1164,8 @@ init -1598 python in _viewers:
 
     def edit_function(key):
         value = get_value(key)
+        if isinstance(value, tuple):
+            value = value[0]
         value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
         if value:
             if value == "None":
@@ -1181,7 +1182,7 @@ init -1598 python in _viewers:
                     + 'message:' + e.message + "\n"
                     renpy.notify(message)
                     return
-                set_keyframe(key, value, time=scene_keyframes[current_scene][1])
+                set_keyframe(key, (value, f), time=scene_keyframes[current_scene][1])
                 change_time(current_time)
 
 
@@ -1398,8 +1399,7 @@ camera"""
                     value = "'" + value + "'"
                 image_keyframes[k[2]] = [(value, 0, None)]
         image_keyframes = set_group_keyframes(image_keyframes)
-        if (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True)) \
-            and "blur" in image_keyframes:
+        if check_focusing_used() and "blur" in image_keyframes:
             del image_keyframes["blur"]
         image_properties = []
         for p, d in transform_props:
@@ -1435,7 +1435,7 @@ show %s""" % child
                 string += "\n        "
             else:
                 string += " "
-        if persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True):
+        if check_focusing_used():
             focus = get_value("focusing", current_time, True)
             dof = get_value("dof", current_time, True)
             result = "function camera_blur({'focusing':[(%s, 0, None)], 'dof':[(%s, 0, None)]})" % (focus, dof)
@@ -2440,7 +2440,7 @@ show %s""" % child
                             break
                     else:
                         string += "\n        "
-                    string += "{} {} ".format("function", camera_keyframes["function"][0][0])
+                    string += "{} {} ".format("function", camera_keyframes["function"][0][0][0])
 
 
             for layer in image_state_org[s]:
@@ -2598,12 +2598,12 @@ show %s""" % child
                                 else:
                                     focusing_func_string = "camera_blur({})".format(focusing_cs)
                                 if "function" in image_keyframes:
-                                    function_string = image_keyframes["function"][0][0]
+                                    function_string = image_keyframes["function"][0][0][0]
                                     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
                                 else:
                                     string += "{} {} ".format("function", focusing_func_string)
                             else:
-                                string += "{} {} ".format("function", image_keyframes["function"][0][0])
+                                string += "{} {} ".format("function", image_keyframes["function"][0][0][0])
             if s != 0:
                 string += """
     with {}""".format(scene_tran)
@@ -2700,7 +2700,7 @@ show %s""" % child
         #             else:
         #                 string += """
         # """
-        #             string += "{} {}".format("function", camera_keyframes["function"][0][0])
+        #             string += "{} {}".format("function", camera_keyframes["function"][0][0][0])
 
             last_scene = len(scene_keyframes)-1
             for layer in image_state_org[last_scene]:
@@ -2865,12 +2865,12 @@ show %s""" % child
                             else:
                                 focusing_func_string = "camera_blur({}, {})".format(focusing_cs)
                             # if "function" in image_keyframes:
-                            #     function_string = image_keyframes["function"][0][0]
+                            #     function_string = image_keyframes["function"][0][0][0]
                             #     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
                             # else:
                             string += "{} {} ".format("function", focusing_func_string)
                         # else:
-                        #     string += "{} {} ".format("function", image_keyframes["function"][0][0])
+                        #     string += "{} {} ".format("function", image_keyframes["function"][0][0][0])
 
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and len(scene_keyframes) == 1) \
             or len(scene_keyframes) > 1:
