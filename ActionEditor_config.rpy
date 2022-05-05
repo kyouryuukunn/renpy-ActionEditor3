@@ -102,7 +102,7 @@ init -1600 python in _viewers:
 
     #The order of properties in clipboard data.
     #この順番でクリップボードデータが出力されます
-    #ないものは最後となります
+    #ないものは出力されません
     sort_order_list = (
     "pos",
     "anchor",

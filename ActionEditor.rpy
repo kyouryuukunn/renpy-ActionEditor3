@@ -1395,7 +1395,7 @@ camera"""
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
-                elif k in any_props and isinstance(value, str):
+                elif k[2] in any_props and isinstance(value, str):
                     value = "'" + value + "'"
                 image_keyframes[k[2]] = [(value, 0, None)]
         image_keyframes = set_group_keyframes(image_keyframes)
