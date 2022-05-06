@@ -1,4 +1,18 @@
+ 本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
+ 日本語マニュアルはドキュメント後半にあります。
+
+ This script adds Ren'py the ability to adjust and view transform properties of images
+ and camera by in-game Action Editor and Image Viewer and Sound Viewer.
+ Many warpers and usefull functions intended to be used in function statement in ATL are
+ also added.
+
+ Ren'Py <http://www.renpy.org/>
+
+![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
+
  youtube sample
+
+Ren'Py ActionEditor Update 220505 <https://www.youtube.com/watch?v=AXf4JQVq3v8>
 
 Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=7Mosa88gY-c>
 
@@ -13,14 +27,15 @@ Quick Overview of the 3D Camera for Ren'Py <https://www.youtube.com/watch?v=lhA8
 lemma forum
 <https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
 
- 日本語マニュアルはドキュメント後半にあります。
+
+
+
+
 
  This script adds Ren'py the ability to adjust and view transform properties of images
  and camera by in-game Action Editor and Image Viewer and Sound Viewer.
-
- Ren'Py <http://www.renpy.org/>
-
-![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
+ Many warpers and usefull functions intended to be used in function statement in ATL are
+ also added.
 
  This is available in v7.4.5 later.
  To use in older version, use old version ActionEditor.
@@ -32,7 +47,9 @@ lemma forum
 
  To install, copy all files in the camera directory into your game directory.
  ActionEditor.rpy is required for release version if you use camera blur or warper_generator.
- 00warper.rpy is also required if you use added warpers. Ohter files arenot required.
+ 00warper.rpy is also required if you use added warpers.
+ ATL_funcctions.rpy is also required if you use added functions for ATL statement.
+ Ohter files arenot required.
 
  Action Editor
 ================
@@ -121,17 +138,38 @@ lemma forum
 
  Image Viewer
 ================
- Showing defined images and filtering that by tag and atrribute.
- The completion feature is availabe by tab
+ If config.developer is True, pressing Shift+U or +(add image) textbutton on ActionEditor
+ to open Image Viewer.
+
+ Defined image tag and attribute textbuttons are shown in this viewer.
+ You can filter them by the text entered in the top-most text entry field.
+ The completion feature is also availabe by tab.
+
+ When these textbuttons get focus and the same image name exist as these text, the image is
+ shown.
+ Pressing the textbutton add that text to the filter if the same image name doesn't exist
+ as that text. the image is added to ActionEditor if that exist and viewer is opened by
+ ActionEditor.  the image name is outputted to the clipboard if that exist and viewer isn't
+ opened by ActionEditor. 
+
+ Pressing clipboard buton at the bottom also outputs the filter string to clipboard 
  
- Press Shift+U to open Image Viewer and view all currently generated displayables.
 
  Sound Viewer
 ================
- Showing auto defined sounds in game/audio and filtering.
- The completion feature is availabe by tab
- 
- Press Shift+S to open Sound Viewer and view all currently generated displayables.
+ If config.developer is True, pressing Shift+S or sounds textbutton on ActionEditor
+ to open Sound Viewer.
+
+ Variable names in audio store are shown in this viewer.
+ The music files should be automatically defined as these name.
+ You can filter them by the text entered in the top-most text entry field.
+ The completion feature is also availabe by tab.
+
+ When these textbuttons get focus and the music file is played.
+ Pressing the textbutton add that to ActionEditor if the viewer is opened by ActionEditor.
+ Otherwise, that name is outputted to the clipboard.
+
+ Pressing clipboard buton at the bottom also outputs the filter string to clipboard 
 
  ATL functions
 ================
@@ -145,17 +183,18 @@ lemma forum
 
 
 
- 本ライブラリでは3Dステージ対応のGUI上で設定できる演出エディター、画像ビューワー、サウンドビューワーさらに便利なワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数を追加します。
+ 本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
+
  Ren'Py v7.4.5から追加された3Dステージ機能により、旧版にあった自作の3Dカメラ再現関数は不要になりました。
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
 
- 3Dカメラの再現を自作スクリプトから3Dステージに切り替えたことにより、旧版にあった最後のアクションを読み込む機能、エクスプレッション機能はなくなりました。
+ 3Dカメラの再現を自作スクリプトから3Dステージに切り替えたことにより、旧版にあった最後のアクションを読み込む機能とエクスプレッション機能はなくなりました。
  使用したい場合はそれぞれ以下で代用してください。
- * エクスプレッション function transform プロパティで代用してください。 <https://ja.renpy.org/doc/html/atl.html#function-statement>
+ * エクスプレッション function ステートメントで代用してください。 <https://ja.renpy.org/doc/html/atl.html#function-statement>
 
  使用にはフォルダ内のファイルをgameフォルダにコピーしてください。
- カメラブラー、ワーパージェネレータを使用している場合にはActionEditor.rpyを、追加ワーパーを使用している場合は00warper.rpyをリリース版にも含めてください。
+ カメラブラー、ワーパージェネレータを使用している場合にはActionEditor.rpyを、追加ワーパーを使用している場合は00warper.rpyを、追加function ステートメント向け関数を使用している場合はATL_functions.rpyもリリース版に含めてください。
  他のファイルは必要ありません。
 
  演出エディター(Action Editor)
@@ -247,19 +286,35 @@ lemma forum
 
  画像ビューワー
 ================
- 定義された画像を画像タグ、属性から縛り込んで表示します。
- タブでの補間も可能です。
+ config.developer が True なら、ゲーム画面でShift+UまたはActionEditor上の+(add image)のボタンから開けます。
 
- config.developer が True なら、Shift+Uで起動します。
+ 定義済の画像のタグ、属性のテキストボタンとして一覧表示します。
+ 最上段のテキスト入力欄に入力されたテキストで表示結果をフィルターします。
+ フィルターではタブキーでの補間も可能です。
+
+ テキストボタンにフォーカスするとそのテキストに対応する画像名があればその画像を表示します。
+ ボタンを押すと、対応する画像名がなければ、そのテキストをフィルターに追加します。
+ ある場合、ActionEditor上から開いてれば、それをActionEditorに追加します。そうでなければ、
+ その画像名をクリップボードに出力します。
+ 
+
+ 最底段のclipboardボタンでフィルターテキストをクリップボードに出力できます。
 
 
  サウンドビューワー
 ================
- game/audioディレクトリーで自動定義された変数一覧を縛り込んで表示します。
- タブでの補間も可能です。
+ config.developer が True なら、ゲーム画面でShift+SまたはActionEditor上のSoundsの項目から開けます。
 
- config.developer が True なら、Shift+Sで起動します。
+ audio store にある変数名をテキストボタンとして一覧表示します。
+ 音声ファイルがgame/audioディレクトリーにあれば変数は自動定義されるはずです。
+ 最上段のテキスト入力欄に入力されたテキストで表示結果をフィルターします。
+ フィルターではタブキーでの補間も可能です。
 
+ ボタンにフォーカスするとその音声が再生されます。
+ ボタンをクリックするとActionEditor上から開いていれば、それがActionEditorに追加されます。
+ そうでなければ、そのボタンテキストをクリップボードに出力します。
+
+ 最低段のclipboardボタンでフィルターテキストをクリップボードに出力できます。
 
 
  ATL functions

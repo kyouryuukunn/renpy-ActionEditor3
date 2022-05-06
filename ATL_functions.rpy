@@ -84,6 +84,9 @@
 #    camera:   
 #        function atl_swiggle(deviation=40)
 
+init python in _viewers:
+    in_editor = False
+
 init python:
     class mfn(object):
         def __init__(self, *args):

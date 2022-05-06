@@ -163,7 +163,11 @@ init -1 python in _viewers:
                         except:
                             self.check = False #text displayable or Live2D
             if self.check:
-                return self.image_name_tuple
+                if in_editor:
+                    return self.image_name_tuple
+                else:
+                    put_clipboard_text(self.string)
+
             else:
                 cs = renpy.current_screen()
                 cs.scope["filter_string"] = self.string + " "

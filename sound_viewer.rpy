@@ -102,21 +102,24 @@ init -2000 python in _viewers:
 
 
     def return_sound(filter_string, sound_name):
-        if "," in filter_string:
-            prefix = "["
-            other_element = filter_string[:filter_string.rfind(",")+1]
-            if "[" in other_element:
-                other_element = other_element[1:]
-            last_element = filter_string[filter_string.rfind(",")+1:]
-            suffix = "]"
-        elif "[" in filter_string:  #]"
-            prefix = "["
-            other_element = ""
-            last_element = filter_string[1:]
-            suffix = "]"
+        if not in_editor:
+            put_clipboard_text(sound_name)
         else:
-            prefix = "["
-            last_element = filter_string
-            other_element = ""
-            suffix = "]"
-        return prefix + other_element + sound_name + suffix
+            if "," in filter_string:
+                prefix = "["
+                other_element = filter_string[:filter_string.rfind(",")+1]
+                if "[" in other_element:
+                    other_element = other_element[1:]
+                last_element = filter_string[filter_string.rfind(",")+1:]
+                suffix = "]"
+            elif "[" in filter_string:  #]"
+                prefix = "["
+                other_element = ""
+                last_element = filter_string[1:]
+                suffix = "]"
+            else:
+                prefix = "["
+                last_element = filter_string
+                other_element = ""
+                suffix = "]"
+            return prefix + other_element + sound_name + suffix
