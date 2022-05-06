@@ -31,12 +31,16 @@ lemma forum
 
 
 
+ Endglish Document
+================
 
  This script adds Ren'py the ability to adjust and view transform properties of images
  and camera by in-game Action Editor and Image Viewer and Sound Viewer.
  Many warpers and usefull functions intended to be used in function statement in ATL are
  also added.
 
+ About old version
+================
  This is available in v7.4.5 later.
  To use in older version, use old version ActionEditor.
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
@@ -45,6 +49,8 @@ lemma forum
  * expression
  * loading last action
 
+ To instal
+================
  To install, copy all files in the camera directory into your game directory.
  ActionEditor.rpy is required for release version if you use camera blur or warper_generator.
  00warper.rpy is also required if you use added warpers.
@@ -99,19 +105,48 @@ lemma forum
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
    When using functions other than camera_blur, these may cause malfunction after skip.
 
- How to add desired properties to the editor.
- Add the names of the properties you want to add to props_set, sort_order_list
- and transform_props or camera_props in ActionEditor_config.rpy. If the type of
- the property you want to add is int or float, also add it to force_float,
- force_wide_range, or force_plus as needed. if it is a boolean value, add it to
- boolean_props. If it is not one of those, add it to any_props where any type
- can be entered. Please note that error checking is not available when using
- this function, so please be careful about the order of input.
 
- For tuples, you can use props_groups where key is the property name and value
- is tuple of each element name, so that they can be edited individually. Also
- set generate_groups_clipboard and generate_groups_value to combine individual
+ How to add desired properties to the editor.
+================
+
+ variable is edited in ActionEditor_config.rpy.
+
+ Commonly, add the following variables the property name you want to add to be added.:
+
+ * `props_set`: control where that is shwon in ActionEditor.
+ * `sort_order_list`: control where that is shwon in clipboard.
+ * `transform_props` or `camera_props`: Add the tuple which include that property name and default value.
+ Adding `transform_props` shows it in each images and Adding `camera_props` shows it in camera.
+
+ Further add the following variables according to the type of property.
+
+ If it is integer or float and required. :
+
+ * `force_float`: it is always float.
+ * `force_wide_range`: it has the same scale as integer even when it is float type.
+ * `force_plus`: it is always plus.
+
+ If it is boolean type. :
+
+ * `boolean_props`
+
+ Others:
+
+ * `any_props` : This type isn't checked error. so you should pay attention to the input order.
+
+
+ Property Group
+================
+
+ タプルなど複数の値で1つのプロパティーを設定するものは props_groups でプロパティー名をキーに、
+ 各要素名を値にして登録すれば個別に編集できます。個別の値を1つにまとめるために 
+ generate_groups_clipboard, generate_groups_value も設定してください。例:
+
+ For tuple, You can use `props_groups` where that key is the property name and that value
+ is the tuple of each element name, so that they can be edited individually. Also
+ set `generate_groups_clipboard` and `generate_groups_value` to combine individual
  values into one. example:
+
     props_groups = {
         "alignaround":["xalignaround", "yalignaround"], 
         "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
@@ -131,10 +166,12 @@ lemma forum
     generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
 
  Exclusive proparties like tile and pan should be set in exclusive. example:
+
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
+
 
  Image Viewer
 ================
@@ -183,7 +220,12 @@ lemma forum
 
 
 
+ 日本語ドキュメント
+================
  本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
+
+ 旧バージョンについて
+================
 
  Ren'Py v7.4.5から追加された3Dステージ機能により、旧版にあった自作の3Dカメラ再現関数は不要になりました。
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。
@@ -192,6 +234,9 @@ lemma forum
  3Dカメラの再現を自作スクリプトから3Dステージに切り替えたことにより、旧版にあった最後のアクションを読み込む機能とエクスプレッション機能はなくなりました。
  使用したい場合はそれぞれ以下で代用してください。
  * エクスプレッション function ステートメントで代用してください。 <https://ja.renpy.org/doc/html/atl.html#function-statement>
+
+ インストール方法
+================
 
  使用にはフォルダ内のファイルをgameフォルダにコピーしてください。
  カメラブラー、ワーパージェネレータを使用している場合にはActionEditor.rpyを、追加ワーパーを使用している場合は00warper.rpyを、追加function ステートメント向け関数を使用している場合はATL_functions.rpyもリリース版に含めてください。
@@ -252,14 +297,42 @@ lemma forum
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
 
- 任意のプロパティーをエディターに追加する方法
- ActionEditor_config.rpyのprops_set, sort_order_listとtransform_propsまたはcamera_propsに追加したいプロパティー名を加えます。
- さらに追加したいプロパティーの型が整数または浮動小数ならば必要に応じてforce_float, force_wide_range, force_plusに、
- 真偽値ならばboolean_propsにプロパティー名を追加します。プロパティーの型がそれら以外ならばどのような型も入力できるany_propsに追加してください。 
- 使用時はエラーチェックを行なえないので入力順番等に注意してください。
 
- タプルなど複数の値で1つのプロパティーを設定するものはprops_groupsでプロパティー名をキーに、各要素名を値にして登録すれば個別に編集できるようになります。
- 個別の値を1つにまとめるためにgenerate_groups_clipboard, generate_groups_valueも設定してください。例:
+ 任意のプロパティーをエディターに追加する方法
+================
+
+ ActionEditor_config.rpy を編集します。
+
+ 共通の設定項目として以下に追加したいプロパティー名を加えます。:
+
+ * `props_set`: : ActionEditor上でプロパティーが表示される位置を指定します。
+ * `sort_order_list`: クリップボードに出力されるプロパティーの順番を指定します。
+ * `transform_props` または camera_props: プロパティー名とデフォルト値のタプルを追加してください。前者は画像の、後者はカメラの追加プロパティーを操作できるようにします。
+ 
+ さらに追加したいプロパティーの型に応じて設定します。
+
+ 整数または浮動小数の場合、必要なら以下に追加したいプロパティー名を加えます。:
+
+ * `force_float`: 常に値が浮動小数になります。
+ * `force_wide_range`: 値が浮動小数でも整数と同じ幅で値を調整できます。
+ * `force_plus`: 常に値が正の数となります。
+
+ 真偽値の場合、以下に追加したいプロパティー名を加えます。:
+
+ * `boolean_props`
+
+ 他の型の場合、以下に追加したいプロパティー名を加えます。:
+
+ * `any_props` : 使用時はエラーチェックを行なえないので入力順番等に注意してください。
+
+
+ プロパティーグループ
+================
+
+ タプルなど複数の値で1つのプロパティーを設定するものは props_groups でプロパティー名をキーに、
+ 各要素名を値にして登録すれば個別に編集できます。個別の値を1つにまとめるために 
+ generate_groups_clipboard, generate_groups_value も設定してください。例:
+
     props_groups = {
         "alignaround":["xalignaround", "yalignaround"], 
         "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
@@ -279,14 +352,17 @@ lemma forum
     generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
 
  tileとpanのような排他的なプロパティーはexclusiveにも登録してください。例:
+
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
 
+
  画像ビューワー
 ================
- config.developer が True なら、ゲーム画面でShift+UまたはActionEditor上の+(add image)のボタンから開けます。
+
+ `config.developer` が True なら、ゲーム画面でShift+UまたはActionEditor上の+(add image)のボタンから開けます。
 
  定義済の画像のタグ、属性のテキストボタンとして一覧表示します。
  最上段のテキスト入力欄に入力されたテキストで表示結果をフィルターします。
@@ -303,7 +379,8 @@ lemma forum
 
  サウンドビューワー
 ================
- config.developer が True なら、ゲーム画面でShift+SまたはActionEditor上のSoundsの項目から開けます。
+
+ `config.developer` が True なら、ゲーム画面でShift+SまたはActionEditor上のSoundsの項目から開けます。
 
  audio store にある変数名をテキストボタンとして一覧表示します。
  音声ファイルがgame/audioディレクトリーにあれば変数は自動定義されるはずです。
@@ -319,5 +396,6 @@ lemma forum
 
  ATL functions
 ================
+
  ATL_funcctions.rpy に ATL function ステートメントでの使用を意図した関数群を用意しました。
  使用方法は該当ファイルを参照してください。
