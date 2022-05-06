@@ -10,19 +10,14 @@
 
 ![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
 
- youtube sample
+ youtube samples:
 
-Ren'Py ActionEditor Update 220505 <https://www.youtube.com/watch?v=AXf4JQVq3v8>
-
-Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=7Mosa88gY-c>
-
-Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
-
-Ren'Py Action Editor Introduction <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
-
-How to use spline in Action Editor with graphic editor <https://www.youtube.com/watch?v=qmGSsJbTYx4>
-
-Quick Overview of the 3D Camera for Ren'Py <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
+ * Ren'Py ActionEditor Update 220505 <https://www.youtube.com/watch?v=AXf4JQVq3v8>
+ * Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=7Mosa88gY-c>
+ * Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
+ * Ren'Py Action Editor Introduction <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
+ * How to use spline in Action Editor with graphic editor <https://www.youtube.com/watch?v=qmGSsJbTYx4>
+ * Quick Overview of the 3D Camera for Ren'Py <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
 
 lemma forum
 <https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
@@ -90,18 +85,19 @@ lemma forum
  * blur transform property of each images are used for simulating camera blur in function transform prperty,
    so blur transform properties of each images aren't availabe when focusing is enabled.
    Set function property to None when you want to disable camera blur for already shownd images.
- * ActionEditor Can't get correct value If any other transform_matrix than below Matrixes are used.
-    OffsetMatrix * RotateMatrix
-    OffsetMatrix
-    RotateMatrix
+ * ActionEditor Can't get correct value If any other transform_matrix than below Matrixes are used.:
+   1. OffsetMatrix * RotateMatrix
+   2. OffsetMatrix
+   3. RotateMatrix
+
  * ActionEditor Can't get colormatrix property.
  * Unfortunately, The behavior of functions for function property isn't same as ATL.
    There are some different points.
   1. inherited_<property> have no value.
   2. Setting properties have no affect when it is called next time.
   3. The return value from it have no affect.
+  4. It isn't always called in time.
 
-   You should note it isn't always called in time.
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
    When using functions other than camera_blur, these may cause malfunction after skip.
 
@@ -138,10 +134,6 @@ lemma forum
  Property Group
 ================
 
- タプルなど複数の値で1つのプロパティーを設定するものは props_groups でプロパティー名をキーに、
- 各要素名を値にして登録すれば個別に編集できます。個別の値を1つにまとめるために 
- generate_groups_clipboard, generate_groups_value も設定してください。例:
-
  For tuple, You can use `props_groups` where that key is the property name and that value
  is the tuple of each element name, so that they can be edited individually. Also
  set `generate_groups_clipboard` and `generate_groups_value` to combine individual
@@ -175,7 +167,7 @@ lemma forum
 
  Image Viewer
 ================
- If config.developer is True, pressing Shift+U or +(add image) textbutton on ActionEditor
+ If `config.developer` is True, pressing Shift+U or +(add image) textbutton on ActionEditor
  to open Image Viewer.
 
  Defined image tag and attribute textbuttons are shown in this viewer.
@@ -194,7 +186,7 @@ lemma forum
 
  Sound Viewer
 ================
- If config.developer is True, pressing Shift+S or sounds textbutton on ActionEditor
+ If `config.developer` is True, pressing Shift+S or sounds textbutton on ActionEditor
  to open Sound Viewer.
 
  Variable names in audio store are shown in this viewer.
@@ -276,24 +268,25 @@ lemma forum
    (複数シーンを使用する場合は強制的にスキップ可となります)
 
  注意
- *focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
- *matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
-    OffsetMatrix * RotateMatrix
-    OffsetMatrix
-    RotateMatrix
- *colormatrixプロパティーは現在の値をエディターでは読み込めません。
- *function ステートメントに関数を指定できますが、ActionEditorとATL中で関数が同じ動作をしないことに注意してください。
+
+ * focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
+ * matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
+  1. OffsetMatrix * RotateMatrix
+  2. OffsetMatrix
+  3. RotateMatrix
+
+ * colormatrixプロパティーは現在の値をエディターでは読み込めません。
+ * function ステートメントに関数を指定できますが、ActionEditorとATL中で関数が同じ動作をしないことに注意してください。
   以下の制限があります。
   1. inherited_<property>では値を取得できません
   2. プロパティーを変更しても次のその関数呼び出し時の値には反映されません
   3. 返り値は機能しません
-  また時間どおりの順に呼び出されるとは限りません。これらの制限のため、プロパティーの値に対するオフセットとして
-  動作させるには癖があり、もっぱらx,yoffsetへの値の代入が主な用途となるでしょう。
+  4. 時間どおりの順に呼び出されるとは限りません。
+  これらの制限のため、プロパティーの値に対するオフセットとして動作させるには癖があり、もっぱらx,yoffsetへの値の代入が主な用途となるでしょう。
  参考リンク
  https://akakyouryuu.com/renpy/atl-%e3%81%aefunction%e3%82%b9%e3%83%86%e3%83%bc%e3%83%88%e3%83%a1%e3%83%b3%e3%83%88%e3%81%a7%e3%83%97%e3%83%ad%e3%83%91%e3%83%86%e3%82%a3%e3%83%bc%e3%81%ae%e5%80%a4%e3%82%92%e3%82%aa%e3%83%95/
- *アニメーションのスキップはアニメーション終了後と同じ画像を表示してスキップを可能にしています。
-  アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
-  また、camera_blur 以外を function プロパティーに使用しているとスキップ後に誤作動する可能性があります。
+ * camera_blur 以外を function プロパティーに使用しているとスキップ後に誤作動する可能性があります。
+ * アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
 
