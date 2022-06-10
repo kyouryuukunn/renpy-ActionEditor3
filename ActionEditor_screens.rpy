@@ -69,7 +69,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                             Function(change_time, previous_time)]
         $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
             _viewers.pause, \
-            Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), in_graphic_mode=in_graphic_mode)]
+            Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
         $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
@@ -500,7 +500,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                     add TimeLine(s, "sounds", key=channel)
                             hbox:
                                 $value = "None"
-                                $sorted_play_times = sorted(sound_keyframes[channel].keys())
+                                $sorted_play_times = sorted(list(sound_keyframes[channel].keys()))
                                 for t in sorted_play_times:
                                     if current_time >= t:
                                         $value = sound_keyframes[channel][t]
@@ -1009,7 +1009,7 @@ screen _warper_selecter(current_warper=""):
             edgescroll (100, 100)
             scrollbars "vertical"
             vbox:
-                for warper in sorted(renpy.atl.warpers.keys()):
+                for warper in sorted(list(renpy.atl.warpers.keys())):
                     textbutton warper:
                         action [SelectedIf((persistent._viewer_warper == warper and not current_warper) or warper == current_warper), Return(warper)]
                         hovered Show("_warper_graph", warper=warper) unhovered Hide("_warper")

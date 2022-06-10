@@ -421,7 +421,7 @@ init -1598 python in _viewers:
             for channel, times in sound_keyframes.items():
                 time = 0
                 files = []
-                sorted_times = sorted(times.keys())
+                sorted_times = sorted(list(times.keys()))
                 if sorted_times:
                     for t in sorted_times:
                         duration = t - time
@@ -964,7 +964,7 @@ init -1598 python in _viewers:
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
                 return
             if not force_plus or 0 <= v:
@@ -984,7 +984,7 @@ init -1598 python in _viewers:
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
                     + 'type:' + str(type(e)) + "\n" \
-                    + 'message:' + e.message + "\n"
+                    + 'message:' + str(e.message) + "\n"
                     renpy.notify(message)
                     return
             persistent._viewer_transition = v
@@ -1016,7 +1016,7 @@ init -1598 python in _viewers:
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
                     + 'type:' + str(type(e)) + "\n" \
-                    + 'message:' + e.message + "\n"
+                    + 'message:' + str(e.message) + "\n"
                     renpy.notify(message)
                     return
             set_keyframe((tag, layer, "child"), (n, v), time=time)
@@ -1179,7 +1179,7 @@ init -1598 python in _viewers:
                 except Exception as e:
                     message = _("Please type a valid data") + "\n" \
                     + 'type:' + str(type(e)) + "\n" \
-                    + 'message:' + e.message + "\n"
+                    + 'message:' + str(e.message) + "\n"
                     renpy.notify(message)
                     return
                 set_keyframe(key, (value, f), time=scene_keyframes[current_scene][1])
@@ -1199,7 +1199,7 @@ init -1598 python in _viewers:
             except Exception as e:
                 message = _("Please type a valid data") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
                 return
             set_keyframe(key, value, time=time)
@@ -1378,11 +1378,11 @@ camera"""
 
         try:
             from pygame import scrap, locals
-            scrap.put(locals.SCRAP_TEXT, string)
+            scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
             + 'type:' + str(type(e)) + "\n" \
-            + 'message:' + e.message + "\n"
+            + 'message:' + str(e.message) + "\n"
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1446,11 +1446,11 @@ show %s""" % child
         string = "\n"+ string + "\n\n"
         try:
             from pygame import scrap, locals
-            scrap.put(locals.SCRAP_TEXT, string)
+            scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
             + 'type:' + str(type(e)) + "\n" \
-            + 'message:' + e.message + "\n"
+            + 'message:' + str(e.message) + "\n"
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1462,7 +1462,7 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            sorted_times = sorted(times.keys())
+            sorted_times = sorted(list(times.keys()))
             if sorted_times:
                 for t in sorted_times:
                     duration = t - time
@@ -1481,11 +1481,11 @@ show %s""" % child
         string = string.replace("u'", "'", 999)
         try:
             from pygame import scrap, locals
-            scrap.put(locals.SCRAP_TEXT, string)
+            scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
             + 'type:' + str(type(e)) + "\n" \
-            + 'message:' + e.message + "\n"
+            + 'message:' + str(e.message) + "\n"
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1517,7 +1517,7 @@ show %s""" % child
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
 
 
@@ -1532,7 +1532,7 @@ show %s""" % child
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
 
 
@@ -1547,7 +1547,7 @@ show %s""" % child
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
 
 
@@ -1569,7 +1569,7 @@ show %s""" % child
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
 
 
@@ -1766,7 +1766,7 @@ show %s""" % child
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
 
 
@@ -1782,7 +1782,7 @@ show %s""" % child
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
                     + 'type:' + str(type(e)) + "\n" \
-                    + 'message:' + e.message + "\n"
+                    + 'message:' + str(e.message) + "\n"
                     renpy.notify(message)
                     return
             scene_keyframes[scene_num] = (v, t, w)
@@ -1814,7 +1814,7 @@ show %s""" % child
         except Exception as e:
             message = _("Please Input filenames") + "\n" \
             + 'type:' + str(type(e)) + "\n" \
-            + 'message:' + e.message + "\n"
+            + 'message:' + str(e.message) + "\n"
             renpy.notify(message)
             return
         duration = 0
@@ -1867,7 +1867,7 @@ show %s""" % child
     def remove_all_keyframe(time):
         keylist = [k for k in all_keyframes[current_scene]]
         remove_keyframe(time, keylist)
-        keylist = sound_keyframes.keys()
+        keylist = list(sound_keyframes.keys())
         remove_keyframe(time, keylist, True)
 
 
@@ -1891,7 +1891,7 @@ show %s""" % child
         moved_time = round(new, 2)
         k_list = [k for k in all_keyframes[current_scene].keys()]
         move_keyframe(new, old, k_list)
-        k_list = sound_keyframes.keys()
+        k_list = list(sound_keyframes.keys())
         move_keyframe(new, old, k_list, True)
 
 
@@ -1988,7 +1988,10 @@ show %s""" % child
 
     def change_time(v):
         global current_time
-        current_time = round(v, 2)
+        try:
+            current_time = round(v, 2)
+        except Exception as e:
+            print(v)
         for c in persistent._viewer_channel_list:
             renpy.music.stop(c, False)
         play(False)
@@ -2011,7 +2014,7 @@ show %s""" % child
 
 
     def is_playing(channel, new_time, old_time):
-        times = sorted(sound_keyframes[channel].keys())
+        times = sorted(list(sound_keyframes[channel].keys()))
         if new_time in times:
             return True
         if old_time in times:
@@ -2143,7 +2146,7 @@ show %s""" % child
                         animation_time = t
         for channel, times in sound_keyframes.items():
             if times:
-                time_list = sorted(times.keys())
+                time_list = sorted(list(times.keys()))
                 start_time = time_list[-1]
                 files = times[start_time]
                 try:
@@ -2187,7 +2190,7 @@ show %s""" % child
                         r = None
                         if gn != "focusing:":
                             r = []
-                            sample = group_cache[gn].values()[0]
+                            sample = list(group_cache[gn].values())[0]
                             for i in range(len(sample)):
                                 kwargs = {k:v[i][0] for k, v in group_cache[gn].items()}
                                 t = sample[i][1]
@@ -2340,7 +2343,7 @@ show %s""" % child
         for channel, times in sound_keyframes.items():
             time = 0
             files = "[\n        " #]"
-            sorted_times = sorted(times.keys())
+            sorted_times = sorted(list(times.keys()))
             if sorted_times:
                 for t in sorted_times:
                     duration = t - time
@@ -2883,11 +2886,11 @@ show %s""" % child
             string = string.replace("u'", "'", 999)
             try:
                 from pygame import scrap, locals
-                scrap.put(locals.SCRAP_TEXT, string)
+                scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
             except Exception as e:
                 message = _("Can't open clip board") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
-                + 'message:' + e.message + "\n"
+                + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
             else:
                 #syntax hilight error in vim
