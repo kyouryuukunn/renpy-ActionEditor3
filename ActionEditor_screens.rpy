@@ -26,6 +26,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $generate_menu = _viewers.generate_menu
     $is_wide_range = _viewers.is_wide_range
     $TimeLine = _viewers.TimeLine
+    $perspective_enabled = _viewers.perspective_enabled
 
     if opened is None:
         $opened = {}
@@ -40,7 +41,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $move_amount1 = 100
     $move_amount2 = 300
     key "hide_windows" action NullAction()
-    if get_value("perspective", scene_keyframes[current_scene][1], True):
+    if perspective_enabled():
         if _viewers.fps_keymap:
             key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
             key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
@@ -206,7 +207,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             $new_opened = opened.copy()
                                             $new_opened[s] = new_opened[s] + ["camera"]
                                         textbutton _(indent+"+ "+"camera"):
-                                            action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) != False),
+                                            action [SensitiveIf(get_value("perspective", scene_keyframes[s][1], True) is not False),
                                             Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)]
                                     fixed:
                                         add TimeLine(s, "camera")
@@ -238,7 +239,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 add TimeLine(s, "camera", props_set=props_set)
                                         for p in props_set:
                                             if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
-                                                (persistent._viewer_focusing and get_value("perspective", scene_keyframes[s][1], True))):
+                                                (persistent._viewer_focusing and perspective_enabled(s))):
                                                 $key = p
                                                 $value = get_property(p)
                                                 $d = _viewers.get_default(p, True)
@@ -256,7 +257,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 action None text_color "#FFF"
                                                             textbutton "[value]":
                                                                 action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.toggle_perspective)]
+                                                                Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
                                                                 size_group None
                                                     elif p == "function":
                                                         hbox:
@@ -298,7 +299,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
-                                                    if p not in _viewers.boolean_props+["function"]:
+                                                    if p not in _viewers.boolean_props+["function", "perspective"]:
                                                         fixed:
                                                             add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
                                                     # else:
@@ -373,8 +374,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     add TimeLine(s, (tag, layer), props_set=props_set)
                                             for p in props_set:
                                                 if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
-                                                    and get_value("perspective", scene_keyframes[s][1], True)) and p != "blur")
-                                                    or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[s][1], True)))):
+                                                    and perspective_enabled(s)) and p != "blur")
+                                                    or (not persistent._viewer_focusing or not perspective_enabled(s)))):
                                                     $key = (tag, layer, p)
                                                     $d = _viewers.get_default(p)
                                                     $value = get_property(key)
@@ -443,7 +444,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action None text_color "#FFF"
                                                                 add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                        if p not in _viewers.boolean_props+["function"]:
+                                                        if p not in _viewers.boolean_props+["function", "perspective"]:
                                                             fixed:
                                                                 # if key not in in_graphic_mode:
                                                                 add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
@@ -631,11 +632,12 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
+    $perspective_enabled =  _viewers.perspective_enabled
 
     $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
         SelectedIf(False), Function(_viewers.play, play=True), \
         Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
-    if get_value("perspective", scene_keyframes[current_scene][1], True):
+    if perspective_enabled():
         key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
         key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
     key "K_SPACE" action play_action
@@ -645,7 +647,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $value_range = persistent._wide_range
     $move_amount1 = 100
     $move_amount2 = 300
-    if get_value("perspective", scene_keyframes[current_scene][1], True):
+    if perspective_enabled():
         if _viewers.fps_keymap:
             key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
             key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
@@ -684,7 +686,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     else:
         $page_list.append(state_list)
     $state=_viewers.get_image_state(layer)
-    if get_value("perspective", scene_keyframes[current_scene][1], True) == False and tab == "camera":
+    if get_value("perspective", scene_keyframes[current_scene][1], True) is False and tab == "camera":
         $tab = state_list[0]
 
     frame:
@@ -725,7 +727,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             textbutton _("<"):
                 action [SensitiveIf(page != 0), Show("_action_editor", tab=tab, layer=layer, page=page-1), renpy.restart_interaction]
             textbutton _("camera"):
-                action [SensitiveIf(get_value("perspective", scene_keyframes[current_scene][1], True) != False),
+                action [SensitiveIf(get_value("perspective", scene_keyframes[current_scene][1], True) is not False),
                 SelectedIf(tab == "camera"), Show("_action_editor", tab="camera")]
             for n in page_list[page]:
                 textbutton "{}".format(n):
@@ -741,7 +743,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
                     for p, d in _viewers.camera_props:
                         if p in props_set and (p not in props_groups["focusing"] or 
-                            (persistent._viewer_focusing and get_value("perspective", scene_keyframes[current_scene][1], True))):
+                            (persistent._viewer_focusing and perspective_enabled())):
                             $value = get_property(p)
                             $f = generate_changed(p)
                             $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
@@ -762,7 +764,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 if p == "perspective":
                                     textbutton "[value]":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
-                                        Function(_viewers.toggle_perspective)]
+                                        Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
                                 elif p == "function":
                                     textbutton "[value[0]]":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
@@ -801,8 +803,8 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
                     for p, d in _viewers.transform_props:
                         if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
-                            and get_value("perspective", scene_keyframes[current_scene][1], True)) and p != "blur") 
-                            or (not persistent._viewer_focusing or not get_value("perspective", scene_keyframes[current_scene][1], True)))):
+                            and perspective_enabled()) and p != "blur") 
+                            or (not persistent._viewer_focusing or not perspective_enabled()))):
                             $key = (tab, layer, p)
                             $value = get_property(key)
                             $f = generate_changed(key)
@@ -1559,7 +1561,6 @@ init 1 python in _viewers:
 
             if self.tag is None:
                 _, t, _ = scene_keyframes[self.scene]
-                scene_start = scene_keyframes[self.scene][1]
                 child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                 new_children.append(child)
                 for key, cs in all_keyframes[self.scene].items():
@@ -1568,26 +1569,24 @@ init 1 python in _viewers:
                     else:
                         p = key
                     if p not in props_groups["focusing"] or \
-                        (persistent._viewer_focusing and get_value("perspective", scene_start, True)):
+                        (persistent._viewer_focusing and perspective_enabled(self.scene)):
                         for c in cs:
                             _, t, _ = c
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
             elif self.tag == "camera" and self.props_set is None and self.key is None:
-                scene_start = scene_keyframes[self.scene][1]
                 for p, d in camera_props:
                     _all_keyframes = all_keyframes[self.scene]
                     if (p not in props_groups["focusing"] or
-                        (persistent._viewer_focusing and get_value("perspective", scene_start, True))):
+                        (persistent._viewer_focusing and perspective_enabled(self.scene))):
                         for _, t, _ in _all_keyframes.get(p, []):
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
             elif self.tag == "camera" and self.props_set is not None:
                 _all_keyframes = all_keyframes[self.scene]
-                scene_start = scene_keyframes[self.scene][1]
                 for p in self.props_set:
                     if (p not in props_groups["focusing"] or \
-                        (persistent._viewer_focusing and get_value("perspective", scene_start, True))):
+                        (persistent._viewer_focusing and perspective_enabled(self.scene))):
                         for _, t, _ in _all_keyframes.get(p, []):
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)

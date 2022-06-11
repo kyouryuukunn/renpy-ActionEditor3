@@ -246,7 +246,7 @@ init 1600 python in _viewers:
     ("ypan", 0.), 
     ("xtile", 1), 
     ("ytile", 1), 
-    ("perspective", None),
+    ("perspective", None), #Falseならカメラ動作せず、Noneなら普通の画像として動作
     ("function", (None, None)), 
     )
 

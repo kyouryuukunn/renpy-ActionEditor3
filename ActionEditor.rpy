@@ -6,10 +6,10 @@
 
 #既知の問題
 #childのみならばparallelなくてよい
-#perspectiveで数値を指定されていたらどうする?
 #colormatrix, transformmatrixは十分再現できない
 
 #課題
+#orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
 #動画と同期できない(用本体の最適化)
@@ -511,7 +511,7 @@ init -1598 python in _viewers:
                         if not group_flag:
                             for prop in ps:
                                 del check_points[layer][tag][prop]
-                    if persistent._viewer_focusing and get_value("perspective", t, True, scene_num=s):
+                    if persistent._viewer_focusing and perspective_enabled(s, time=t):
                         if "blur" in check_points[layer][tag]:
                             del check_points[layer][tag]["blur"]
                         if "focusing" not in check_points[layer][tag]:
@@ -643,7 +643,7 @@ init -1598 python in _viewers:
         group_cache = defaultdict(lambda:{})
         sle = renpy.game.context().scene_lists
         if in_editor and camera:
-            tran.perspective = get_value("perspective", scene_checkpoints[scene_num][1], True, scene_num=scene_num)
+            tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
 
         for p, cs in check_points.items():
             if not cs:
@@ -1221,18 +1221,13 @@ init -1598 python in _viewers:
         change_time(current_time)
 
 
-    def toggle_perspective():
-        perspective = get_value("perspective", scene_keyframes[current_scene][1], True)
-        if perspective:
-            perspective = None
-        elif perspective is None:
-            perspective = True
-        perspective_org=camera_state_org[current_scene]["perspective"]
-        if perspective == perspective_org:
-            remove_keyframe(scene_keyframes[current_scene][1], "perspective")
-        else:
-            set_keyframe("perspective", perspective, time=scene_keyframes[current_scene][1])
-        change_time(current_time)
+    def perspective_enabled(scene_num=None, time=None):
+        if scene_num is None:
+            scene_num = current_scene
+        if time is None:
+            time = scene_keyframes[scene_num][1]
+        v = get_value("perspective", scene_keyframes[scene_num][1], True, scene_num)
+        return v or (v is not False and v == 0)
 
 
     def remove_image(layer, tag):
@@ -1988,10 +1983,7 @@ show %s""" % child
 
     def change_time(v):
         global current_time
-        try:
-            current_time = round(v, 2)
-        except Exception as e:
-            print(v)
+        current_time = round(v, 2)
         for c in persistent._viewer_channel_list:
             renpy.music.stop(c, False)
         play(False)
@@ -2327,7 +2319,7 @@ show %s""" % child
     def check_focusing_used(scene_num = None):
         if scene_num is None:
             scene_num = current_scene
-        return (persistent._viewer_focusing and get_value("perspective", scene_keyframes[scene_num][1], True, scene_num))
+        return (persistent._viewer_focusing and perspective_enabled(scene_num))
 
 
     def put_clipboard():
