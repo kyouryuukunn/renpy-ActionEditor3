@@ -264,7 +264,7 @@ init -1598 python in _viewers:
                 s = matrix_args[2]
                 b = matrix_args[3]
                 h = matrix_args[4]
-            elif matrix_order == (InvertMatrix):
+            elif matrix_order == (InvertMatrix,):
                 i = matrix_args[0]
                 c = 1.
                 s = 1.
@@ -282,7 +282,7 @@ init -1598 python in _viewers:
                 s = matrix_args[0]
                 b = 0.
                 h = 0.
-            elif matrix_order == (BrightnessMatrix):
+            elif matrix_order == (BrightnessMatrix,):
                 i = 0.
                 c = 1.
                 s = 1.
