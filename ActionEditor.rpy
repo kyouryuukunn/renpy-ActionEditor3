@@ -36,6 +36,7 @@ init -1600 python in _viewers:
     from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Movie
     from renpy import config
 init python in _viewers:
+    from renpy.store import RotateMatrix, OffsetMatrix, ScaleMatrix, _MultiplyMatrix
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
     # coordinate_icon = Fixed()
     # coordinate_icon.add(Solid("#00F", xsize=50, ysize=6, anchor=(0., .5)))
@@ -117,8 +118,7 @@ init -1598 python in _viewers:
 
     def action_editor_init():
         global image_state, image_state_org, camera_state_org, movie_cache
-        if not config.developer:
-            return
+
         sle = renpy.game.context().scene_lists
         # layer->tag->property->value
         image_state_org = []
@@ -180,18 +180,35 @@ init -1598 python in _viewers:
                         for p, v in zip(ps, p2):
                             image_state_org[current_scene][layer][tag][p] = v
 
-        # init camera and images
+        # init camera, layer and images
         renpy.scene()
-        kwargs = {}
-        for p, d in camera_props:
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    break
-            else:
-                if p not in not_used_by_default:
-                    kwargs[p]=d
-        renpy.exports.show_layer_at(Transform(**kwargs), camera=True)
+        for layer in config.layers:
+            sle.set_layer_at_list(layer, [], camera=True)
+            sle.set_layer_at_list(layer, [])
 
+
+    def get_matrix_info(matrix):
+        matrix_info = []
+        def _get_matrix_info(origin):
+            if isinstance(origin, _MultiplyMatrix):
+                args = getattr(origin.right, "args", None)
+                if args is None:
+                    args = getattr(origin.right, "value")
+                matrix_info.append((type(origin.right), args))
+                _get_matrix_info(origin.left)
+            else:
+                args = getattr(origin, "args", None)
+                if args is None:
+                    args = getattr(origin, "value")
+                matrix_info.append((type(origin), args))
+
+        origin = getattr(matrix, "origin", False)
+        if not origin:
+            return matrix_info
+        else:
+            _get_matrix_info(origin)
+            matrix_info.reverse()
+        return matrix_info
 
     def get_group_property(group_name, group):
         def decimal(a):
@@ -202,63 +219,89 @@ init -1598 python in _viewers:
             return None
 
         if group_name == "matrixtransform":
-            # can't get correct value If any other transform_matrix than below Matrixes is used
-            #OffsetMatrix * RotateMatrix
-            #OffsetMatrix
-            #RotateMatrix
-            ox = group.xdw
-            oy = group.ydw
-            oz = group.zdw
 
-            sinry = (-group.zdx)
-            sinry = 1.0 if sinry > 1.0 else sinry
-            sinry = -1.0 if sinry < -1.0 else sinry
-            ry = asin(sinry)
-
-            for i in range(2):
-                sinrx = group.zdy/cos(ry)
-                sinrx = 1.0 if sinrx > 1.0 else sinrx
-                sinrx = -1.0 if sinrx < -1.0 else sinrx
-                rx = asin(sinrx)
-                if decimal(group.zdz) != decimal(cos(rx)*cos(ry)):
-                    rx = 2*pi - rx
-            
-                cosrz = group.xdx/cos(ry)
-                cosrz = 1.0 if cosrz > 1.0 else cosrz
-                cosrz = -1.0 if cosrz < -1.0 else cosrz
-                rz = acos(cosrz)
-                if decimal(group.ydx) != decimal(cos(ry)*sin(rz)):
-                    rz = 2*pi - rz
-
-                if decimal(group.ydy) != decimal(cos(rx)*cos(rz)+sin(rx)*sin(ry)*sin(rz)):
-                    ry = pi - ry
-                else:
-                    break
-            if (decimal(group.xdy) != decimal(-cos(rx)*sin(rz)+cos(rz)*sin(rx)*sin(ry))) \
-                or (decimal(group.xdz) != decimal(cos(rx)*cos(rz)*sin(ry)+sin(rx)*sin(rz))) \
-                or (decimal(group.ydz) != decimal(cos(rx)*sin(ry)*sin(rz)-cos(rz)*sin(rx))):
-                #no supported matrix is used.
-                return 0., 0., 0., 0., 0., 0.
-
-            if decimal(rx) >= decimal(2*pi):
-                rx = rx - 2*pi
-            if decimal(ry) >= decimal(2*pi):
-                ry = ry - 2*pi
-            if decimal(rz) >= decimal(2*pi):
-                rz = rz - 2*pi
-
-            if decimal(rx) <= -decimal(2*pi):
-                rx = rx + 2*pi
-            if decimal(ry) <= -decimal(2*pi):
-                ry = ry + 2*pi
-            if decimal(rz) <= -decimal(2*pi):
-                rz = rz + 2*pi
-
-            return rx*180.0/pi, ry*180.0/pi, rz*180.0/pi, ox, oy, oz
+            matrix_info = get_matrix_info(group)
+            matrix_order = tuple(i[0] for i in matrix_info)
+            matrix_args = tuple(i[1] for i in matrix_info)
+            if matrix_order == (OffsetMatrix, RotateMatrix):
+                ox = matrix_args[0][0]
+                oy = matrix_args[0][1]
+                oz = matrix_args[0][2]
+                rx = matrix_args[1][0]
+                ry = matrix_args[1][1]
+                rz = matrix_args[1][2]
+            elif matrix_order == (OffsetMatrix,):
+                ox = matrix_args[0][0]
+                oy = matrix_args[0][1]
+                oz = matrix_args[0][2]
+                rx = 0.0
+                ry = 0.0
+                rz = 0.0
+            elif matrix_order == (RotateMatrix,):
+                ox = 0.0
+                oy = 0.0
+                oz = 0.0
+                rx = matrix_args[0][0]
+                ry = matrix_args[0][1]
+                rz = matrix_args[0][2]
+            else:
+                rx = 0.0
+                ry = 0.0
+                rz = 0.0
+                ox = 0.0
+                oy = 0.0
+                oz = 0.0
+            return rx, ry, rz, ox, oy, oz
 
         elif group_name == "matrixcolor":
-            #can't get properties from matrixcolor
-            return 0., 1., 1., 0., 0.
+
+            matrix_info = get_matrix_info(group)
+            matrix_order = tuple(i[0] for i in matrix_info)
+            matrix_args = tuple(i[1] for i in matrix_info)
+            if matrix_order == (InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix):
+                i = matrix_args[0]
+                c = matrix_args[1]
+                s = matrix_args[2]
+                b = matrix_args[3]
+                h = matrix_args[4]
+            elif matrix_order == (InvertMatrix):
+                i = matrix_args[0]
+                c = 1.
+                s = 1.
+                b = 0.
+                h = 0.
+            elif matrix_order == (ContrastMatrix,):
+                i = 0.
+                c = matrix_args[0]
+                s = 1.
+                b = 0.
+                h = 0.
+            elif matrix_order == (SaturationMatrix,):
+                i = 0.
+                c = 1.
+                s = matrix_args[0]
+                b = 0.
+                h = 0.
+            elif matrix_order == (BrightnessMatrix):
+                i = 0.
+                c = 1.
+                s = 1.
+                b = matrix_args[0]
+                h = 0.
+            elif matrix_order == (HueMatrix, ):
+                i = 0.
+                c = 1.
+                s = 1.
+                b = 0.
+                h = matrix_args[0]
+            else:
+                i = 0.
+                c = 1.
+                s = 1.
+                b = 0.
+                h = 0.
+            return i, c, s, b, h
+
         else:
             return group
 
