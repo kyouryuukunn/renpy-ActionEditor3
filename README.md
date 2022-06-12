@@ -94,10 +94,10 @@ lemma forum
    2. One of above matrixes
  * Unfortunately, The behavior of functions for function property isn't same as ATL.
    There are some different points.
-  1. inherited_<property> have no value.
-  2. Setting properties have no affect when it is called next time.
-  3. The return value from it have no affect.
-  4. It isn't always called in time.
+   1. inherited_<property> have no value.
+   2. Setting properties have no affect when it is called next time.
+   3. The return value from it have no affect.
+   4. It isn't always called in time.
   ActionEditor can't get current function when opened.
 
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
@@ -273,19 +273,18 @@ lemma forum
 
  * focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
  * matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
-  1. OffsetMatrix * RotateMatrix
-  2. OffsetMatrix
-  3. RotateMatrix
+   1. OffsetMatrix * RotateMatrix
+   2. OffsetMatrix
+   3. RotateMatrix
  * matrixcolorプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
-  1. InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
-  2. 上記のマトリックス中の1つ
- * colormatrixプロパティーは現在の値をエディターでは読み込めません。
+   1. InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
+   2. 上記のマトリックス中の1つ
  * function ステートメントに関数を指定できますが、ActionEditorとATL中で関数が同じ動作をしないことに注意してください。
   以下の制限があります。
-  1. inherited_(property) では値を取得できません
-  2. プロパティーを変更しても次のその関数呼び出し時の値には反映されません
-  3. 返り値は機能しません
-  4. 時間どおりの順に呼び出されるとは限りません。
+   1. inherited_(property) では値を取得できません
+   2. プロパティーを変更しても次のその関数呼び出し時の値には反映されません
+   3. 返り値は機能しません
+   4. 時間どおりの順に呼び出されるとは限りません。
   これらの制限のため、プロパティーの値に対するオフセットとして動作させるには癖があり、もっぱらx,yoffsetへの値の代入が主な用途となるでしょう。
   加えて、ActionEditor起動時に現在のfuncitonは読み込めません
  参考リンク
