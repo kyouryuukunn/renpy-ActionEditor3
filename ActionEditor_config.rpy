@@ -93,6 +93,7 @@ init -1600 python in _viewers:
     #These variables are always wide range even if it is float type.
     #浮動小数であっても整数と同じスケールで表示される変数です。
     force_wide_range = ("rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan")
+    force_narrow_range = ("xtile", "ytile")
     #These variables are always plus
     #常に正数になる変数です。
     force_plus = ("additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile")
@@ -265,7 +266,7 @@ init 1600 python in _viewers:
     "matrixanchorY": 0.5, 
     "xoffset": 0, 
     "yoffset": 0, 
-    "rotate": 0,
+    "rotate": 0.,
     "xzoom": 1., 
     "yzoom": 1., 
     "zoom": 1., 

@@ -1393,19 +1393,6 @@ init 1 python in _viewers:
         return Text(_("time: {:>05.2f} s").format(current_time), style="new_action_editor_text", underline=True), 0.01
 
 
-    def is_wide_range(key):
-        if isinstance(key, tuple):
-            _, _, prop = key
-        else:
-            prop = key
-        if is_force_float(prop):
-            return False
-        if prop in force_wide_range:
-            return True
-        value = get_value(key, default=True)
-        return ((value is None and isinstance(get_default(prop), int)) or isinstance(value, int))
-
-
     def out_of_viewport():
         #check if there is out of showing range of viewport
         x, y = renpy.get_mouse_pos()
