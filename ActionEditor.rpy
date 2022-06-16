@@ -129,7 +129,7 @@ init -1598 python in _viewers:
         camera_state_org.append({})
         movie_cache = {}
         props = sle.camera_transform["master"]
-        for p, d in camera_props:
+        for p, _ in camera_props:
             camera_state_org[current_scene][p] = getattr(props, p, None)
         for gn, ps in props_groups.items():
             for p, _ in camera_props:
@@ -171,7 +171,7 @@ init -1598 python in _viewers:
                 state = getattr(d, "state", None)
                 for p in ["xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"]:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
-                for p, default in transform_props:
+                for p, _ in transform_props:
                     if p not in image_state_org[current_scene][layer][tag]:
                         if p == "child":
                             image_state_org[current_scene][layer][tag][p] = (image_name, None)
@@ -340,17 +340,14 @@ init -1598 python in _viewers:
             if isinstance(key, tuple):
                 tag, layer, prop = key
                 state = get_image_state(layer)[tag]
-                props = transform_props
+                camera = False
             else:
                 prop = key
                 state = camera_state_org[current_scene]
-                props = camera_props
-            for p, d in props:
-                if p == prop:
-                    if state[prop] is not None:
-                        v = state[prop]
-                    else:
-                        v = d
+                camera = True
+            v = state[prop]
+            if v is None:
+                v = get_default(prop, camera)
             #もともとNoneでNoneとデフォルトで結果が違うPropertyはリセット時にずれるが、デフォルの値で入力すると考えてキーフレーム設定した方が自然
             set_keyframe(key, v, time=time)
         change_time(time)
