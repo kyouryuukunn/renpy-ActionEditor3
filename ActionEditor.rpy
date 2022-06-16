@@ -7,6 +7,7 @@
 #既知の問題
 #childのみならばparallelなくてよい
 #colormatrix, transformmatrixは十分再現できない
+#warper後の時間が丸められていない場合がある
 
 #課題
 #orientationが採用されたら補間方法に追加する
@@ -129,10 +130,10 @@ init -1598 python in _viewers:
         camera_state_org.append({})
         movie_cache = {}
         props = sle.camera_transform["master"]
-        for p, _ in camera_props:
+        for p in camera_props:
             camera_state_org[current_scene][p] = getattr(props, p, None)
         for gn, ps in props_groups.items():
-            for p, _ in camera_props:
+            for p in camera_props:
                 if p in ps:
                     pvs = getattr(props, gn, None)
                     if pvs is not None:
@@ -171,14 +172,14 @@ init -1598 python in _viewers:
                 state = getattr(d, "state", None)
                 for p in ["xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"]:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
-                for p, _ in transform_props:
+                for p in transform_props:
                     if p not in image_state_org[current_scene][layer][tag]:
                         if p == "child":
                             image_state_org[current_scene][layer][tag][p] = (image_name, None)
                         else:
                             image_state_org[current_scene][layer][tag][p] = getattr(state, p, None)
                 for gn, ps in props_groups.items():
-                    for p, _ in transform_props:
+                    for p in transform_props:
                         if p in ps:
                             pvs = getattr(d, gn, None)
                             if pvs is not None:
@@ -340,14 +341,12 @@ init -1598 python in _viewers:
             if isinstance(key, tuple):
                 tag, layer, prop = key
                 state = get_image_state(layer)[tag]
-                camera = False
             else:
                 prop = key
                 state = camera_state_org[current_scene]
-                camera = True
             v = state[prop]
             if v is None:
-                v = get_default(prop, camera)
+                v = get_default(prop)
             #もともとNoneでNoneとデフォルトで結果が違うPropertyはリセット時にずれるが、デフォルの値で入力すると考えてキーフレーム設定した方が自然
             set_keyframe(key, v, time=time)
         change_time(time)
@@ -359,7 +358,7 @@ init -1598 python in _viewers:
 
 
     def camera_reset():
-        reset([p for p, d in camera_props])
+        reset([p for p in camera_props])
 
 
     def generate_changed(key):
@@ -375,7 +374,7 @@ init -1598 python in _viewers:
             if time < scene_keyframes[current_scene][1]:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
-            default = get_default(prop, not isinstance(key, tuple))
+            default = get_default(prop)
             if not is_force_float(prop) and (prop in force_wide_range
                 or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_value(key, default=True), float) and prop in force_wide_range:
@@ -447,7 +446,7 @@ init -1598 python in _viewers:
             else:
                 org = state[prop]
                 if org is None:
-                    org = get_default(prop, not isinstance(key, tuple))
+                    org = get_default(prop)
                 if prop == "child" and ((current_scene == 0 and tag in image_state[current_scene][layer])
                     or (current_scene != 0 and time > scene_keyframes[current_scene][1])):
                     org = (None, None)
@@ -470,7 +469,7 @@ init -1598 python in _viewers:
                 for i in range(s, -1, -1):
                     if camera_keyframes_exist(i):
                         break
-                for p, d in camera_props:
+                for p in camera_props:
                     middle_value = get_value(p, scene_keyframes[s][1], False, i)
                     if isinstance(middle_value, float):
                         camera_state_org[s][p] = round(middle_value, 3)
@@ -506,7 +505,7 @@ init -1598 python in _viewers:
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
             camera_is_used = False
-            for prop, d in camera_props:
+            for prop in camera_props:
                 if not exclusive_check(prop, s):
                     continue
                 if prop in all_keyframes[s]:
@@ -529,15 +528,15 @@ init -1598 python in _viewers:
                                 if camera_state_org[s].get(prop, None) is not None:
                                     v = camera_state_org[s][prop]
                                 else:
-                                    v = get_default(prop, True)
+                                    v = get_default(prop)
                                 check_points[prop] = [(v, t, None)]
                             else:
                                 group_flag =  True
                         if not group_flag:
                             for prop in ps:
                                 del check_points[prop]
-                loop.append({prop+"_loop": loops[s][prop] for prop, d in camera_props})
-                spline.append({prop+"_spline": splines[s][prop] for prop, d in camera_props})
+                loop.append({prop+"_loop": loops[s][prop] for prop in camera_props})
+                spline.append({prop+"_spline": splines[s][prop] for prop in camera_props})
                 camera_check_points.append(check_points)
 
         image_check_points = []
@@ -548,7 +547,7 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
-                    for prop, d in transform_props:
+                    for prop in transform_props:
                         if not exclusive_check((tag, layer, prop), s):
                             continue
                         if (tag, layer, prop) in all_keyframes[s]:
@@ -566,7 +565,7 @@ init -1598 python in _viewers:
                                 if state[tag].get(prop, None) is not None:
                                     v = state[tag][prop]
                                 else:
-                                    v = get_default(prop, False)
+                                    v = get_default(prop)
                                 check_points[layer][tag][prop] = [(v, t, None)]
                             else:
                                 group_flag = True
@@ -577,8 +576,8 @@ init -1598 python in _viewers:
                         if "blur" in check_points[layer][tag]:
                             del check_points[layer][tag]["blur"]
                         if "focusing" not in check_points[layer][tag]:
-                            check_points[layer][tag]["focusing"] = [(get_default("focusing", False), t, None)]
-                            check_points[layer][tag]["dof"] = [(get_default("dof", False), t, None)]
+                            check_points[layer][tag]["focusing"] = [(get_default("focusing"), t, None)]
+                            check_points[layer][tag]["dof"] = [(get_default("dof"), t, None)]
                     else:
                         for p in ["focusing", "dof"]:
                             if p in check_points[layer][tag]:
@@ -586,7 +585,7 @@ init -1598 python in _viewers:
                         if "blur" not in check_points[layer][tag]:
                             blur = state[tag].get("blur", None)
                             if blur is None:
-                                blur = get_default("blur", False)
+                                blur = get_default("blur")
                             check_points[layer][tag]["blur"] = [(blur, t, None)]
             image_check_points.append(check_points)
 
@@ -676,8 +675,8 @@ init -1598 python in _viewers:
         for layer in image_check_points:
             for tag, zorder in zorder_list[scene_num][layer]:
                 if tag in image_check_points[layer]:
-                    image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop, d in transform_props}
-                    image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop, d in transform_props}
+                    image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop in transform_props}
+                    image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop in transform_props}
                     for p in props_groups["focusing"]:
                         image_loop[p+"_loop"] = loops[scene_num][p]
                         image_spline[p+"_spline"] = splines[scene_num][p]
@@ -731,7 +730,7 @@ init -1598 python in _viewers:
                             g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
                         else:
                             g = 1.
-                        default = get_default(p, camera)
+                        default = get_default(p)
                         if goal[0] is not None or p in boolean_props + any_props:
                             if start[0] is None:
                                 start_v = default
@@ -961,7 +960,7 @@ init -1598 python in _viewers:
                         key2 = (tag, layer, p)
                     if key2 in all_keyframes[scene_num]:
                         return True
-                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p, camera)):
+                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
                         return True
                 for p in other_set:
                     if camera:
@@ -970,7 +969,7 @@ init -1598 python in _viewers:
                         key2 = (tag, layer, p)
                     if key2 in all_keyframes[scene_num]:
                         return False
-                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p, camera)):
+                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
                         return False
                 else:
                     if prop in set1:
@@ -1120,7 +1119,7 @@ init -1598 python in _viewers:
                 added_tag = name.split()[0]
                 image_state[current_scene][layer][added_tag] = {}
                 zorder_list[current_scene][layer].append((added_tag, 0))
-                for p, d in transform_props:
+                for p in transform_props:
                     if p == "child":
                         image_state[current_scene][layer][added_tag][p] = (image_name, None)
                         if current_scene == 0 or current_time > scene_keyframes[current_scene][1]:
@@ -1277,14 +1276,8 @@ init -1598 python in _viewers:
         zorder_list[current_scene][layer] = [(ztag, z) for (ztag, z) in zorder_list[current_scene][layer] if ztag != tag]
 
 
-    def get_default(prop, camera=False):
-        if camera:
-            props = camera_props
-        else:
-            props = transform_props
-        for p, d in props:
-            if p == prop:
-                return d
+    def get_default(prop):
+        return property_default_value[prop]
 
 
     def get_value(key, time=None, default=False, scene_num=None):
@@ -1298,11 +1291,9 @@ init -1598 python in _viewers:
         if isinstance(key, tuple):
             tag, layer, prop = key
             state = get_image_state(layer)[tag]
-            camera = False
         else:
             prop = key
             state = camera_state_org[scene_num]
-            camera = True
         if key not in all_keyframes[scene_num]:
             v = state[prop]
             if v is not None or prop in boolean_props + any_props:
@@ -1311,7 +1302,7 @@ init -1598 python in _viewers:
                 else:
                     return v
             elif default:
-                return get_default(prop, camera)
+                return get_default(prop)
             else:
                 return None
 
@@ -1344,7 +1335,7 @@ init -1598 python in _viewers:
                     g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
                 else:
                     g = 1.
-                default_vault = get_default(prop, not isinstance(key, tuple))
+                default_vault = get_default(prop)
                 if goal[0] is not None or prop in boolean_props + any_props:
                     if start[0] is None:
                         start_v = default_vault
@@ -1384,7 +1375,7 @@ init -1598 python in _viewers:
                 camera_keyframes[k] = [(value, 0, None)]
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
-        for p, d in camera_props:
+        for p in camera_props:
             for gn, ps in props_groups.items():
                 if p in ps:
                     if gn not in camera_properties:
@@ -1434,7 +1425,7 @@ camera"""
         if check_focusing_used() and "blur" in image_keyframes:
             del image_keyframes["blur"]
         image_properties = []
-        for p, d in transform_props:
+        for p in transform_props:
             for gn, ps in props_groups.items():
                 if p in ps:
                     if gn not in image_properties:
@@ -1662,7 +1653,7 @@ show %s""" % child
         for i in range(current_scene-1, -1, -1):
             if camera_keyframes_exist(i):
                 break
-        for p, d in camera_props:
+        for p in camera_props:
             middle_value = get_value(p, scene_keyframes[current_scene][1], False, i)
             if isinstance(middle_value, float):
                 camera_state_org[current_scene][p] = round(middle_value, 3)
@@ -1676,7 +1667,7 @@ show %s""" % child
 
 
     def camera_keyframes_exist(scene_num):
-        for p, d in camera_props:
+        for p in camera_props:
             if p in all_keyframes[scene_num]:
                 break
         else:
@@ -1702,7 +1693,7 @@ show %s""" % child
             for i in range(s, -1, -1):
                 if camera_keyframes_exist(i):
                     break
-            for p, d in camera_props:
+            for p in camera_props:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
                     camera_state_org[s][p] = round(middle_value, 3)
@@ -1764,7 +1755,7 @@ show %s""" % child
             for i in range(s, -1, -1):
                 if camera_keyframes_exist(i):
                     break
-            for p, d in camera_props:
+            for p in camera_props:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
                     camera_state_org[s][p] = round(middle_value, 3)
@@ -2400,7 +2391,7 @@ show %s""" % child
                             formated_v.append(c)
                     camera_keyframes[k] = formated_v
             camera_properties = []
-            for p, d in camera_props:
+            for p in camera_props:
                 for gn, ps in props_groups.items():
                     if p in ps:
                         if gn not in camera_properties:
@@ -2493,7 +2484,7 @@ show %s""" % child
                     if check_focusing_used(s) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
-                    for p, d in transform_props:
+                    for p in transform_props:
                         for gn, ps in props_groups.items():
                             if p in ps:
                                 if gn not in image_properties:
@@ -2666,7 +2657,7 @@ show %s""" % child
                     break
             last_camera_scene = i
             camera_keyframes = {k:v for k, v in all_keyframes[last_camera_scene].items() if not isinstance(k, tuple)}
-            for p, d in camera_props:
+            for p in camera_props:
                 if p not in camera_keyframes:
                     if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
                         camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]

@@ -6,6 +6,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
     $generate_changed = _viewers.generate_changed
     $get_value = _viewers.get_value
+    $get_default = _viewers.get_default
     $current_scene = _viewers.current_scene
     $scene_keyframes = _viewers.scene_keyframes
     $sound_keyframes = _viewers.sound_keyframes
@@ -164,11 +165,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                 $key = in_graphic_mode[0]
                 if isinstance(key, tuple):
                     $p = key[2]
-                    $d = _viewers.get_default(p)
                     $tag=(key[0], key[1])
                 else:
                     $p = key
-                    $d = _viewers.get_default(p, True)
                     $tag = "camera"
                 $value = get_value(key, default=True)
                 $f = generate_changed(key)
@@ -250,11 +249,10 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             fixed:
                                                 add TimeLine(s, "camera", props_set=props_set)
                                         for p in props_set:
-                                            if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
+                                            if p in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                                 (persistent._viewer_focusing and perspective_enabled(s))):
                                                 $key = p
                                                 $value = get_value(p, default=True)
-                                                $d = _viewers.get_default(p, True)
                                                 $f = generate_changed(p)
                                                 $use_wide_range = is_wide_range(key)
                                                 if not use_wide_range or isinstance(value, float):
@@ -385,14 +383,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 fixed:
                                                     add TimeLine(s, (tag, layer), props_set=props_set)
                                             for p in props_set:
-                                                if (p, _viewers.get_default(p)) in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                                if p in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                     and perspective_enabled(s)) and p != "blur")
                                                     or (not persistent._viewer_focusing or not perspective_enabled(s)))):
                                                     $key = (tag, layer, p)
-                                                    $d = _viewers.get_default(p)
                                                     $value = get_value(key, default=True)
                                                     $f = generate_changed(key)
-                                                    $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                                    $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
                                                     if not use_wide_range or isinstance(value, float):
                                                         $value_format = float_format
                                                     else:
@@ -629,6 +626,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $float_format = "{:> .2f}"
     $generate_changed = _viewers.generate_changed
     $get_value = _viewers.get_value
+    $get_default = _viewers.get_default
     $current_scene = _viewers.current_scene
     $scene_keyframes = _viewers.scene_keyframes
     $all_keyframes = _viewers.all_keyframes
@@ -765,12 +763,12 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p, d in _viewers.camera_props:
+                    for p in _viewers.camera_props:
                         if p in props_set and (p not in props_groups["focusing"] or 
                             (persistent._viewer_focusing and perspective_enabled())):
                             $value = get_value(p, default=True)
                             $f = generate_changed(p)
-                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
@@ -825,14 +823,14 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p, d in _viewers.transform_props:
+                    for p in _viewers.transform_props:
                         if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
                             and perspective_enabled()) and p != "blur") 
                             or (not persistent._viewer_focusing or not perspective_enabled()))):
                             $key = (tab, layer, p)
                             $value = get_value(key, default=True)
                             $f = generate_changed(key)
-                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
@@ -1399,12 +1397,10 @@ init 1 python in _viewers:
     def is_wide_range(key):
         if isinstance(key, tuple):
             _, _, prop = key
-            d = get_default(prop)
         else:
             prop = key
-            d = get_default(prop, True)
         value = get_value(key, default=True)
-        return not is_force_float(prop) and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+        return not is_force_float(prop) and (prop in force_wide_range or ((value is None and isinstance(get_default(prop), int)) or isinstance(value, int)))
 
 
     def out_of_viewport():
@@ -1599,7 +1595,7 @@ init 1 python in _viewers:
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
             elif self.tag == "camera" and self.props_set is None and self.key is None:
-                for p, d in camera_props:
+                for p in camera_props:
                     _all_keyframes = all_keyframes[self.scene]
                     if (p not in props_groups["focusing"] or
                         (persistent._viewer_focusing and perspective_enabled(self.scene))):
@@ -1656,7 +1652,7 @@ init 1 python in _viewers:
             elif isinstance(self.tag, tuple) and self.props_set is None and self.key is None:
                 tag, layer = self.tag
                 _all_keyframes = all_keyframes[self.scene]
-                for p, d in transform_props:
+                for p in transform_props:
                     for _, t, _ in _all_keyframes.get((tag, layer, p), []):
                         child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
                             clicked=Function(change_time, t))
@@ -2894,7 +2890,7 @@ init 1 python in _viewers:
             if "xpos" in state:
                 xpos_org = state["xpos"]
             else:
-                xpos_org = get_default("xpos", True)
+                xpos_org = get_default("xpos")
             x /= preview_size
             if isinstance(xpos_org, int):
                 x = int(x)
@@ -2905,7 +2901,7 @@ init 1 python in _viewers:
             if "ypos" in state:
                 ypos_org = state["ypos"]
             else:
-                ypos_org = get_default("ypos", True)
+                ypos_org = get_default("ypos")
             y /= preview_size
             if isinstance(ypos_org, int):
                 y = int(y)
