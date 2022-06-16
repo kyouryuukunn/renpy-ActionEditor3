@@ -5,7 +5,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $float_format = "{:> .2f}"
 
     $generate_changed = _viewers.generate_changed
-    $get_property = _viewers.get_property
     $get_value = _viewers.get_value
     $current_scene = _viewers.current_scene
     $scene_keyframes = _viewers.scene_keyframes
@@ -171,7 +170,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     $p = key
                     $d = _viewers.get_default(p, True)
                     $tag = "camera"
-                $value = get_property(key)
+                $value = get_value(key, default=True)
                 $f = generate_changed(key)
                 $use_wide_range = is_wide_range(key)
                 if not use_wide_range or isinstance(value, float):
@@ -254,7 +253,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             if (p, _viewers.get_default(p, True)) in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
                                                 (persistent._viewer_focusing and perspective_enabled(s))):
                                                 $key = p
-                                                $value = get_property(p)
+                                                $value = get_value(p, default=True)
                                                 $d = _viewers.get_default(p, True)
                                                 $f = generate_changed(p)
                                                 $use_wide_range = is_wide_range(key)
@@ -391,7 +390,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     or (not persistent._viewer_focusing or not perspective_enabled(s)))):
                                                     $key = (tag, layer, p)
                                                     $d = _viewers.get_default(p)
-                                                    $value = get_property(key)
+                                                    $value = get_value(key, default=True)
                                                     $f = generate_changed(key)
                                                     $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                                                     if not use_wide_range or isinstance(value, float):
@@ -629,7 +628,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $int_format = "{:> }" 
     $float_format = "{:> .2f}"
     $generate_changed = _viewers.generate_changed
-    $get_property = _viewers.get_property
     $get_value = _viewers.get_value
     $current_scene = _viewers.current_scene
     $scene_keyframes = _viewers.scene_keyframes
@@ -770,7 +768,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                     for p, d in _viewers.camera_props:
                         if p in props_set and (p not in props_groups["focusing"] or 
                             (persistent._viewer_focusing and perspective_enabled())):
-                            $value = get_property(p)
+                            $value = get_value(p, default=True)
                             $f = generate_changed(p)
                             $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                             if use_wide_range:
@@ -832,7 +830,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             and perspective_enabled()) and p != "blur") 
                             or (not persistent._viewer_focusing or not perspective_enabled()))):
                             $key = (tab, layer, p)
-                            $value = get_property(key)
+                            $value = get_value(key, default=True)
                             $f = generate_changed(key)
                             $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                             if use_wide_range:
@@ -1405,7 +1403,7 @@ init 1 python in _viewers:
         else:
             prop = key
             d = get_default(prop, True)
-        value = get_property(key)
+        value = get_value(key, default=True)
         return not is_force_float(prop) and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
 
 
@@ -1469,7 +1467,7 @@ init 1 python in _viewers:
 
 
         def render(self, width, height, st, at):
-            value = get_property(self.key)
+            value = get_value(self.key, default=True)
             if self.hovered:
                 kwargs = self.hover_kwargs
             else:
@@ -1508,7 +1506,7 @@ init 1 python in _viewers:
                         self.speed = self.NORMAL
                     self.clicking = True
                     self.last_x = x
-                    self.value = get_property(self.key)
+                    self.value = get_value(self.key, default=True)
                     raise renpy.display.core.IgnoreEvent()
                 elif not self.dragging and renpy.map_event(ev, "mouseup_1"):
                     if self.clicking == True:
@@ -3004,9 +3002,9 @@ init 1 python in _viewers:
             else:
                 self.y_range = persistent._narrow_range
 
-            self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
+            self.x = (0.5 + get_value("offsetX", default=True)/(2.*self.x_range))*config.screen_width
             self.cx =  self.x
-            self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
+            self.y = (0.5 + get_value("offsetY", default=True)/(2.*self.y_range))*config.screen_height
             self.cy =  self.y
 
 
@@ -3032,9 +3030,9 @@ init 1 python in _viewers:
             elif renpy.map_event(ev, "mouseup_1"):
                 self.dragging = False
 
-            if get_property("offsetX") != int(self.cx) or get_property("offsetY") != int(self.cy):
-                self.x = (0.5 + get_property("offsetX")/(2.*self.x_range))*config.screen_width
-                self.y = (0.5 + get_property("offsetY")/(2.*self.y_range))*config.screen_height
+            if get_value("offsetX", default=True) != int(self.cx) or get_value("offsetY", default=True) != int(self.cy):
+                self.x = (0.5 + get_value("offsetX", default=True)/(2.*self.x_range))*config.screen_width
+                self.y = (0.5 + get_value("offsetY", default=True)/(2.*self.y_range))*config.screen_height
                 renpy.redraw(self, 0)
 
             if self.dragging:
@@ -3045,7 +3043,7 @@ init 1 python in _viewers:
                         self.cx = int(self.cx)
                     if self.int_y:
                         self.cy = int(self.cy)
-                    if self.cx != get_property("offsetX") or self.cy != get_property("offsetY"):
+                    if self.cx != get_value("offsetX", default=True) or self.cy != get_value("offsetY", default=True):
                         generate_changed("offsetX")(self.cx)
                         generate_changed("offsetY")(self.cy)
                     self.x, self.y = x, y

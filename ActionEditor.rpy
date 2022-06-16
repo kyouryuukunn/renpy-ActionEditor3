@@ -378,7 +378,7 @@ init -1598 python in _viewers:
             default = get_default(prop, not isinstance(key, tuple))
             if not is_force_float(prop) and (prop in force_wide_range
                 or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
-                if isinstance(get_property(key), float) and prop in force_wide_range:
+                if isinstance(get_value(key, default=True), float) and prop in force_wide_range:
                     if prop in force_plus:
                         v = float(v)
                     else:
@@ -464,7 +464,7 @@ init -1598 python in _viewers:
                         key2 = (tag, layer, p)
                     else:
                         key2 = p
-                    set_keyframe(key2, get_property(key2), True, time=time)
+                    set_keyframe(key2, get_value(key2, default=True), True, time=time)
         if not recursion:
             for s in range(current_scene+1, len(scene_keyframes)):
                 for i in range(s, -1, -1):
@@ -514,7 +514,7 @@ init -1598 python in _viewers:
                     camera_is_used = True
                 else:
                     if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
-                        check_points[prop] = [(get_property(prop, True, scene_num=s), t, None)]
+                        check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
             if not camera_is_used and s > 0:
                 loop.append(loop[s-1])
                 spline.append(spline[s-1])
@@ -557,7 +557,7 @@ init -1598 python in _viewers:
                             check_points[layer][tag][prop] = camera_check_points[s][prop]
                         else:
                             if prop not in not_used_by_default or state[tag][prop] is not None:
-                                check_points[layer][tag][prop] = [(get_property((tag, layer, prop), True, scene_num=s), t, None)]
+                                check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
                     #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
                     for gn, ps in props_groups.items():
                         group_flag = False
@@ -766,7 +766,7 @@ init -1598 python in _viewers:
                                                 image_zpos += tran.matrixtransform.zdw
                                             camera_zpos = 0
                                             if in_editor:
-                                                camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
+                                                camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
                                             else:
                                                 if "master" in sle.camera_transform:
                                                     props = sle.camera_transform["master"]
@@ -801,7 +801,7 @@ init -1598 python in _viewers:
                                     image_zpos += tran.matrixtransform.zdw
                                 camera_zpos = 0
                                 if in_editor:
-                                    camera_zpos = get_property("zpos", True, scene_num=scene_num) - get_property("offsetZ", scene_num=scene_num)
+                                    camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
                                 else:
                                     if "master" in sle.camera_transform:
                                         props = sle.camera_transform["master"]
@@ -981,32 +981,6 @@ init -1598 python in _viewers:
             return True
 
 
-    def get_property(key, default=True, scene_num=None):
-        if scene_num is None:
-            scene_num = current_scene
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            if prop in props_groups["focusing"]:
-                key = prop
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            state = get_image_state(layer, scene_num)[tag]
-        else:
-            prop = key
-            state = camera_state_org[scene_num]
-        if key in all_keyframes[scene_num]:
-            return get_value(key, scene_num=scene_num)
-        elif (prop in state and state[prop] is not None) or (prop in boolean_props + any_props):
-            if prop == "child":
-                return state[prop][0], None
-            else:
-                return state[prop]
-        elif default:
-            return get_default(prop, not isinstance(key, tuple))
-        else:
-            return None
-
-
     def edit_value(function, default, use_wide_range=False, force_plus=False, time=None):
         v = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=default)
         if v:
@@ -1069,7 +1043,7 @@ init -1598 python in _viewers:
                         (n, tran), t, w = cs[i]
                         break
             else:
-                n = get_property((tag, layer, "child"))[0]
+                n = get_value((tag, layer, "child"), default=True)[0]
             if v == "None":
                 v = None
             else:
@@ -1316,30 +1290,31 @@ init -1598 python in _viewers:
     def get_value(key, time=None, default=False, scene_num=None):
         if scene_num is None:
             scene_num = current_scene
+
         if isinstance(key, tuple):
             tag, layer, prop = key
             if prop in props_groups["focusing"]:
                 key = prop
         if isinstance(key, tuple):
             tag, layer, prop = key
-            if key not in all_keyframes[scene_num]:
-                v = get_image_state(layer)[tag][prop]
-                if v is not None:
-                    return v
-                elif default:
-                    return get_default(prop)
-                else:
-                    return None
+            state = get_image_state(layer)[tag]
+            camera = False
         else:
             prop = key
-            if key not in all_keyframes[scene_num]:
-                v = camera_state_org[scene_num][prop]
-                if v is not None:
-                    return v
-                elif default:
-                    return get_default(prop, True)
+            state = camera_state_org[scene_num]
+            camera = True
+        if key not in all_keyframes[scene_num]:
+            v = state[prop]
+            if v is not None or prop in boolean_props + any_props:
+                if prop == "child":
+                    return v[0], None
                 else:
-                    return None
+                    return v
+            elif default:
+                return get_default(prop, camera)
+            else:
+                return None
+
         cs = all_keyframes[scene_num][key]
 
         if time is None:
