@@ -378,15 +378,15 @@ init -1598 python in _viewers:
             if not is_force_float(prop) and (prop in force_wide_range
                 or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_value(key, default=True), float) and prop in force_wide_range:
-                    if prop in force_plus:
+                    if is_force_plus(prop):
                         v = float(v)
                     else:
                         v -= float(persistent._wide_range)
                 else:
-                    if prop not in force_plus:
+                    if not is_force_plus(prop):
                         v -= persistent._wide_range
             else:
-                if prop in force_plus:
+                if is_force_plus(prop):
                     v = round(float(v), 2)
                 else:
                     v = round(v -persistent._narrow_range, 2)

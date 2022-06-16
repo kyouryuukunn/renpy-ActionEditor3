@@ -1400,8 +1400,12 @@ init 1 python in _viewers:
             _, _, prop = key
         else:
             prop = key
+        if is_force_float(prop):
+            return False
+        if prop in force_wide_range:
+            return True
         value = get_value(key, default=True)
-        return not is_force_float(prop) and (prop in force_wide_range or ((value is None and isinstance(get_default(prop), int)) or isinstance(value, int)))
+        return ((value is None and isinstance(get_default(prop), int)) or isinstance(value, int))
 
 
     def out_of_viewport():
