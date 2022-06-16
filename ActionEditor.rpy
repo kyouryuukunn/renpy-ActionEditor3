@@ -132,10 +132,13 @@ init -1598 python in _viewers:
         for p, d in camera_props:
             camera_state_org[current_scene][p] = getattr(props, p, None)
         for gn, ps in props_groups.items():
-            p2 = get_group_property(gn, getattr(props, gn, None))
-            if p2 is not None:
-                for p, v in zip(ps, p2):
-                    camera_state_org[current_scene][p] = v
+            for p, _ in camera_props:
+                if p in ps:
+                    pvs = getattr(props, gn, None)
+                    if pvs is not None:
+                        for gp, v in zip(ps, pvs):
+                            camera_state_org[current_scene][gp] = v
+                    break
 
         for layer in config.layers:
             image_state_org[current_scene][layer] = {}
@@ -175,10 +178,13 @@ init -1598 python in _viewers:
                         else:
                             image_state_org[current_scene][layer][tag][p] = getattr(state, p, None)
                 for gn, ps in props_groups.items():
-                    p2 = get_group_property(gn, getattr(d, gn, None))
-                    if p2 is not None:
-                        for p, v in zip(ps, p2):
-                            image_state_org[current_scene][layer][tag][p] = v
+                    for p, _ in transform_props:
+                        if p in ps:
+                            pvs = getattr(d, gn, None)
+                            if pvs is not None:
+                                for gp, v in zip(ps, pvs):
+                                    image_state_org[current_scene][layer][tag][gp] = v
+                            break
 
         # init camera, layer and images
         renpy.scene()
