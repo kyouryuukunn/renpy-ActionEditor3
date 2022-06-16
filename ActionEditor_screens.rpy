@@ -36,33 +36,45 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
     $indent = "  "
 
-    $offsetX, offsetY = get_property("offsetX"), get_property("offsetY")
-    $value_range = persistent._wide_range
-    $move_amount1 = 100
-    $move_amount2 = 300
+    $xpos, ypos = get_value("xpos", default=True), get_value("ypos", default=True)
+    $xmove_amount1 = 0.1
+    $ymove_amount1 = 0.1
+    $xmove_amount2 = 0.3
+    $ymove_amount2 = 0.3
+    $xvalue_range = yvalue_range = persistent._wide_range
+    if isinstance(xpos, int):
+        $xmove_amount1 = int(xmove_amount1*config.screen_width)
+        $xmove_amount2 = int(xmove_amount2*config.screen_width)
+    else:
+        $xvalue_range = persistent._narrow_range
+    if isinstance(ypos, int):
+        $ymove_amount1 = int(ymove_amount1*config.screen_height)
+        $ymove_amount2 = int(ymove_amount2*config.screen_height)
+    else:
+        $yvalue_range = persistent._narrow_range
     key "hide_windows" action NullAction()
     if get_value("perspective", scene_keyframes[0][1], True) is not False:
         if _viewers.fps_keymap:
-            key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
-            key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
-            key "a" action Function(generate_changed("offsetX"), offsetX - move_amount1 + value_range)
-            key "d" action Function(generate_changed("offsetX"), offsetX + move_amount1 + value_range)
-            key "S" action Function(generate_changed("offsetY"), offsetY + move_amount2 + value_range)
-            key "W" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
-            key "A" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
-            key "D" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+            key "s" action Function(generate_changed("ypos"), ypos + ymove_amount1 + yvalue_range)
+            key "w" action Function(generate_changed("ypos"), ypos - ymove_amount1 + yvalue_range)
+            key "a" action Function(generate_changed("xpos"), xpos - xmove_amount1 + xvalue_range)
+            key "d" action Function(generate_changed("xpos"), xpos + xmove_amount1 + xvalue_range)
+            key "S" action Function(generate_changed("ypos"), ypos + ymove_amount2 + yvalue_range)
+            key "W" action Function(generate_changed("ypos"), ypos - ymove_amount2 + yvalue_range)
+            key "A" action Function(generate_changed("xpos"), xpos - xmove_amount2 + xvalue_range)
+            key "D" action Function(generate_changed("xpos"), xpos + xmove_amount2 + xvalue_range)
         else:
-            key "j" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
-            key "k" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
-            key "h" action Function(generate_changed("offsetX"), offsetX - move_amount1 + value_range)
-            key "l" action Function(generate_changed("offsetX"), offsetX + move_amount1 + value_range)
-            key "J" action Function(generate_changed("offsetY"), offsetY + move_amount2 + value_range)
-            key "K" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
-            key "H" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
-            key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+            key "j" action Function(generate_changed("ypos"), ypos + ymove_amount1 + yvalue_range)
+            key "k" action Function(generate_changed("ypos"), ypos - ymove_amount1 + yvalue_range)
+            key "h" action Function(generate_changed("xpos"), xpos - xmove_amount1 + xvalue_range)
+            key "l" action Function(generate_changed("xpos"), xpos + xmove_amount1 + xvalue_range)
+            key "J" action Function(generate_changed("ypos"), ypos + ymove_amount2 + yvalue_range)
+            key "K" action Function(generate_changed("ypos"), ypos - ymove_amount2 + yvalue_range)
+            key "H" action Function(generate_changed("xpos"), xpos - xmove_amount2 + xvalue_range)
+            key "L" action Function(generate_changed("xpos"), xpos + xmove_amount2 + xvalue_range)
     if perspective_enabled():
-        key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
-        key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
+        key "rollback"    action Function(generate_changed("zpos"), get_value("zpos", default=True)+100+persistent._wide_range)
+        key "rollforward" action Function(generate_changed("zpos"), get_value("zpos", default=True)-100+persistent._wide_range)
 
     if time:
         timer time+_viewers.return_margin action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode), \
@@ -641,32 +653,45 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
 
-    $offsetX, offsetY = get_property("offsetX"), get_property("offsetY")
-    $value_range = persistent._wide_range
-    $move_amount1 = 100
-    $move_amount2 = 300
+    $xpos, ypos = get_value("xpos", default=True), get_value("ypos", default=True)
+    $xmove_amount1 = 0.1
+    $ymove_amount1 = 0.1
+    $xmove_amount2 = 0.3
+    $ymove_amount2 = 0.3
+    $xvalue_range = yvalue_range = persistent._wide_range
+    if isinstance(xpos, int):
+        $xmove_amount1 = int(xmove_amount1*config.screen_width)
+        $xmove_amount2 = int(xmove_amount2*config.screen_width)
+    else:
+        $xvalue_range = persistent._narrow_range
+    if isinstance(ypos, int):
+        $ymove_amount1 = int(ymove_amount1*config.screen_height)
+        $ymove_amount2 = int(ymove_amount2*config.screen_height)
+    else:
+        $yvalue_range = persistent._narrow_range
+    key "hide_windows" action NullAction()
     if get_value("perspective", scene_keyframes[0][1], True) is not False:
         if _viewers.fps_keymap:
-            key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
-            key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
-            key "a" action Function(generate_changed("offsetX"), offsetX - move_amount1 + value_range)
-            key "d" action Function(generate_changed("offsetX"), offsetX + move_amount1 + value_range)
-            key "S" action Function(generate_changed("offsetY"), offsetY + move_amount2 + value_range)
-            key "W" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
-            key "A" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
-            key "D" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+            key "s" action Function(generate_changed("ypos"), ypos + ymove_amount1 + yvalue_range)
+            key "w" action Function(generate_changed("ypos"), ypos - ymove_amount1 + yvalue_range)
+            key "a" action Function(generate_changed("xpos"), xpos - xmove_amount1 + xvalue_range)
+            key "d" action Function(generate_changed("xpos"), xpos + xmove_amount1 + xvalue_range)
+            key "S" action Function(generate_changed("ypos"), ypos + ymove_amount2 + yvalue_range)
+            key "W" action Function(generate_changed("ypos"), ypos - ymove_amount2 + yvalue_range)
+            key "A" action Function(generate_changed("xpos"), xpos - xmove_amount2 + xvalue_range)
+            key "D" action Function(generate_changed("xpos"), xpos + xmove_amount2 + xvalue_range)
         else:
-            key "j" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
-            key "k" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
-            key "h" action Function(generate_changed("offsetX"), offsetX - move_amount1 + value_range)
-            key "l" action Function(generate_changed("offsetX"), offsetX + move_amount1 + value_range)
-            key "J" action Function(generate_changed("offsetY"), offsetY + move_amount2 + value_range)
-            key "K" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
-            key "H" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
-            key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+            key "j" action Function(generate_changed("ypos"), ypos + ymove_amount1 + yvalue_range)
+            key "k" action Function(generate_changed("ypos"), ypos - ymove_amount1 + yvalue_range)
+            key "h" action Function(generate_changed("xpos"), xpos - xmove_amount1 + xvalue_range)
+            key "l" action Function(generate_changed("xpos"), xpos + xmove_amount1 + xvalue_range)
+            key "J" action Function(generate_changed("ypos"), ypos + ymove_amount2 + yvalue_range)
+            key "K" action Function(generate_changed("ypos"), ypos - ymove_amount2 + yvalue_range)
+            key "H" action Function(generate_changed("xpos"), xpos - xmove_amount2 + xvalue_range)
+            key "L" action Function(generate_changed("xpos"), xpos + xmove_amount2 + xvalue_range)
     if perspective_enabled():
-        key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
-        key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
+        key "rollback"    action Function(generate_changed("zpos"), get_value("zpos", default=True)+100+persistent._wide_range)
+        key "rollforward" action Function(generate_changed("zpos"), get_value("zpos", default=True)-100+persistent._wide_range)
 
     if time:
         timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), \
