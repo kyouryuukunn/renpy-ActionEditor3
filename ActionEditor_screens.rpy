@@ -17,7 +17,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
     $is_force_plus = _viewers.is_force_plus
-    $is_force_float = _viewers.is_force_float
     $force_wide_range = _viewers.force_wide_range
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
@@ -637,7 +636,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
     $is_force_plus = _viewers.is_force_plus
-    $is_force_float = _viewers.is_force_float
     $force_wide_range = _viewers.force_wide_range
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
