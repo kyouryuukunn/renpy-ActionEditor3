@@ -312,6 +312,22 @@ init -1598 python in _viewers:
             return group
 
 
+    def is_force_float(prop):
+        if prop is None:
+            return False
+        # if is_matrix_paras(prop):
+        #     prop = prop[:-1]
+        return prop in force_float
+
+
+    def is_force_plus(prop):
+        if prop is None:
+            return False
+        # if is_matrix_paras(prop):
+        #     prop = prop[:-1]
+        return prop in force_plus
+
+
     def reset(key_list, time=None):
         if time is None:
             time = current_time
@@ -363,7 +379,7 @@ init -1598 python in _viewers:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
             default = get_default(prop, not isinstance(key, tuple))
-            if prop not in force_float and (prop in force_wide_range
+            if not is_force_float(prop) and (prop in force_wide_range
                 or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
                 if isinstance(get_property(key), float) and prop in force_wide_range:
                     if prop in force_plus:
@@ -735,7 +751,7 @@ init -1598 python in _viewers:
                                 v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[p])
                             else:
                                 v = g*(goal[0]-start_v)+start_v
-                            if isinstance(goal[0], int) and p not in force_float:
+                            if isinstance(goal[0], int) and not is_force_float(p):
                                 v = int(v)
                             for gn, ps in props_groups.items():
                                 if p in ps:
@@ -1373,7 +1389,7 @@ init -1598 python in _viewers:
                         v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[prop])
                     else:
                         v = g*(goal[0]-start_v)+start_v
-                    if isinstance(goal[0], int) and prop not in force_float:
+                    if isinstance(goal[0], int) and not is_force_float(prop):
                         v = int(v)
                     return v
                 break

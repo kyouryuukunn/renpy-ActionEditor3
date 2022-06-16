@@ -16,8 +16,8 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $current_time = _viewers.current_time
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
-    $force_plus = _viewers.force_plus
-    $force_float = _viewers.force_float
+    $is_force_plus = _viewers.is_force_plus
+    $is_force_float = _viewers.is_force_float
     $force_wide_range = _viewers.force_wide_range
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
@@ -170,7 +170,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     hbox:
                         style_group "new_action_editor_c"
                         textbutton "  [key]" action None text_color "#FFF"
-                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                             text_size=16, text_color="#CCC", text_hover_underline=True)
                     fixed:
                         # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
@@ -296,7 +296,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]" action None text_color "#FFF"
-                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
                                                     if p not in _viewers.boolean_props+["function", "perspective"]:
@@ -380,7 +380,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $d = _viewers.get_default(p)
                                                     $value = get_property(key)
                                                     $f = generate_changed(key)
-                                                    $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                                                    $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                                                     if not use_wide_range or isinstance(value, float):
                                                         $value_format = float_format
                                                     else:
@@ -442,7 +442,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
-                                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, p in force_plus,
+                                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
                                                         if p not in _viewers.boolean_props+["function", "perspective"]:
                                                             fixed:
@@ -626,8 +626,8 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $current_time = _viewers.current_time
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
-    $force_plus = _viewers.force_plus
-    $force_float = _viewers.force_float
+    $is_force_plus = _viewers.is_force_plus
+    $is_force_float = _viewers.is_force_float
     $force_wide_range = _viewers.force_wide_range
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
@@ -746,7 +746,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             (persistent._viewer_focusing and perspective_enabled())):
                             $value = get_property(p)
                             $f = generate_changed(p)
-                            $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
@@ -783,13 +783,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
                                         Function(_viewers.toggle_boolean_property, p)]
                                 else:
-                                    if p in force_plus:
+                                    if is_force_plus(p):
                                         $bar_value = value
                                     else:
                                         $bar_value = value + value_range
                                         $value_range = value_range*2
                                     textbutton value_format.format(value):
-                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                         alternate Function(reset, p) style_group "action_editor_b"
                                     bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                         xalign 1. yalign .5 style "action_editor_bar"
@@ -808,7 +808,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             $key = (tab, layer, p)
                             $value = get_property(key)
                             $f = generate_changed(key)
-                            $use_wide_range = p not in force_float and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
@@ -853,13 +853,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                         action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
                                         Function(_viewers.toggle_boolean_property, key)]
                                 else:
-                                    if p in force_plus:
+                                    if is_force_plus(p):
                                         $bar_value = value
                                     else:
                                         $bar_value = value + value_range
                                         $value_range = value_range*2
                                     textbutton value_format.format(value):
-                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=p in force_plus)
+                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                         alternate Function(reset, key) style_group "action_editor_b"
                                     bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                         xalign 1. yalign .5 style "action_editor_bar"
@@ -1093,7 +1093,7 @@ screen _edit_keyframe(key, change_func=None, use_wide_range=False):
                         if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
                             textbutton _("spline") action None
                         textbutton _("{}".format(v)) action [\
-                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
+                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
                             Function(_viewers.change_time, t)]
                     textbutton _("[t:>05.2f] s") action None
             else:
@@ -1110,9 +1110,9 @@ screen _edit_keyframe(key, change_func=None, use_wide_range=False):
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
                                     key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
-                                    use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t)]
+                                    use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t)]
                         textbutton _("{}".format(v)) action [\
-                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in _viewers.force_plus, time=t), \
+                            Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
                             Function(_viewers.change_time, t)]
                     textbutton _("[t:>05.2f] s") action Function(_viewers.edit_move_keyframe, keys=k_list, old=t)
                     bar adjustment ui.adjustment(range=persistent._time_range, value=t, changed=renpy.curry(_viewers.move_keyframe)(old=t, keys=k_list)):
@@ -1336,9 +1336,9 @@ init 1 python in _viewers:
             time = goal
         if in_graphic_mode:
             use_wide_range = is_wide_range(key)
-            value = pos_to_value(y, use_wide_range, p in force_plus)
+            value = pos_to_value(y, use_wide_range, is_force_plus(p))
             vchanged = generate_changed(key)
-            vchanged(to_changed_value(value, p in force_plus, use_wide_range), time)
+            vchanged(to_changed_value(value, is_force_plus(p), use_wide_range), time)
         return time
 
 
@@ -1380,7 +1380,7 @@ init 1 python in _viewers:
             prop = key
             d = get_default(prop, True)
         value = get_property(key)
-        return prop not in force_float and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
+        return not is_force_float(prop) and (prop in force_wide_range or ((value is None and isinstance(d, int)) or isinstance(value, int)))
 
 
     def out_of_viewport():
@@ -1602,7 +1602,6 @@ init 1 python in _viewers:
                     new_children.append(child)
             elif self.tag == "camera" and self.key is not None and self.graphic_mode:
                 last_v, last_t = None, None
-                is_force_plus = self.key in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
                     v, t, w = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
@@ -1618,7 +1617,7 @@ init 1 python in _viewers:
                         t_diff = (t - last_t)
                         for t2 in range(1, self.mark_num):
                             xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
-                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus(self.key))
                             box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
                         if w.startswith("warper_generator"):
                             warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
@@ -1658,7 +1657,6 @@ init 1 python in _viewers:
                     new_children.append(child)
             elif isinstance(self.tag, tuple) and self.key is not None and self.graphic_mode:
                 last_v, last_t = None, None
-                is_force_plus = self.key[2] in force_plus
                 for c in all_keyframes[self.scene].get(self.key, []):
                     v, t, w = c
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
@@ -1674,7 +1672,7 @@ init 1 python in _viewers:
                         t_diff = (t - last_t)
                         for t2 in range(1, self.mark_num):
                             xpos = time_to_pos(last_t + t_diff*t2/self.mark_num)
-                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus)
+                            ypos = time_and_key_to_pos(last_t + t_diff*t2/self.mark_num, self.key, is_force_plus(self.key[2]))
                             box.add(Transform(interpolate_key_child, xoffset=xpos, yoffset=ypos))
                         if w.startswith("warper_generator"):
                             warperkey_child = WarperKey(t_diff/2 + last_t, self.key, last_v, v, self.scene, t)
@@ -1821,7 +1819,7 @@ init 1 python in _viewers:
                     p = self.key[2]
                 else:
                     p = self.key
-                self.force_plus = p in force_plus
+                self.force_plus = is_force_plus(p)
 
 
         def __eq__(self, other):
@@ -1966,13 +1964,13 @@ init 1 python in _viewers:
                 for gn, ps in props_groups.items():
                     if p in ps:
                         self.key_list = [(n, l, p) for p in props_groups[gn]]
-                self.force_plus = p in force_plus
+                self.force_plus = is_force_plus(p)
             else:
                 for gn, ps in props_groups.items():
                     if key in ps:
                         if gn != "focusing":
                             self.key_list = props_groups[gn]
-                self.force_plus = key in force_plus
+                self.force_plus = is_force_plus(key)
 
             if is_wide_range(key):
                 self.range = persistent._graphic_editor_wide_range
@@ -2092,13 +2090,13 @@ init 1 python in _viewers:
                 # for gn, ps in props_groups.items():
                 #     if p in ps:
                 #         self.key_list = [(n, l, p) for p in props_groups[gn]]
-                self.force_plus = p in force_plus
+                self.force_plus = is_force_plus(p)
             else:
                 # for gn, ps in props_groups.items():
                 #     if key in ps:
                 #         if gn != "focusing":
                 #             self.key_list = props_groups[gn]
-                self.force_plus = key in force_plus
+                self.force_plus = is_force_plus(key)
 
             if is_wide_range(key):
                 self.range = persistent._graphic_editor_wide_range
@@ -2196,13 +2194,13 @@ init 1 python in _viewers:
                 for gn, ps in props_groups.items():
                     if p in ps:
                         self.key_list = [(n, l, p) for p in props_groups[gn]]
-                self.force_plus = p in force_plus
+                self.force_plus = is_force_plus(p)
             else:
                 for gn, ps in props_groups.items():
                     if key in ps:
                         if gn != "focusing":
                             self.key_list = props_groups[gn]
-                self.force_plus = key in force_plus
+                self.force_plus = is_force_plus(key)
 
             if in_graphic_mode:
                 self.width  = config.screen_width-c_box_size-50-key_half_xsize
@@ -2488,13 +2486,13 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu(
                         [("{}".format(tag), NullAction()),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), "xpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time)]),
                         ("edit: ypos {}".format(ypos),             
-                         [Function(edit_value, self.y_changed, ypos, is_wide_range((tag, layer, "ypos")), "ypos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range((tag, layer, "ypos")), is_force_plus("ypos"), time), Function(change_time, time)]),
                         ("edit: zpos {}".format(zpos),             
-                         [Function(edit_value, self.z_changed, zpos, is_wide_range((tag, layer, "zpos")), "zpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.z_changed, zpos, is_wide_range((tag, layer, "zpos")), is_force_plus("zpos"), time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
-                         [Function(edit_value, self.r_changed, rotate, is_wide_range((tag, layer, "rotate")), "rotate" in force_plus, time), Function(change_time, time)])],
+                         [Function(edit_value, self.r_changed, rotate, is_wide_range((tag, layer, "rotate")), is_force_plus("rotate"), time), Function(change_time, time)])],
                         style_prefix="_viewers_alternate_menu")
 
             self.dragging = False
@@ -2628,16 +2626,16 @@ init 1 python in _viewers:
 
             mods = self.get_mods()
             if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
-                self.r_changed(to_changed_value(z+self.last_rotate, "rotate" in force_plus, is_wide_range((self.tag, self.layer, "rotate"))))
+                self.r_changed(to_changed_value(z+self.last_rotate, is_force_plus("rotate"), is_wide_range((self.tag, self.layer, "rotate"))))
             elif mods & self.KMOD_CTRL:
-                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range((self.tag, self.layer, "ypos"))))
+                self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range((self.tag, self.layer, "ypos"))))
             elif mods & self.KMOD_SHIFT:
-                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range((self.tag, self.layer, "xpos"))))
+                self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range((self.tag, self.layer, "xpos"))))
             elif mods & self.KMOD_ALT:
-                self.z_changed(to_changed_value(z+self.last_zpos, "zpos" in force_plus, is_wide_range((self.tag, self.layer, "zpos"))))
+                self.z_changed(to_changed_value(z+self.last_zpos, is_force_plus("zpos"), is_wide_range((self.tag, self.layer, "zpos"))))
             else:
-                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range((self.tag, self.layer, "xpos"))))
-                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range((self.tag, self.layer, "ypos"))))
+                self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range((self.tag, self.layer, "xpos"))))
+                self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range((self.tag, self.layer, "ypos"))))
 
 
         def event(self, ev, x, y, st):
@@ -2771,13 +2769,13 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu([
                         ("camera", NullAction()),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, xpos, is_wide_range("xpos"), "xpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range("xpos"), is_force_plus("xpos"), time), Function(change_time, time)]),
                         ("edit: ypos {}".format(ypos),             
-                         [Function(edit_value, self.y_changed, ypos, is_wide_range("ypos"), "ypos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range("ypos"), is_force_plus("ypos"), time), Function(change_time, time)]),
                         ("edit: zpos {}".format(zpos),             
-                         [Function(edit_value, self.z_changed, zpos, is_wide_range("zpos"), "zpos" in force_plus, time), Function(change_time, time)]),
+                         [Function(edit_value, self.z_changed, zpos, is_wide_range("zpos"), is_force_plus("zpos"), time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
-                         [Function(edit_value, self.r_changed, rotate, is_wide_range("rotate"), "rotate" in force_plus, time), Function(change_time, time)])],
+                         [Function(edit_value, self.r_changed, rotate, is_wide_range("rotate"), is_force_plus("rotate"), time), Function(change_time, time)])],
                         style_prefix="_viewers_alternate_menu")
 
             self.dragging = False
@@ -2893,16 +2891,16 @@ init 1 python in _viewers:
 
             mods = self.get_mods()
             if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
-                self.r_changed(to_changed_value(z+self.last_rotate, "rotate" in force_plus, is_wide_range("rotate")))
+                self.r_changed(to_changed_value(z+self.last_rotate, is_force_plus("rotate"), is_wide_range("rotate")))
             elif mods & self.KMOD_CTRL:
-                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range("ypos")))
+                self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range("ypos")))
             elif mods & self.KMOD_SHIFT:
-                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range("xpos")))
+                self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range("xpos")))
             elif mods & self.KMOD_ALT:
-                self.z_changed(to_changed_value(z+self.last_zpos, "zpos" in force_plus, is_wide_range("zpos")))
+                self.z_changed(to_changed_value(z+self.last_zpos, is_force_plus("zpos"), is_wide_range("zpos")))
             else:
-                self.x_changed(to_changed_value(x, "xpos" in force_plus, is_wide_range("xpos")))
-                self.y_changed(to_changed_value(y, "ypos" in force_plus, is_wide_range("ypos")))
+                self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range("xpos")))
+                self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range("ypos")))
 
 
         def event(self, ev, x, y, st):
@@ -3090,7 +3088,7 @@ init 1 python in _viewers:
                 Function(edit_any, key, time=t)))
         else:
             button_list.append(( _("edit value: {}".format(v)),
-                [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=p in force_plus, time=t),
+                [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=is_force_plus(p), time=t),
                 Function(change_time, t)]))
             if w.startswith("warper_generator"):
                 button_list.append(( _("open warper selecter: warper_generator"),
@@ -3107,7 +3105,7 @@ init 1 python in _viewers:
                         [SelectedIf(t in splines[current_scene][key]), 
                         Show("_spline_editor", change_func=change_func, 
                             key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
-                            use_wide_range=use_wide_range, force_plus=p in force_plus, time=t)]))
+                            use_wide_range=use_wide_range, force_plus=is_force_plus(p), time=t)]))
                 if len(check_points) >= 2:
                     if key in in_graphic_mode:
                         _in_graphic_mode = in_graphic_mode[:]
