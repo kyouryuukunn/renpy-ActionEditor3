@@ -338,8 +338,10 @@ init -1598 python in _viewers:
             return False
         if prop in force_wide_range:
             return True
+        # if prop in force_narrow_range:
+        #     return False
         value = get_value(key, default=True)
-        return ((value is None and isinstance(get_default(prop), int)) or isinstance(value, int))
+        return isinstance(value, int)
 
 
     def reset(key_list, time=None):
@@ -388,9 +390,8 @@ init -1598 python in _viewers:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
             default = get_default(prop)
-            if not is_force_float(prop) and (is_wide_range(prop)
-                or ( (state[prop] is None and isinstance(default, int)) or isinstance(state[prop], int) )):
-                if isinstance(get_value(key, default=True), float) and is_wide_range(prop):
+            if not is_force_float(prop) and is_wide_range(key):
+                if isinstance(get_value(key, default=True), float):
                     if is_force_plus(prop):
                         v = float(v)
                     else:
