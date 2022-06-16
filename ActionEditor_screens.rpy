@@ -25,6 +25,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $generate_sound_menu = _viewers.generate_sound_menu
     $generate_menu = _viewers.generate_menu
     $is_wide_range = _viewers.is_wide_range
+    $DraggableValue = _viewers.DraggableValue
     $TimeLine = _viewers.TimeLine
     $perspective_enabled = _viewers.perspective_enabled
 
@@ -181,7 +182,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     hbox:
                         style_group "new_action_editor_c"
                         textbutton "  [key]" action None text_color "#FFF"
-                        add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                        add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                             text_size=16, text_color="#CCC", text_hover_underline=True)
                     fixed:
                         # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
@@ -306,7 +307,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]" action None text_color "#FFF"
-                                                            add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                                                            add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
                                                     if p not in _viewers.boolean_props+["function", "perspective"]:
@@ -389,7 +390,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $key = (tag, layer, p)
                                                     $value = get_value(key, default=True)
                                                     $f = generate_changed(key)
-                                                    $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
+                                                    $use_wide_range = is_wide_range(key)
                                                     if not use_wide_range or isinstance(value, float):
                                                         $value_format = float_format
                                                     else:
@@ -451,7 +452,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
-                                                                add _viewers.DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                                                                add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
                                                         if p not in _viewers.boolean_props+["function", "perspective"]:
                                                             fixed:
@@ -768,7 +769,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             (persistent._viewer_focusing and perspective_enabled())):
                             $value = get_value(p, default=True)
                             $f = generate_changed(p)
-                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
+                            $use_wide_range = is_wide_range(p)
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
@@ -830,7 +831,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             $key = (tab, layer, p)
                             $value = get_value(key, default=True)
                             $f = generate_changed(key)
-                            $use_wide_range = not is_force_float(p) and (p in force_wide_range or ((value is None and isinstance(get_default(p), int)) or isinstance(value, int)))
+                            $use_wide_range = is_wide_range(key)
                             if use_wide_range:
                                 $value_range = persistent._wide_range
                                 $bar_page = 1
