@@ -41,7 +41,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $move_amount1 = 100
     $move_amount2 = 300
     key "hide_windows" action NullAction()
-    if perspective_enabled():
+    if get_value("perspective", scene_keyframes[0][1], True) is not False:
         if _viewers.fps_keymap:
             key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
             key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
@@ -60,6 +60,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             key "K" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
             key "H" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+    if perspective_enabled():
         key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
         key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
 
@@ -637,9 +638,6 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
         SelectedIf(False), Function(_viewers.play, play=True), \
         Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
-    if perspective_enabled():
-        key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
-        key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
     key "K_SPACE" action play_action
     key "action_editor" action NullAction()
 
@@ -647,7 +645,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $value_range = persistent._wide_range
     $move_amount1 = 100
     $move_amount2 = 300
-    if perspective_enabled():
+    if get_value("perspective", scene_keyframes[0][1], True) is not False:
         if _viewers.fps_keymap:
             key "s" action Function(generate_changed("offsetY"), offsetY + move_amount1 + value_range)
             key "w" action Function(generate_changed("offsetY"), offsetY - move_amount1 + value_range)
@@ -666,6 +664,9 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             key "K" action Function(generate_changed("offsetY"), offsetY - move_amount2 + value_range)
             key "H" action Function(generate_changed("offsetX"), offsetX - move_amount2 + value_range)
             key "L" action Function(generate_changed("offsetX"), offsetX + move_amount2 + value_range)
+    if perspective_enabled():
+        key "rollback"    action Function(generate_changed("offsetZ"), get_property("offsetZ")+100+persistent._wide_range)
+        key "rollforward" action Function(generate_changed("offsetZ"), get_property("offsetZ")-100+persistent._wide_range)
 
     if time:
         timer time+1 action [Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page), \
