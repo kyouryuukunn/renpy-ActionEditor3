@@ -382,22 +382,30 @@ init -1598 python in _viewers:
             default = get_default(prop)
             if is_wide_range(key):
                 if isinstance(get_value(key, default=True), float):
-                    if is_force_plus(prop):
-                        v = float(v)
-                    else:
-                        v -= float(persistent._wide_range)
+                    if not is_force_plus(prop):
+                        v -= persistent._wide_range
+                    elif v < 0:
+                        v = 0
+                    v = float(v)
                 else:
                     if not is_force_plus(prop):
                         v -= persistent._wide_range
+                    elif v < 0:
+                        v = 0
+                    v = int(v)
             else:
                 if isinstance(get_value(key, default=True), float):
-                    if is_force_plus(prop):
-                        v = round(float(v), 2)
-                    else:
-                        v = round(v -persistent._narrow_range, 2)
+                    if not is_force_plus(prop):
+                        v -= persistent._narrow_range
+                    elif v < 0:
+                        v = 0
+                    v = float(v)
                 else:
                     if not is_force_plus(prop):
                         v -= persistent._narrow_range
+                    elif v < 0:
+                        v = 0
+                    v = int(v)
 
             default_warper_org = persistent._viewer_warper
             if key in all_keyframes[current_scene]:
@@ -418,11 +426,6 @@ init -1598 python in _viewers:
         else:
             range = persistent._narrow_range
         if force_plus:
-            if value < 0:
-                if isinstance(value, int):
-                    value = 0
-                else:
-                    value = 0.
             return value
         else:
             return value + range
@@ -735,7 +738,7 @@ init -1598 python in _viewers:
                                 warper = renpy.python.py_eval(goal[2])
                             else:
                                 warper = renpy.atl.warpers[goal[2]]
-                            g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
+                            g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint)) #TODO 
                         else:
                             g = 1.
                         default = get_default(p)
@@ -993,27 +996,14 @@ init -1598 python in _viewers:
         if v:
             try:
                 v = renpy.python.py_eval(v)
-                if isinstance(default, int):
-                    v = int(v)
-                else:
-                    v = float(v)
-                if force_plus:
-                    v = v
-                else:
-                    if use_wide_range:
-                        v = v + persistent._wide_range
-                    else:
-                        v = v + persistent._narrow_range
+                v = to_changed_value(v, force_plus, use_wide_range)
             except Exception as e:
                 message = _("Please type value") + "\n" \
                 + 'type:' + str(type(e)) + "\n" \
                 + 'message:' + str(e.message) + "\n"
                 renpy.notify(message)
                 return
-            if not force_plus or 0 <= v:
-                function(v, time=time)
-            else:
-                renpy.notify(_("Please type plus value"))
+            function(v, time=time)
 
 
     def edit_default_transition():
