@@ -89,18 +89,18 @@ init -1600 python in _viewers:
 
     #These variables are always wide range even if it is float type.
     #浮動小数であっても整数と同じスケールで表示される変数です。
-    force_wide_range = ("rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan")
-    force_narrow_range = ("xtile", "ytile")
+    force_wide_range = {"rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan"}
+    force_narrow_range = {"xtile", "ytile"}
     #These variables are always plus
     #常に正数になる変数です。
-    force_plus = ("additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile")
+    force_plus = {"additive", "blur", "alpha", "invert", "contrast", "saturate", "cropW", "cropH", "dof", "focusing", "xtile", "ytile"}
     #These varialbes aren't setted without keyframe.
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     #キーフレームを設定しなければ適用されない変数です。
-    not_used_by_default = ("rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function")
+    not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
 
-    boolean_props = ["zzoom"]
-    any_props = []
+    boolean_props = {"zzoom"}
+    any_props = {}
 
     #Exclusive variables
     #排他的な変数です。
