@@ -483,11 +483,12 @@ init -1598 python in _viewers:
                     if camera_keyframes_exist(i):
                         break
                 for p in camera_state_org[i]:
-                    middle_value = get_value(p, scene_keyframes[s][1], False, i)
-                    if isinstance(middle_value, float):
-                        camera_state_org[s][p] = round(middle_value, 3)
-                    else:
-                        camera_state_org[s][p] = middle_value
+                    if p in camera_state_org[s]:
+                        middle_value = get_value(p, scene_keyframes[s][1], False, i)
+                        if isinstance(middle_value, float):
+                            camera_state_org[s][p] = round(middle_value, 3)
+                        else:
+                            camera_state_org[s][p] = middle_value
 
 
     def play(play):
