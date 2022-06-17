@@ -1637,7 +1637,7 @@ show %s""" % child
         # else:
         #     i = len(scene_keyframes)
         if scene_keyframes[-1][1] >= current_time:
-            renpy.notify("the new scene must be later than the start time of the previous scene.")
+            renpy.notify(_("the new scene must be later than the start time of the previous scene."))
             return
         i = len(scene_keyframes)
         current_scene = i

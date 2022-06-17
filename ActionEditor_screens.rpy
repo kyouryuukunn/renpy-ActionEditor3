@@ -1286,7 +1286,7 @@ init 1 python in _viewers:
         return pos
 
 
-    def pos_to_value(y, use_wide_range, force_plus, int_type):
+    def pos_to_value(y, use_wide_range, force_plus):
         if use_wide_range:
             range = persistent._graphic_editor_wide_range
         else:
@@ -1305,8 +1305,6 @@ init 1 python in _viewers:
                 value = -range
         if value > range:
             value = range
-        if int_type:
-            value = int(value) #TODO
         return value
 
 
@@ -1357,7 +1355,7 @@ init 1 python in _viewers:
             time = goal
         if in_graphic_mode:
             use_wide_range = is_wide_range(key)
-            value = pos_to_value(y, use_wide_range, is_force_plus(p), isinstance(get_value(key, default=True), int))
+            value = pos_to_value(y, use_wide_range, is_force_plus(p))
             vchanged = generate_changed(key)
             vchanged(to_changed_value(value, is_force_plus(p), use_wide_range), time)
         return time
@@ -2148,9 +2146,11 @@ init 1 python in _viewers:
 
 
         def knot_drag_changed(self, y):
-            v = pos_to_value(y, is_wide_range(self.key), self.force_plus, self.int_type)
-            if isinstance(v, float):
-                v = round(v, 2)
+            v = pos_to_value(y, is_wide_range(self.key), self.force_plus)
+            if self.int_type:
+                v = int(v)
+            else:
+                v = round(float(v), 2)
             splines[self.scene][self.key][self.key_time][self.knot_num] = v
             renpy.restart_interaction()
 
@@ -2163,7 +2163,7 @@ init 1 python in _viewers:
 
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
-                self.knot_drag_changed(y, self.int_type)
+                self.knot_drag_changed(y)
                 return True
 
             self.hovered = False
@@ -2212,7 +2212,6 @@ init 1 python in _viewers:
                             if gn != "focusing":
                                 self.key_list = props_groups[gn]
                     self.force_plus = is_force_plus(key)
-                self.int_type = isinstance(get_value(key, default=True), int) #TODO
 
             if in_graphic_mode:
                 self.width  = config.screen_width-c_box_size-50-key_half_xsize
@@ -2274,7 +2273,7 @@ init 1 python in _viewers:
                         if self.in_graphic_mode:
                             time = pos_to_time(x)
                             use_wide_range = is_wide_range(self.key)
-                            value = pos_to_value(y, use_wide_range, self.force_plus, self.int_type)
+                            value = pos_to_value(y, use_wide_range, self.force_plus)
                             generate_changed(self.key)(to_changed_value(value, self.force_plus, use_wide_range), time)
                         else:
                             time = pos_to_time(x)
