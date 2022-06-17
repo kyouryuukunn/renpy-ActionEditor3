@@ -1392,7 +1392,7 @@ camera"""
         for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes]):
             if string.find(":") < 0:
                 string += ":\n        "
-            string += "{} {}".format(p, cs[0][0])
+            string += "{property} {value}".format(property=p, value=cs[0][0])
             if persistent._one_line_one_prop:
                 string += "\n        "
             else:
@@ -1440,11 +1440,11 @@ camera"""
 
         child = state[tag]["child"][0]
         string = """
-show %s""" % child
+show {imagename}""".format(imagename=child)
         if tag != child.split()[0]:
-                string += " as %s" % tag
+                string += " as {tagname}".format(tagname=tag)
         if layer != "master":
-                string += " onlayer %s" % layer
+                string += " onlayer {layer}".format(layer=layer)
         if tag in image_state[current_scene][layer]:
             string += """:
     default"""
@@ -1455,7 +1455,7 @@ show %s""" % child
         for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes]):
             if string.find(":") < 0:
                 string += ":\n        "
-            string += "{} {}".format(p, cs[0][0])
+            string += "{property} {value}".format(property=p, value=cs[0][0])
             if persistent._one_line_one_prop:
                 string += "\n        "
             else:
@@ -1463,7 +1463,7 @@ show %s""" % child
         if check_focusing_used():
             focus = get_value("focusing", current_time, True)
             dof = get_value("dof", current_time, True)
-            result = "function camera_blur({'focusing':[(%s, 0, None)], 'dof':[(%s, 0, None)]})" % (focus, dof)
+            result = "function camera_blur({'focusing':[({}, 0, None)], 'dof':[({}, 0, None)]})".format(focus, dof)
             string += "\n        "
             string += result
 
