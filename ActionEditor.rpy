@@ -607,7 +607,7 @@ init -1598 python in _viewers:
         if play:
             renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
              camera_check_points=camera_check_points, image_check_points=image_check_points,
-             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, start_time=0, end_time=get_animation_delay())))
+             scene_checkpoints=deepcopy(scene_keyframes), zorder_list=zorder_list, loop=loop, spline=spline, start_time=0., end_time=get_animation_delay())))
         else:
             renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
              camera_check_points=camera_check_points, image_check_points=image_check_points,
@@ -738,7 +738,7 @@ init -1598 python in _viewers:
                                 warper = renpy.python.py_eval(goal[2])
                             else:
                                 warper = renpy.atl.warpers[goal[2]]
-                            g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint)) #TODO 
+                            g = warper((time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                         else:
                             g = 1.
                         default = get_default(p)
@@ -1330,7 +1330,7 @@ init -1598 python in _viewers:
                         warper = renpy.python.py_eval(goal[2])
                     else:
                         warper = renpy.atl.warpers[goal[2]]
-                    g = warper((time - pre_checkpoint) / float(checkpoint - pre_checkpoint))
+                    g = warper((time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                 else:
                     g = 1.
                 default_vault = get_default(prop)
@@ -2064,7 +2064,7 @@ show %s""" % child
         if not config.developer:
             return
         playing = False
-        current_time = 0
+        current_time = 0.0 #current_time is always float
         current_scene = 0
         moved_time = 0
         loops = [defaultdict(lambda:False)]
