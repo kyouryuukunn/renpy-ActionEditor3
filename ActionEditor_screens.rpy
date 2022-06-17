@@ -2615,9 +2615,8 @@ init 1 python in _viewers:
             else:
                 r = round(r, 2)
 
-            if "xpos" in state:
-                xpos_org = state["xpos"]
-            else:
+            xpos_org = state["xpos"]
+            if xpos_org is None:
                 xpos_org = get_default("xpos")
             x /= preview_size
             if isinstance(xpos_org, int):
@@ -2625,10 +2624,9 @@ init 1 python in _viewers:
             else:
                 x /= config.screen_width
 
-            if "ypos" in state:
-                ypos_org = state["ypos"]
-            else:
-                ypos_org = get_default("ypos")
+            ypos_org = state["xpos"]
+            if ypos_org is None:
+                ypos_org = get_default("xpos")
             y /= preview_size
             if isinstance(ypos_org, int):
                 y = int(y)
@@ -2879,9 +2877,8 @@ init 1 python in _viewers:
                 r = round(r, 2)
 
             x -= self.xoffset
-            if "xpos" in state:
-                xpos_org = state["xpos"]
-            else:
+            xpos_org = state["xpos"]
+            if xpos_org is None:
                 xpos_org = get_default("xpos")
             x /= preview_size
             if isinstance(xpos_org, int):
@@ -2890,9 +2887,8 @@ init 1 python in _viewers:
                 x /= config.screen_width
 
             y -= self.yoffset
-            if "ypos" in state:
-                ypos_org = state["ypos"]
-            else:
+            ypos_org = state["ypos"]
+            if ypos_org is None:
                 ypos_org = get_default("ypos")
             y /= preview_size
             if isinstance(ypos_org, int):
