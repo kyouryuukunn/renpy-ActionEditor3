@@ -482,7 +482,7 @@ init -1598 python in _viewers:
                 for i in range(s, -1, -1):
                     if camera_keyframes_exist(i):
                         break
-                for p in camera_props:
+                for p in camera_state_org[i]:
                     middle_value = get_value(p, scene_keyframes[s][1], False, i)
                     if isinstance(middle_value, float):
                         camera_state_org[s][p] = round(middle_value, 3)
