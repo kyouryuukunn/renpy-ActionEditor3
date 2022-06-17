@@ -78,3 +78,7 @@ translate japanese strings:
     old "Please type the list of channel names(ex [['sound', 'sound2'])"
     new "チャンネル名のリストを入力してください(例 ['sound', 'sound2'])"
 
+    # game/ActionEditor.rpy:1640
+    old "the new scene must be later than the start time of the previous scene."
+    new "新規シーンは以前のシーン開始より後であるべきです。"
+
