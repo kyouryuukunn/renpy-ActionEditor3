@@ -387,7 +387,7 @@ init -1598 python in _viewers:
                         v -= persistent._wide_range
                     elif v < 0:
                         v = 0
-                    v = float(v)
+                    v = round(float(v), 2)
                 else:
                     if not is_force_plus(prop):
                         v -= persistent._wide_range
@@ -400,7 +400,7 @@ init -1598 python in _viewers:
                         v -= persistent._narrow_range
                     elif v < 0:
                         v = 0
-                    v = float(v)
+                    v = round(float(v), 2)
                 else:
                     if not is_force_plus(prop):
                         v -= persistent._narrow_range
