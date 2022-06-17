@@ -87,9 +87,6 @@ init -1600 python in _viewers:
         "focusing":["focusing", "dof"], 
     }
 
-    #These variables are always float type.
-    #常に浮動小数になる変数です。
-    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround")
     #These variables are always wide range even if it is float type.
     #浮動小数であっても整数と同じスケールで表示される変数です。
     force_wide_range = ("rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan")

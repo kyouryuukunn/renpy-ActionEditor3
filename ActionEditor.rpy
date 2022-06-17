@@ -313,14 +313,6 @@ init -1598 python in _viewers:
             return group
 
 
-    def is_force_float(prop):
-        if prop is None:
-            return False
-        # if is_matrix_paras(prop):
-        #     prop = prop[:-1]
-        return prop in force_float
-
-
     def is_force_plus(prop):
         if prop is None:
             return False
@@ -334,12 +326,10 @@ init -1598 python in _viewers:
             _, _, prop = key
         else:
             prop = key
-        if is_force_float(prop):
-            return False
         if prop in force_wide_range:
             return True
-        # if prop in force_narrow_range:
-        #     return False
+        if prop in force_narrow_range:
+            return False
         value = get_value(key, default=True)
         return isinstance(value, int)
 
@@ -390,7 +380,7 @@ init -1598 python in _viewers:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
             default = get_default(prop)
-            if not is_force_float(prop) and is_wide_range(key):
+            if is_wide_range(key):
                 if isinstance(get_value(key, default=True), float):
                     if is_force_plus(prop):
                         v = float(v)
@@ -400,10 +390,14 @@ init -1598 python in _viewers:
                     if not is_force_plus(prop):
                         v -= persistent._wide_range
             else:
-                if is_force_plus(prop):
-                    v = round(float(v), 2)
+                if isinstance(get_value(key, default=True), float):
+                    if is_force_plus(prop):
+                        v = round(float(v), 2)
+                    else:
+                        v = round(v -persistent._narrow_range, 2)
                 else:
-                    v = round(v -persistent._narrow_range, 2)
+                    if not is_force_plus(prop):
+                        v -= persistent._narrow_range
 
             default_warper_org = persistent._viewer_warper
             if key in all_keyframes[current_scene]:
@@ -761,7 +755,7 @@ init -1598 python in _viewers:
                                 v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[p])
                             else:
                                 v = g*(goal[0]-start_v)+start_v
-                            if isinstance(goal[0], int) and not is_force_float(p):
+                            if isinstance(goal[0], int):
                                 v = int(v)
                             for gn, ps in props_groups.items():
                                 if p in ps:
@@ -1366,7 +1360,7 @@ init -1598 python in _viewers:
                         v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[prop])
                     else:
                         v = g*(goal[0]-start_v)+start_v
-                    if isinstance(goal[0], int) and not is_force_float(prop):
+                    if isinstance(goal[0], int):
                         v = int(v)
                     return v
                 break
