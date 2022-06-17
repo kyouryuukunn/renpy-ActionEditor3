@@ -1492,7 +1492,7 @@ show {imagename}""".format(imagename=child)
                 for t in sorted_times:
                     duration = t - time
                     if duration > 0:
-                        files += "'<silence {}>',\n        ".format(round(duration, 3))
+                        files += "'<silence {}>',\n        ".format(duration)
                     fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
@@ -2028,12 +2028,14 @@ show {imagename}""".format(imagename=child)
             return renpy.python.py_eval(filename.split()[1][:-1])
         else:
             #互換性で残っている未使用のチャンネルで再生
+            #doesn't during mute
             renpy.music.play(filename, channel=1, fadeout=0, loop=False)
             duration = None
             while duration is None:
                 renpy.audio.audio.interact()
                 if renpy.music.is_playing(1) and renpy.music.get_duration(1) != 0:
                     duration = renpy.music.get_duration(1)
+                print(duration)
             renpy.music.stop(1)
             return duration
 
@@ -2373,7 +2375,7 @@ show {imagename}""".format(imagename=child)
                 for t in sorted_times:
                     duration = t - time
                     if duration > 0:
-                        files += "'<silence {}>',\n        ".format(round(duration, 3))
+                        files += "'<silence {}>',\n        ".format(duration)
                     fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
@@ -2414,7 +2416,7 @@ show {imagename}""".format(imagename=child)
     camera:
         subpixel True"""
                 if "crop" in camera_keyframes:
-                    string += " {} {}".format("crop_relative", True)
+                    string += " crop_relative True"
                 if persistent._one_line_one_prop:
                     string += "\n        "
                 else:
@@ -2424,7 +2426,7 @@ show {imagename}""".format(imagename=child)
                 #rotateは設定されればキーフレームに入り、されてなければ問題ない
                 #アニメーションしないなら出力しなくてよいのでここでは不要
                 for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
-                    string += "{} {}".format(p, cs[0][0])
+                    string += "{property} {value}".format(property=p, value=cs[0][0])
                     if persistent._one_line_one_prop:
                         string += "\n        "
                     else:
@@ -2442,7 +2444,7 @@ show {imagename}""".format(imagename=child)
                             string += """
         """
                         for p, cs in same_time_set:
-                            string += "{} {} ".format(p, cs[0][0])
+                            string += "{property} {value} ".format(property=p, value=cs[0][0])
                         cs = same_time_set[0][1]
                         for i, c in enumerate(cs[1:]):
                             if c[2].startswith("warper_generator"):
@@ -2450,9 +2452,9 @@ show {imagename}""".format(imagename=child)
                             else:
                                 warper = c[2]
                             string += """
-        {}{} {} """.format(add_tab, warper, cs[i+1][1]-cs[i][1])
+        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
                             for p2, cs2 in same_time_set:
-                                string += "{} {} ".format(p2, cs2[i+1][0])
+                                string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
                                 if cs2[i+1][1] in splines[s][xy_to_x(p2)] and splines[s][xy_to_x(p2)][cs2[i+1][1]]:
                                     for knot in splines[s][xy_to_x(p2)][cs2[i+1][1]]:
                                         string += " knot {} ".format(knot)
@@ -2468,7 +2470,7 @@ show {imagename}""".format(imagename=child)
                             break
                     else:
                         string += "\n        "
-                    string += "{} {} ".format("function", camera_keyframes["function"][0][0][0])
+                    string += "function {} ".format(camera_keyframes["function"][0][0][0])
 
 
             for layer in image_state_org[s]:
@@ -2517,11 +2519,11 @@ show {imagename}""".format(imagename=child)
                             string += "default "
                         string += "subpixel True "
                         if "crop" in image_keyframes:
-                            string += "{} {} ".format("crop_relative", True)
+                            string += "crop_relative True "
                         if persistent._one_line_one_prop:
                             string += "\n        "
                         for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes and len(image_keyframes[p]) == 1], layer, tag):
-                                string += "{} {}".format(p, cs[0][0])
+                                string += "{property} {value}".format(property=p, value=cs[0][0])
                                 if persistent._one_line_one_prop:
                                     string += "\n        "
                                 else:
@@ -2556,16 +2558,16 @@ show {imagename}""".format(imagename=child)
                                     null = "Null({}, {})".format(w, h)
                                 if (t - last_time) > 0:
                                     string += """
-        {}{}""".format(add_tab, t-last_time)
+        {tab}{pause}""".format(tab=add_tab, pause=t-last_time)
                                 if i == 0 and (image is not None and transition is not None):
                                     string += """
-        {}{}""".format(add_tab, null)
+        {tab}{child}""".format(tab=add_tab, child=null)
                                 if image is None:
                                     string += """
-        {}{}""".format(add_tab, null)
+        {tab}{child}""".format(tab=add_tab, child=null)
                                 else:
                                     string += """
-        {}'{}'""".format(add_tab, image)
+        {tab}'{child}'""".format(tab=add_tab, child=image)
                                 if transition is not None:
                                     string += " with {}".format(transition)
                                     t += get_transition_delay(transition)
@@ -2586,7 +2588,7 @@ show {imagename}""".format(imagename=child)
                                     string += """
         """
                                 for p, cs in same_time_set:
-                                    string += "{} {} ".format(p, cs[0][0])
+                                    string += "{property} {value} ".format(property=p, value=cs[0][0])
                                 cs = same_time_set[0][1]
                                 for i, c in enumerate(cs[1:]):
                                     if c[2].startswith("warper_generator"):
@@ -2594,9 +2596,9 @@ show {imagename}""".format(imagename=child)
                                     else:
                                         warper = c[2]
                                     string += """
-        {}{} {} """.format(add_tab, warper, cs[i+1][1]-cs[i][1])
+        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, value=cs[i+1][1]-cs[i][1])
                                     for p2, cs2 in same_time_set:
-                                        string += "{} {} ".format(p2, cs2[i+1][0])
+                                        string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
                                         if cs2[i+1][1] in splines[s][(tag, layer, xy_to_x(p2))] and splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
                                             for knot in splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
                                                 string += " knot {} ".format(knot)
@@ -2626,11 +2628,11 @@ show {imagename}""".format(imagename=child)
                                     focusing_func_string = "camera_blur({})".format(focusing_cs)
                                 if "function" in image_keyframes:
                                     function_string = image_keyframes["function"][0][0][0]
-                                    string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
+                                    string += "function mfn({}, {}) ".format(function_string, focusing_func_string)
                                 else:
-                                    string += "{} {} ".format("function", focusing_func_string)
+                                    string += "function {} ".format(focusing_func_string)
                             else:
-                                string += "{} {} ".format("function", image_keyframes["function"][0][0][0])
+                                string += "function {} ".format(image_keyframes["function"][0][0][0])
             if s != 0:
                 string += """
     with {}""".format(scene_tran)
@@ -2691,7 +2693,7 @@ show {imagename}""".format(imagename=child)
                                 first = False
                                 string += """
         """
-                            string += "{} {}".format(p, cs[-1][0])
+                            string += "{property} {value}".format(property=p, value=cs[-1][0])
                             if persistent._one_line_one_prop:
                                 string += "\n        "
                             else:
@@ -2702,14 +2704,14 @@ show {imagename}""".format(imagename=child)
                         if len(cs) > 1 and loops[last_camera_scene][p]:
                             string += """
         parallel:
-            {} {}""".format(p, cs[0][0])
+            {property} {value}""".format(property=p, value=cs[0][0])
                             for i, c in enumerate(cs[1:]):
                                 if c[2].startswith("warper_generator"):
                                     warper = "warp "+ c[2]
                                 else:
                                     warper = c[2]
                                 string += """
-            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
+            {warper} {duration} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
                                 if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
                                     for knot in splines[last_camera_scene][p][c[1]]:
                                         string += " knot {}".format(knot)
@@ -2790,7 +2792,7 @@ show {imagename}""".format(imagename=child)
                                     first = False
                                     string += """
         """
-                                string += "{} {}".format(p, cs[-1][0])
+                                string += "{property} {value}".format(property=p, value=cs[-1][0])
                                 if persistent._one_line_one_prop:
                                     string += "\n        "
                                 else:
@@ -2801,14 +2803,14 @@ show {imagename}""".format(imagename=child)
                             if len(cs) > 1 and loops[last_scene][(tag, layer, p)]:
                                 string += """
         parallel:
-            {} {}""".format(p, cs[0][0])
+            {property} {value}""".format(property=p, value=cs[0][0])
                                 for i, c in enumerate(cs[1:]):
                                     if c[2].startswith("warper_generator"):
                                         warper = "warp "+ c[2]
                                     else:
                                         warper = c[2]
                                     string += """
-            {} {} {} {}""".format(warper, cs[i+1][1]-cs[i][1], p, c[0])
+            {warper} {duration} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
                                     if c[1] in splines[last_scene][(tag, layer, p)] and splines[last_scene][(tag, layer, p)][c[1]]:
                                         for knot in splines[last_scene][(tag, layer, p)][c[1]]:
                                             string += " knot {}".format(knot)
@@ -2840,16 +2842,16 @@ show {imagename}""".format(imagename=child)
                                 null = "Null({}, {})".format(w, h)
                             if (t - last_time) > 0:
                                 string += """
-            {}""".format(t-last_time)
+            {pause}""".format(pause=t-last_time)
                             if i == 0 and (image is not None and transition is not None):
                                 string += """
-            {}""".format(null)
+            {child}""".format(child=null)
                             if image is None:
                                 string += """
-            {}""".format(null)
+            {child}""".format(child=null)
                             else:
                                 string += """
-            '{}'""".format(image)
+            '{child}'""".format(child=image)
                             if transition is not None:
                                 string += " with {}".format(transition)
                                 t += get_transition_delay(transition)
@@ -2895,7 +2897,7 @@ show {imagename}""".format(imagename=child)
                             #     function_string = image_keyframes["function"][0][0][0]
                             #     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
                             # else:
-                            string += "{} {} ".format("function", focusing_func_string)
+                            string += "function {} ".format(focusing_func_string)
                         # else:
                         #     string += "{} {} ".format("function", image_keyframes["function"][0][0][0])
 
