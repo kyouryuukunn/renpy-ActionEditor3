@@ -636,7 +636,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     $edit_value = _viewers.edit_value
     $reset = _viewers.reset
     $is_force_plus = _viewers.is_force_plus
-    $force_wide_range = _viewers.force_wide_range
+    $is_wide_range = _viewers.is_wide_range
     $props_sets = _viewers.props_sets
     $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
@@ -1267,7 +1267,7 @@ init 1 python in _viewers:
     def pos_to_time(x):
         barwidth = config.screen_width - c_box_size - 50 - key_half_xsize
         frac = float(x - key_half_xsize)/barwidth
-        goal = round(frac*persistent._time_range, 2)
+        goal = round(frac*persistent._time_range, 2) #キーフレームのドラッグに必要
         if goal < 0:
             goal = 0.
         elif goal > persistent._time_range:
@@ -1306,7 +1306,7 @@ init 1 python in _viewers:
         if value > range:
             value = range
         if int_type:
-            value = int(value)
+            value = int(value) #TODO
         return value
 
 
@@ -1477,8 +1477,6 @@ init 1 python in _viewers:
             if ev.type == self.MOUSEMOTION and self.clicking:
                 self.dragging = True
                 v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
-                if self.int_type:
-                    v = int(v)
                 self.changed(to_changed_value(v, self.force_plus, self.use_wide_range))
 
             self.hovered = False
@@ -2609,7 +2607,7 @@ init 1 python in _viewers:
             if x - self.last_x >= 0:
                 r *= -1
             if isinstance(self.last_zpos, int):
-                z = int(r)
+                z = int(r) #TODO
             else:
                 z = round(r, 2)
             if isinstance(self.last_rotate, int):
@@ -2872,7 +2870,7 @@ init 1 python in _viewers:
             if x - self.last_x >= 0:
                 r *= -1
             if isinstance(self.last_zpos, int):
-                z = int(r)
+                z = int(r) #TODO
             else:
                 z = round(r, 2)
             if isinstance(self.last_rotate, int):

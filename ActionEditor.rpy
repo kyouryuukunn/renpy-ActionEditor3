@@ -376,6 +376,7 @@ init -1598 python in _viewers:
         def changed(v, time=None, knot_number=None):
             if time is None:
                 time = current_time
+            time = round(float(time), 2)
             if time < scene_keyframes[current_scene][1]:
                 renpy.notify(_("can't change values before the start tiem of the current scene"))
                 return
@@ -1745,7 +1746,7 @@ show %s""" % child
             loops.append(scene_num_loops)
             splines.append(scene_num_splines)
             new_scene_num = len(scene_keyframes)-1
-        new = round(new, 2)
+        new = round(float(new), 2)
         tran, old, w = scene_keyframes[new_scene_num]
         scene_keyframes[new_scene_num] = (tran, new, w)
 
@@ -1920,7 +1921,7 @@ show %s""" % child
         if not is_sound:
             if new < scene_keyframes[current_scene][1]:
                 new = scene_keyframes[current_scene][1]
-        new = round(new, 2)
+        new = round(float(new), 2)
         if new == old:
             renpy.restart_interaction()
             if persistent._viewer_legacy_gui:
