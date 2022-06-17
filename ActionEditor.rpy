@@ -2596,7 +2596,7 @@ show {imagename}""".format(imagename=child)
                                     else:
                                         warper = c[2]
                                     string += """
-        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, value=cs[i+1][1]-cs[i][1])
+        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
                                     for p2, cs2 in same_time_set:
                                         string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
                                         if cs2[i+1][1] in splines[s][(tag, layer, xy_to_x(p2))] and splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
