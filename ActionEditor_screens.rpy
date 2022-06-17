@@ -2605,14 +2605,6 @@ init 1 python in _viewers:
             r = sqrt((x - self.last_x)**2 + (y - self.last_y)**2)
             if x - self.last_x >= 0:
                 r *= -1
-            if isinstance(self.last_zpos, int):
-                z = int(r) #TODO
-            else:
-                z = round(r, 2)
-            if isinstance(self.last_rotate, int):
-                r = int(r)
-            else:
-                r = round(r, 2)
 
             xpos_org = state["xpos"]
             if xpos_org is None:
@@ -2635,13 +2627,13 @@ init 1 python in _viewers:
 
             mods = self.get_mods()
             if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
-                self.r_changed(to_changed_value(z+self.last_rotate, is_force_plus("rotate"), is_wide_range((self.tag, self.layer, "rotate"))))
+                self.r_changed(to_changed_value(r+self.last_rotate, is_force_plus("rotate"), is_wide_range((self.tag, self.layer, "rotate"))))
             elif mods & self.KMOD_CTRL:
                 self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range((self.tag, self.layer, "ypos"))))
             elif mods & self.KMOD_SHIFT:
                 self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range((self.tag, self.layer, "xpos"))))
             elif mods & self.KMOD_ALT:
-                self.z_changed(to_changed_value(z+self.last_zpos, is_force_plus("zpos"), is_wide_range((self.tag, self.layer, "zpos"))))
+                self.z_changed(to_changed_value(r+self.last_zpos, is_force_plus("zpos"), is_wide_range((self.tag, self.layer, "zpos"))))
             else:
                 self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range((self.tag, self.layer, "xpos"))))
                 self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range((self.tag, self.layer, "ypos"))))
@@ -2866,14 +2858,6 @@ init 1 python in _viewers:
             r = sqrt((x - self.last_x)**2 + (y - self.last_y)**2)
             if x - self.last_x >= 0:
                 r *= -1
-            if isinstance(self.last_zpos, int):
-                z = int(r) #TODO
-            else:
-                z = round(r, 2)
-            if isinstance(self.last_rotate, int):
-                r = int(r)
-            else:
-                r = round(r, 2)
 
             x -= self.xoffset
             xpos_org = state["xpos"]
@@ -2898,13 +2882,13 @@ init 1 python in _viewers:
 
             mods = self.get_mods()
             if mods & self.KMOD_SHIFT and mods & self.KMOD_CTRL:
-                self.r_changed(to_changed_value(z+self.last_rotate, is_force_plus("rotate"), is_wide_range("rotate")))
+                self.r_changed(to_changed_value(r+self.last_rotate, is_force_plus("rotate"), is_wide_range("rotate")))
             elif mods & self.KMOD_CTRL:
                 self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range("ypos")))
             elif mods & self.KMOD_SHIFT:
                 self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range("xpos")))
             elif mods & self.KMOD_ALT:
-                self.z_changed(to_changed_value(z+self.last_zpos, is_force_plus("zpos"), is_wide_range("zpos")))
+                self.z_changed(to_changed_value(r+self.last_zpos, is_force_plus("zpos"), is_wide_range("zpos")))
             else:
                 self.x_changed(to_changed_value(x, is_force_plus("xpos"), is_wide_range("xpos")))
                 self.y_changed(to_changed_value(y, is_force_plus("ypos"), is_wide_range("ypos")))
