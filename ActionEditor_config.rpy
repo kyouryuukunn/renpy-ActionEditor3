@@ -100,7 +100,7 @@ init -1600 python in _viewers:
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
 
     boolean_props = {"zzoom"}
-    any_props = {}
+    any_props = set()
 
     #Exclusive variables
     #排他的な変数です。

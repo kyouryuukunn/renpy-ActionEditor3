@@ -3074,7 +3074,7 @@ init 1 python in _viewers:
                 Function(change_child, n, l, time=t, default=v[0])))
             button_list.append((("edit transform: {}".format(v[1])), 
                 Function(edit_transition, n, l, time=t)))
-        elif p in boolean_props + any_props:
+        elif p in boolean_props | any_props:
             button_list.append((("edit value: {}".format(v)), 
                 Function(edit_any, key, time=t)))
         else:

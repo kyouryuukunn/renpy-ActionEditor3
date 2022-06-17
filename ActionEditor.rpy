@@ -170,7 +170,7 @@ init -1598 python in _viewers:
 
                 pos = renpy.get_placement(d)
                 state = getattr(d, "state", None)
-                for p in ["xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"]:
+                for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
                 for p in transform_props:
                     if p not in image_state_org[current_scene][layer][tag]:
@@ -746,7 +746,7 @@ init -1598 python in _viewers:
                         else:
                             g = 1.
                         default = get_default(p)
-                        if goal[0] is not None or p in boolean_props + any_props:
+                        if goal[0] is not None or p in boolean_props | any_props:
                             if start[0] is None:
                                 start_v = default
                             else:
@@ -758,7 +758,7 @@ init -1598 python in _viewers:
                                     knots = [start_v] + knots + [goal[0]]
                             if knots:
                                 v = renpy.atl.interpolate_spline(g, knots)
-                            elif p in boolean_props + any_props:
+                            elif p in boolean_props | any_props:
                                 v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[p])
                             else:
                                 v = g*(goal[0]-start_v)+start_v
@@ -1269,7 +1269,7 @@ init -1598 python in _viewers:
 
     def remove_image(layer, tag):
         def remove_keyframes(layer, tag):
-            for k in [k for k in all_keyframes[current_scene] if isinstance(k, tuple) and k[0] == tag and k[1] == layer]:
+            for k in (k for k in all_keyframes[current_scene] if isinstance(k, tuple) and k[0] == tag and k[1] == layer):
                 del all_keyframes[current_scene][k]
 
         renpy.hide(tag, layer)
@@ -1298,7 +1298,7 @@ init -1598 python in _viewers:
             state = camera_state_org[scene_num]
         if key not in all_keyframes[scene_num]:
             v = state[prop]
-            if v is not None or prop in boolean_props + any_props:
+            if v is not None or prop in boolean_props | any_props:
                 if prop == "child":
                     return v[0], None
                 else:
@@ -1338,7 +1338,7 @@ init -1598 python in _viewers:
                 else:
                     g = 1.
                 default_vault = get_default(prop)
-                if goal[0] is not None or prop in boolean_props + any_props:
+                if goal[0] is not None or prop in boolean_props | any_props:
                     if start[0] is None:
                         start_v = default_vault
                     else:
@@ -1350,7 +1350,7 @@ init -1598 python in _viewers:
                             knots = [start_v] + knots + [goal[0]]
                     if knots:
                         v = renpy.atl.interpolate_spline(g, knots)
-                    elif prop in boolean_props + any_props:
+                    elif prop in boolean_props | any_props:
                         v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[prop])
                     else:
                         v = g*(goal[0]-start_v)+start_v
