@@ -249,7 +249,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             fixed:
                                                 add TimeLine(s, "camera", props_set=props_set)
                                         for p in props_set:
-                                            if p in _viewers.camera_props and p != "child" and (p not in props_groups["focusing"] or \
+                                            if p in _viewers.camera_state_org[s] and p != "child" and (p not in props_groups["focusing"] or \
                                                 (persistent._viewer_focusing and perspective_enabled(s))):
                                                 $key = p
                                                 $value = get_value(p, default=True)
@@ -383,7 +383,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 fixed:
                                                     add TimeLine(s, (tag, layer), props_set=props_set)
                                             for p in props_set:
-                                                if p in _viewers.transform_props and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
+                                                if p in _viewers.get_image_state(layer, s)[tag] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
                                                     and perspective_enabled(s)) and p != "blur")
                                                     or (not persistent._viewer_focusing or not perspective_enabled(s)))):
                                                     $key = (tag, layer, p)
@@ -762,7 +762,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.camera_props:
+                    for p in _viewers.camera_state_org[current_scene]:
                         if p in props_set and (p not in props_groups["focusing"] or 
                             (persistent._viewer_focusing and perspective_enabled())):
                             $value = get_value(p, default=True)
@@ -822,7 +822,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.transform_props:
+                    for p in _viewers.get_image_state(layer, current_scene)[tag]:
                         if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
                             and perspective_enabled()) and p != "blur") 
                             or (not persistent._viewer_focusing or not perspective_enabled()))):
@@ -1414,7 +1414,7 @@ init 1 python in _viewers:
             self.changed = changed
             self.use_wide_range = use_wide_range
             self.force_plus = force_plus
-            self.int_type = isinstance(get_value(key, default=True), int) #TODO
+            self.int_type = isinstance(get_value(key, default=True), int)
             self.dragging = False
             self.kwargs = {}
             for k, v in properties.items():
@@ -1582,7 +1582,7 @@ init 1 python in _viewers:
                             child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None, clicked=Function(change_time, t))
                             new_children.append(child)
             elif self.tag == "camera" and self.props_set is None and self.key is None:
-                for p in camera_props:
+                for p in camera_state_org[self.scene]:
                     _all_keyframes = all_keyframes[self.scene]
                     if (p not in props_groups["focusing"] or
                         (persistent._viewer_focusing and perspective_enabled(self.scene))):
@@ -1639,7 +1639,7 @@ init 1 python in _viewers:
             elif isinstance(self.tag, tuple) and self.props_set is None and self.key is None:
                 tag, layer = self.tag
                 _all_keyframes = all_keyframes[self.scene]
-                for p in transform_props:
+                for p in get_image_state(layer, self.scene)[tag]:
                     for _, t, _ in _all_keyframes.get((tag, layer, p), []):
                         child = KeyFrame(insensitive_key_child, t, insensitive_key_hovere_child, False, key=None,
                             clicked=Function(change_time, t))
@@ -2104,7 +2104,7 @@ init 1 python in _viewers:
                 #         if gn != "focusing":
                 #             self.key_list = props_groups[gn]
                 self.force_plus = is_force_plus(key)
-            self.int_type = isinstance(get_value(key, default=True), int) #TODO
+            self.int_type = isinstance(get_value(key, default=True), int)
 
             if is_wide_range(key):
                 self.range = persistent._graphic_editor_wide_range

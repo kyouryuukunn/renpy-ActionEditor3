@@ -363,7 +363,7 @@ init -1598 python in _viewers:
 
 
     def camera_reset():
-        reset([p for p in camera_props])
+        reset([p for p in camera_state_org[current_scene]])
 
 
     def generate_changed(key):
@@ -518,7 +518,7 @@ init -1598 python in _viewers:
         for s, (_, t, _) in enumerate(scene_keyframes):
             check_points = {}
             camera_is_used = False
-            for prop in camera_props:
+            for prop in camera_state_org[s]:
                 if not exclusive_check(prop, s):
                     continue
                 if prop in all_keyframes[s]:
@@ -548,8 +548,8 @@ init -1598 python in _viewers:
                         if not group_flag:
                             for prop in ps:
                                 del check_points[prop]
-                loop.append({prop+"_loop": loops[s][prop] for prop in camera_props})
-                spline.append({prop+"_spline": splines[s][prop] for prop in camera_props})
+                loop.append({prop+"_loop": loops[s][prop] for prop in camera_state_org[s]})
+                spline.append({prop+"_spline": splines[s][prop] for prop in camera_state_org[s]})
                 camera_check_points.append(check_points)
 
         image_check_points = []
@@ -560,7 +560,7 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
-                    for prop in transform_props:
+                    for prop in state[tag]:
                         if not exclusive_check((tag, layer, prop), s):
                             continue
                         if (tag, layer, prop) in all_keyframes[s]:
@@ -688,8 +688,9 @@ init -1598 python in _viewers:
         for layer in image_check_points:
             for tag, zorder in zorder_list[scene_num][layer]:
                 if tag in image_check_points[layer]:
-                    image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop in transform_props}
-                    image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop in transform_props}
+                    state = get_image_state(layer, scene_num)[tag]
+                    image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop in state}
+                    image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop in state}
                     for p in props_groups["focusing"]:
                         image_loop[p+"_loop"] = loops[scene_num][p]
                         image_spline[p+"_spline"] = splines[scene_num][p]
@@ -1375,7 +1376,7 @@ init -1598 python in _viewers:
                 camera_keyframes[k] = [(value, 0, None)]
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
-        for p in camera_props:
+        for p in camera_state_org[current_scene]:
             for gn, ps in props_groups.items():
                 if p in ps:
                     if gn not in camera_properties:
@@ -1425,7 +1426,7 @@ camera"""
         if check_focusing_used() and "blur" in image_keyframes:
             del image_keyframes["blur"]
         image_properties = []
-        for p in transform_props:
+        for p in get_image_state(layer)[tag]:
             for gn, ps in props_groups.items():
                 if p in ps:
                     if gn not in image_properties:
@@ -1670,7 +1671,7 @@ show %s""" % child
 
 
     def camera_keyframes_exist(scene_num):
-        for p in camera_props:
+        for p in camera_state_org[scene_num]:
             if p in all_keyframes[scene_num]:
                 break
         else:
@@ -1696,7 +1697,7 @@ show %s""" % child
             for i in range(s, -1, -1):
                 if camera_keyframes_exist(i):
                     break
-            for p in camera_props:
+            for p in camera_state_org[i]:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
                     camera_state_org[s][p] = round(middle_value, 3)
@@ -1758,7 +1759,7 @@ show %s""" % child
             for i in range(s, -1, -1):
                 if camera_keyframes_exist(i):
                     break
-            for p in camera_props:
+            for p in camera_state_org[i]:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
                     camera_state_org[s][p] = round(middle_value, 3)
@@ -2394,7 +2395,7 @@ show %s""" % child
                             formated_v.append(c)
                     camera_keyframes[k] = formated_v
             camera_properties = []
-            for p in camera_props:
+            for p in camera_state_org[s]:
                 for gn, ps in props_groups.items():
                     if p in ps:
                         if gn not in camera_properties:
@@ -2472,7 +2473,6 @@ show %s""" % child
             for layer in image_state_org[s]:
                 state = get_image_state(layer, s)
                 for tag, _ in zorder_list[s][layer]:
-                    value_org = state[tag]
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes)
                     for k, v in image_keyframes.items():
@@ -2487,7 +2487,7 @@ show %s""" % child
                     if check_focusing_used(s) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
-                    for p in transform_props:
+                    for p in state[tag]:
                         for gn, ps in props_groups.items():
                             if p in ps:
                                 if gn not in image_properties:
@@ -2660,7 +2660,7 @@ show %s""" % child
                     break
             last_camera_scene = i
             camera_keyframes = {k:v for k, v in all_keyframes[last_camera_scene].items() if not isinstance(k, tuple)}
-            for p in camera_props:
+            for p in camera_state_org[last_camera_scene]:
                 if p not in camera_keyframes:
                     if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
                         camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]
