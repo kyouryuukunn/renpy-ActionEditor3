@@ -2028,14 +2028,16 @@ show {imagename}""".format(imagename=child)
             return renpy.python.py_eval(filename.split()[1][:-1])
         else:
             #互換性で残っている未使用のチャンネルで再生
-            #doesn't during mute
+            #doesn't work during mute
+            mute_org = renpy.store._preferences.get_mute("sfx")
+            renpy.store._preferences.set_mute("sfx", False)
             renpy.music.play(filename, channel=1, fadeout=0, loop=False)
             duration = None
             while duration is None:
                 renpy.audio.audio.interact()
                 if renpy.music.is_playing(1) and renpy.music.get_duration(1) != 0:
                     duration = renpy.music.get_duration(1)
-                print(duration)
+            renpy.store._preferences.set_mute("sfx", mute_org)
             renpy.music.stop(1)
             return duration
 
