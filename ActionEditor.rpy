@@ -1289,7 +1289,7 @@ init -1598 python in _viewers:
                 key = prop
         if isinstance(key, tuple):
             tag, layer, prop = key
-            state = get_image_state(layer)[tag]
+            state = get_image_state(layer, scene_num)[tag]
         else:
             prop = key
             state = camera_state_org[scene_num]
