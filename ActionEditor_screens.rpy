@@ -309,7 +309,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
-                                                    if p not in _viewers.boolean_props+["function", "perspective"]:
+                                                    if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                         fixed:
                                                             add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
                                                     # else:
@@ -453,7 +453,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action None text_color "#FFF"
                                                                 add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                        if p not in _viewers.boolean_props+["function", "perspective"]:
+                                                        if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                             fixed:
                                                                 # if key not in in_graphic_mode:
                                                                 add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
