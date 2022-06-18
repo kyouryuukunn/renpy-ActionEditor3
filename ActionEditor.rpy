@@ -534,22 +534,6 @@ init -1598 python in _viewers:
                 spline.append(spline[s-1])
                 camera_check_points.append(camera_check_points[s-1])
             else:
-                #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
-                for gn, ps in props_groups.items():
-                    if gn != "focusing":
-                        group_flag = False
-                        for prop in ps:
-                            if not prop in check_points:
-                                if camera_state_org[s].get(prop, None) is not None:
-                                    v = camera_state_org[s][prop]
-                                else:
-                                    v = get_default(prop)
-                                check_points[prop] = [(v, t, None)]
-                            else:
-                                group_flag =  True
-                        if not group_flag:
-                            for prop in ps:
-                                del check_points[prop]
                 loop.append({prop+"_loop": loops[s][prop] for prop in camera_state_org[s]})
                 spline.append({prop+"_spline": splines[s][prop] for prop in camera_state_org[s]})
                 camera_check_points.append(check_points)
@@ -572,36 +556,13 @@ init -1598 python in _viewers:
                         else:
                             if prop not in not_used_by_default or state[tag][prop] is not None:
                                 check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
-                    #ひとつでもprops_groupsのプロパティがあればグループ単位で追加する
-                    for gn, ps in props_groups.items():
-                        group_flag = False
-                        for prop in ps:
-                            if not prop in check_points[layer][tag]:
-                                if state[tag].get(prop, None) is not None:
-                                    v = state[tag][prop]
-                                else:
-                                    v = get_default(prop)
-                                check_points[layer][tag][prop] = [(v, t, None)]
-                            else:
-                                group_flag = True
-                        if not group_flag:
-                            for prop in ps:
-                                del check_points[layer][tag][prop]
                     if persistent._viewer_focusing and perspective_enabled(s, time=t):
                         if "blur" in check_points[layer][tag]:
                             del check_points[layer][tag]["blur"]
-                        if "focusing" not in check_points[layer][tag]:
-                            check_points[layer][tag]["focusing"] = [(get_default("focusing"), t, None)]
-                            check_points[layer][tag]["dof"] = [(get_default("dof"), t, None)]
                     else:
                         for p in ["focusing", "dof"]:
                             if p in check_points[layer][tag]:
                                 del check_points[layer][tag][p]
-                        if "blur" not in check_points[layer][tag]:
-                            blur = state[tag].get("blur", None)
-                            if blur is None:
-                                blur = get_default("blur")
-                            check_points[layer][tag]["blur"] = [(blur, t, None)]
             image_check_points.append(check_points)
 
             for css in camera_check_points:
@@ -2210,7 +2171,10 @@ show {imagename}""".format(imagename=child)
                                 kwargs = {k:v[i][0] for k, v in group_cache[gn].items()}
                                 t = sample[i][1]
                                 w = sample[i][2]
-                                r.append((generate_groups_clipboard[gn](**kwargs), t, w))
+                                try:
+                                    r.append((generate_groups_clipboard[gn](**kwargs), t, w))
+                                except:
+                                    raise Exception(gn)
                         if r:
                             result[gn] = r
                     break
