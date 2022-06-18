@@ -145,7 +145,8 @@ init -1600 python in _viewers:
     )
 
 
-    special_props = ["child", "function"]
+    #clipboardで個別に出力するプロパティー
+    special_props = {"child", "function"}
     in_editor = False
 
 init 1600 python in _viewers:
