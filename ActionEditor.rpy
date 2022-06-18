@@ -2203,7 +2203,7 @@ show {imagename}""".format(imagename=child)
                     group_cache[gn][p] = cs
                     if len(group_cache[gn]) == len(props_groups[gn]):
                         r = None
-                        if gn != "focusing:":
+                        if gn != "focusing":
                             r = []
                             sample = list(group_cache[gn].values())[0]
                             for i in range(len(sample)):
