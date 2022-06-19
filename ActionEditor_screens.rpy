@@ -756,58 +756,56 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.camera_state_org[current_scene]:
-                        if p in props_set and (p not in props_groups["focusing"] or 
-                            (persistent._viewer_focusing and perspective_enabled())):
-                            $value = get_value(p, default=True)
-                            $f = generate_changed(p)
-                            $use_wide_range = is_wide_range(p)
-                            if use_wide_range:
-                                $value_range = persistent._wide_range
-                                $bar_page = 1
-                            else:
-                                $value_range = persistent._narrow_range
-                                $bar_page = .05
-                            if isinstance(value, float):
-                                $value_format = float_format
-                            else:
-                                $value_format = int_format
-                            hbox:
-                                textbutton "  [p]":
-                                    action [SensitiveIf(p in all_keyframes[current_scene]),
-                                    SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
-                                if p == "perspective":
-                                    textbutton "[value]":
-                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
-                                        Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
-                                elif p == "function":
-                                    textbutton "[value[0]]":
+                    for p in _viewers.expand_props_set(props_set, "camera", current_scene):
+                        $value = get_value(p, default=True)
+                        $f = generate_changed(p)
+                        $use_wide_range = is_wide_range(p)
+                        if use_wide_range:
+                            $value_range = persistent._wide_range
+                            $bar_page = 1
+                        else:
+                            $value_range = persistent._narrow_range
+                            $bar_page = .05
+                        if isinstance(value, float):
+                            $value_format = float_format
+                        else:
+                            $value_format = int_format
+                        hbox:
+                            textbutton "  [p]":
+                                action [SensitiveIf(p in all_keyframes[current_scene]),
+                                SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
+                            if p == "perspective":
+                                textbutton "[value]":
+                                    action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
+                                    Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
+                            elif p == "function":
+                                textbutton "[value[0]]":
+                                    action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.edit_function, p)]
+                            elif p in _viewers.any_props:
+                                if isinstance(value, str):
+                                    textbutton "'[value]'":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_function, p)]
-                                elif p in _viewers.any_props:
-                                    if isinstance(value, str):
-                                        textbutton "'[value]'":
-                                            action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, p)]
-                                    else:
-                                        textbutton "[value]":
-                                            action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, p)]
-                                elif p in _viewers.boolean_props:
-                                    textbutton "[value]":
-                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.toggle_boolean_property, p)]
+                                        Function(_viewers.edit_any, p)]
                                 else:
-                                    if is_force_plus(p):
-                                        $bar_value = value
-                                    else:
-                                        $bar_value = value + value_range
-                                        $value_range = value_range*2
-                                    textbutton value_format.format(value):
-                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                        alternate Function(reset, p) style_group "action_editor_b"
-                                    bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                        xalign 1. yalign .5 style "action_editor_bar"
+                                    textbutton "[value]":
+                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                        Function(_viewers.edit_any, p)]
+                            elif p in _viewers.boolean_props:
+                                textbutton "[value]":
+                                    action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.toggle_boolean_property, p)]
+                            else:
+                                if is_force_plus(p):
+                                    $bar_value = value
+                                else:
+                                    $bar_value = value + value_range
+                                    $value_range = value_range*2
+                                textbutton value_format.format(value):
+                                    action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
+                                    alternate Function(reset, p) style_group "action_editor_b"
+                                bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                    xalign 1. yalign .5 style "action_editor_bar"
                 else:
                     hbox:
                         textbutton "+ "+props_set_name:
@@ -816,68 +814,65 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.get_image_state(layer, current_scene)[tab]:
-                        if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
-                            and perspective_enabled()) and p != "blur") 
-                            or (not persistent._viewer_focusing or not perspective_enabled()))):
-                            $key = (tab, layer, p)
-                            $value = get_value(key, default=True)
-                            $f = generate_changed(key)
-                            $use_wide_range = is_wide_range(key)
-                            if use_wide_range:
-                                $value_range = persistent._wide_range
-                                $bar_page = 1
-                            else:
-                                $value_range = persistent._narrow_range
-                                $bar_page = .05
-                            if isinstance(value, float):
-                                $value_format = float_format
-                            else:
-                                $value_format = int_format
-                            hbox:
-                                textbutton "  [p]":
+                    for p in _viewers.expand_props_set(props_set, (tag, layer), current_scene):
+                        $key = (tab, layer, p)
+                        $value = get_value(key, default=True)
+                        $f = generate_changed(key)
+                        $use_wide_range = is_wide_range(key)
+                        if use_wide_range:
+                            $value_range = persistent._wide_range
+                            $bar_page = 1
+                        else:
+                            $value_range = persistent._narrow_range
+                            $bar_page = .05
+                        if isinstance(value, float):
+                            $value_format = float_format
+                        else:
+                            $value_format = int_format
+                        hbox:
+                            textbutton "  [p]":
+                                action [SensitiveIf(key in all_keyframes[current_scene]), 
+                                SelectedIf(keyframes_exist(key)), 
+                                Show("_edit_keyframe", key=key, change_func=f)]
+                            if p == "child":
+                                textbutton "[value[0]]":
+                                    action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                    Function(_viewers.change_child, tab, layer, default=value[0])]
+                                    size_group None
+                                textbutton "with" action None size_group None
+                                textbutton "[value[1]]":
                                     action [SensitiveIf(key in all_keyframes[current_scene]), 
-                                    SelectedIf(keyframes_exist(key)), 
-                                    Show("_edit_keyframe", key=key, change_func=f)]
-                                if p == "child":
-                                    textbutton "[value[0]]":
-                                        action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
-                                        Function(_viewers.change_child, tab, layer, default=value[0])]
-                                        size_group None
-                                    textbutton "with" action None size_group None
-                                    textbutton "[value[1]]":
-                                        action [SensitiveIf(key in all_keyframes[current_scene]), 
-                                        SelectedIf(keyframes_exist((tab, layer, "child"))), 
-                                        Function(_viewers.edit_transition, tab, layer)]
-                                        size_group None
-                                elif p == "function":
-                                    textbutton "[value[0]]":
+                                    SelectedIf(keyframes_exist((tab, layer, "child"))), 
+                                    Function(_viewers.edit_transition, tab, layer)]
+                                    size_group None
+                            elif p == "function":
+                                textbutton "[value[0]]":
+                                    action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.edit_function, key)]
+                            elif p in _viewers.any_props:
+                                if isinstance(value, str):
+                                    textbutton "'[value]'":
                                         action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_function, key)]
-                                elif p in _viewers.any_props:
-                                    if isinstance(value, str):
-                                        textbutton "'[value]'":
-                                            action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, key)]
-                                    else:
-                                        textbutton "[value]":
-                                            action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                            Function(_viewers.edit_any, key)]
-                                elif p in _viewers.boolean_props:
+                                        Function(_viewers.edit_any, key)]
+                                else:
                                     textbutton "[value]":
                                         action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.toggle_boolean_property, key)]
+                                        Function(_viewers.edit_any, key)]
+                            elif p in _viewers.boolean_props:
+                                textbutton "[value]":
+                                    action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.toggle_boolean_property, key)]
+                            else:
+                                if is_force_plus(p):
+                                    $bar_value = value
                                 else:
-                                    if is_force_plus(p):
-                                        $bar_value = value
-                                    else:
-                                        $bar_value = value + value_range
-                                        $value_range = value_range*2
-                                    textbutton value_format.format(value):
-                                        action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                        alternate Function(reset, key) style_group "action_editor_b"
-                                    bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                        xalign 1. yalign .5 style "action_editor_bar"
+                                    $bar_value = value + value_range
+                                    $value_range = value_range*2
+                                textbutton value_format.format(value):
+                                    action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
+                                    alternate Function(reset, key) style_group "action_editor_b"
+                                bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                    xalign 1. yalign .5 style "action_editor_bar"
                 else:
                     hbox:
                         textbutton "+ "+props_set_name:
