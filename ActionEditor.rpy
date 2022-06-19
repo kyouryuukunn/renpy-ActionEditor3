@@ -750,7 +750,7 @@ init -1598 python in _viewers:
                         if spline is not None and p+"_spline" in spline and checkpoint in spline[p+"_spline"]:
                             knots = spline[p+"_spline"][checkpoint]
                             if knots:
-                                knots = [start_v] + knots + [goal[0]]
+                                knots = [start[0]] + knots + [goal[0]]
 
                         if knots:
                             v = renpy.atl.interpolate_spline(g, knots)
@@ -2047,7 +2047,7 @@ show {imagename}""".format(imagename=child)
 
 
     def open_action_editor():
-        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing, in_editor
+        global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing, in_editor, loops, splines
         if not config.developer:
             return
         playing = False
