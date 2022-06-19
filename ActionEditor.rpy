@@ -2132,7 +2132,6 @@ show {imagename}""".format(imagename=child)
             renpy.music.stop(c)
         action_editor_init()
         in_editor = True
-        camera_icon.init(True, True)
         _window = renpy.store._window
         renpy.store._window = False
         _skipping_org = renpy.store._skipping
