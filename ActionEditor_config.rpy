@@ -80,7 +80,7 @@ init -1600 python in _viewers:
 
     props_groups = {
         "alignaround":["xalignaround", "yalignaround"], 
-        "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
+        "matrixtransform":["offsetX", "offsetY", "offsetZ", "rotateX", "rotateY", "rotateZ"], 
         "matrixanchor":["matrixanchorX", "matrixanchorY"], 
         "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
         "crop":["cropX", "cropY", "cropW", "cropH"], 
@@ -296,52 +296,3 @@ init 1600 python in _viewers:
     "function": (None, None), 
     "perspective": None, #Falseならカメラ動作せず、Noneなら普通の画像として動作
     }
-
-
-    generate_groups_value = {}
-    def generate_matrixtransform_value(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        return Matrix.offset(offsetX, offsetY, offsetZ)*Matrix.rotate(rotateX, rotateY, rotateZ)
-    generate_groups_value["matrixtransform"] = generate_matrixtransform_value
-
-    def generate_matrixanchor_value(matrixanchorX, matrixanchorY):
-        return (matrixanchorX, matrixanchorY)
-    generate_groups_value["matrixanchor"] = generate_matrixanchor_value
-
-    def generate_matrixcolor_value(invert, contrast, saturate, bright, hue):
-        return InvertMatrix(invert)*ContrastMatrix(contrast)*SaturationMatrix(saturate)*BrightnessMatrix(bright)*HueMatrix(hue)
-    generate_groups_value["matrixcolor"] = generate_matrixcolor_value
-
-    def generate_crop_value(cropX, cropY, cropW, cropH):
-        return (cropX, cropY, cropW, cropH)
-    generate_groups_value["crop"] = generate_crop_value
-
-    def generate_alignaround_value(xalignaround, yalignaround):
-        return (xalignaround, yalignaround)
-    generate_groups_value["alignaround"] = generate_alignaround_value
-
-
-    generate_groups_clipboard = {}
-    def generate_matrixtransform_clipboard(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
-        return v % (offsetX, offsetY, offsetZ, rotateX, rotateY, rotateZ)
-    generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
-
-    def generate_matrixanchor_clipboard(matrixanchorX, matrixanchorY):
-        v = "(%s, %s)"
-        return v % (matrixanchorX, matrixanchorY)
-    generate_groups_clipboard["matrixanchor"] = generate_matrixanchor_clipboard
-
-    def generate_matrixcolor_clipboard(invert, contrast, saturate, bright, hue):
-        v = "InvertMatrix(%s)*ContrastMatrix(%s)*SaturationMatrix(%s)*BrightnessMatrix(%s)*HueMatrix(%s)"
-        return v % (invert, contrast, saturate, bright, hue)
-    generate_groups_clipboard["matrixcolor"] = generate_matrixcolor_clipboard
-
-    def generate_crop_clipboard(cropX, cropY, cropW, cropH):
-        v = "(%s, %s, %s, %s)"
-        return v % (cropX, cropY, cropW, cropH)
-    generate_groups_clipboard["crop"] = generate_crop_clipboard
-
-    def generate_alignaround_clipboard(xalignaround, yalignaround):
-        v = "(%s, %s)"
-        return v % (xalignaround, yalignaround)
-    generate_groups_clipboard["alignaround"] = generate_alignaround_clipboard

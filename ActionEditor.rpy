@@ -492,6 +492,14 @@ init -1598 python in _viewers:
                             camera_state_org[s][p] = middle_value
 
 
+    def generate_matrix_strings(args, matrix):
+        if matrix == "matrixtransform":
+            v = "OffsetMatrix({}, {}, {})*RotateMatrix({}, {}, {})".format(*args)
+        else:
+            v = "InvertMatrix({})*ContrastMatrix({})*SaturationMatrix({})*BrightnessMatrix({})*HueMatrix({})".format(*args)
+        return v
+
+
     def play(play):
         if play:
             for channel, times in sound_keyframes.items():
@@ -529,13 +537,28 @@ init -1598 python in _viewers:
                 else:
                     if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
                         check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
+            for gn, ps in props_groups.items():
+                #focusing以外のグループプロパティーはここで纏める
+                if ps[0] in check_points and gn != "focusing":
+                    args = []
+                    for prop in ps:
+                        args.append(check_points[prop])
+                        del check_points[prop]
+                    group_cs = []
+                    for cs in zip(*args):
+                        v = tuple(c[0] for c in cs)
+                        if gn in ("matrixtransform", "matrixcolor"):
+                            v = generate_matrix_strings(v, matrix=gn)
+                            v = renpy.python.py_eval(v)
+                        group_cs.append((v, cs[0][1], cs[0][2]))
+                    check_points[gn] = group_cs
             if not camera_is_used and s > 0:
                 loop.append(loop[s-1])
                 spline.append(spline[s-1])
                 camera_check_points.append(camera_check_points[s-1])
             else:
-                loop.append({prop+"_loop": loops[s][prop] for prop in camera_state_org[s]})
-                spline.append({prop+"_spline": splines[s][prop] for prop in camera_state_org[s]})
+                loop.append({key+"_loop": loops[s][key] for key in loops[s] if not isinstance(key, tuple)})
+                spline.append({key+"_spline": splines[s][key] for key in splines[s] if not isinstance(key, tuple)})
                 camera_check_points.append(check_points)
 
         image_check_points = []
@@ -556,6 +579,21 @@ init -1598 python in _viewers:
                         else:
                             if prop not in not_used_by_default or state[tag][prop] is not None:
                                 check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
+                    for gn, ps in props_groups.items():
+                        #focusing以外のグループプロパティーはここで纏める
+                        if ps[0] in check_points[layer][tag] and gn != "focusing":
+                            args = []
+                            for prop in ps:
+                                args.append(check_points[layer][tag][prop])
+                                del check_points[layer][tag][prop]
+                            group_cs = []
+                            for cs in zip(*args):
+                                v = tuple(c[0] for c in cs)
+                                if gn in ("matrixtransform", "matrixcolor"):
+                                    v = generate_matrix_strings(v, matrix=gn)
+                                    v = renpy.python.py_eval(v)
+                                group_cs.append((v, cs[0][1], cs[0][2]))
+                            check_points[layer][tag][gn] = group_cs
                     if persistent._viewer_focusing and perspective_enabled(s, time=t):
                         if "blur" in check_points[layer][tag]:
                             del check_points[layer][tag]["blur"]
@@ -651,9 +689,8 @@ init -1598 python in _viewers:
         for layer in image_check_points:
             for tag, zorder in zorder_list[scene_num][layer]:
                 if tag in image_check_points[layer]:
-                    state = get_image_state(layer, scene_num)[tag]
-                    image_loop = {prop+"_loop": loops[scene_num][(tag, layer, prop)] for prop in state}
-                    image_spline = {prop+"_spline": splines[scene_num][(tag, layer, prop)] for prop in state}
+                    image_loop = {key[2]+"_loop": loops[scene_num][key] for key in loops[scene_num] if isinstance(key, tuple) and key[0] == tag and key[1] == layer}
+                    image_spline = {key[2]+"_spline": splines[scene_num][key] for key in splines[scene_num] if isinstance(key, tuple) and key[0] == tag and key[1] == layer}
                     for p in props_groups["focusing"]:
                         image_loop[p+"_loop"] = loops[scene_num][p]
                         image_spline[p+"_spline"] = splines[scene_num][p]
@@ -687,7 +724,7 @@ init -1598 python in _viewers:
             if not cs:
                 break
 
-            if loop[p+"_loop"] and cs[-1][1]:
+            if p+"_loop" in loop and loop[p+"_loop"] and cs[-1][1]:
                 if time % cs[-1][1] != 0:
                     time = time % cs[-1][1]
 
@@ -699,6 +736,7 @@ init -1598 python in _viewers:
                     start = cs[i-1]
                     goal = cs[i]
                     if p not in ("child", "function"):
+
                         if checkpoint != pre_checkpoint:
                             if goal[2].startswith("warper_generator"):
                                 warper = renpy.python.py_eval(goal[2])
@@ -707,69 +745,26 @@ init -1598 python in _viewers:
                             g = warper((time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                         else:
                             g = 1.
-                        default = get_default(p)
-                        if goal[0] is not None or p in boolean_props | any_props:
-                            if start[0] is None:
-                                start_v = default
-                            else:
-                                start_v = start[0]
-                            knots = []
-                            if spline is not None and checkpoint in spline[p+"_spline"]:
-                                knots = spline[p+"_spline"][checkpoint]
-                                if knots:
-                                    knots = [start_v] + knots + [goal[0]]
+
+                        knots = []
+                        if spline is not None and p+"_spline" in spline and checkpoint in spline[p+"_spline"]:
+                            knots = spline[p+"_spline"][checkpoint]
                             if knots:
-                                v = renpy.atl.interpolate_spline(g, knots)
-                            elif p in boolean_props | any_props:
-                                v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[p])
-                            else:
-                                v = g*(goal[0]-start_v)+start_v
-                            if isinstance(goal[0], int):
-                                v = int(v)
-                            for gn, ps in props_groups.items():
-                                if p in ps:
-                                    group_cache[gn][p] = v
-                                    if len(group_cache[gn]) == len(props_groups[gn]):
-                                        if gn != "focusing":
-                                            setattr(tran, gn, generate_groups_value[gn](**group_cache[gn]))
-                                        else:
-                                            focusing = group_cache["focusing"]["focusing"]
-                                            dof = group_cache["focusing"]["dof"]
-                                            image_zpos = 0
-                                            if tran.zpos:
-                                                image_zpos = tran.zpos
-                                            if tran.matrixtransform:
-                                                image_zpos += tran.matrixtransform.zdw
-                                            camera_zpos = 0
-                                            if in_editor:
-                                                camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
-                                            else:
-                                                if "master" in sle.camera_transform:
-                                                    props = sle.camera_transform["master"]
-                                                    if props.zpos:
-                                                        camera_zpos = props.zpos
-                                                    if props.matrixtransform:
-                                                        camera_zpos -= props.matrixtransform.zdw
-                                            result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
-                                            setattr(tran, "blur", result)
-                                    break
-                            else:
-                                setattr(tran, p, v)
-                    break
-            else:
-                if time < scene_start:
-                    fixed_index = 0
-                else:
-                    fixed_index = -1
-                for gn, ps in props_groups.items():
-                    if p in ps:
-                        group_cache[gn][p] = cs[fixed_index][0]
-                        if len(group_cache[gn]) == len(props_groups[gn]):
-                            if gn != "focusing":
-                                setattr(tran, gn, generate_groups_value[gn](**group_cache[gn]))
-                            else:
-                                focusing = group_cache["focusing"]["focusing"]
-                                dof = group_cache["focusing"]["dof"]
+                                knots = [start_v] + knots + [goal[0]]
+
+                        if knots:
+                            v = renpy.atl.interpolate_spline(g, knots)
+                        elif p not in props_groups["focusing"]:
+                            s = start[0]
+                            if p in ("matrixtransform", "matrixcolor"):
+                                s = start[0](None, 1.0)
+                                s.origin = start[0]
+                            v = renpy.atl.interpolate(g, s, goal[0], renpy.atl.PROPERTIES[p])
+                        if p in props_groups["focusing"]:
+                            group_cache[p] = v
+                            if len(group_cache) == len(props_groups):
+                                focusing = group_cache["focusing"]
+                                dof = group_cache["dof"]
                                 image_zpos = 0
                                 if tran.zpos:
                                     image_zpos = tran.zpos
@@ -787,10 +782,44 @@ init -1598 python in _viewers:
                                             camera_zpos -= props.matrixtransform.zdw
                                 result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                                 setattr(tran, "blur", result)
-                        break
+                        else:
+                            if camera and p == "matrixtransform":
+                                renpy.store.test = (v, start[0], goal[0])
+                            setattr(tran, p, v)
+                    break
+            else:
+                if time < scene_start:
+                    fixed_index = 0
+                else:
+                    fixed_index = -1
+                if p in props_groups["focusing"]:
+                    group_cache[p] = cs[fixed_index][0]
+                    if len(group_cache) == len(props_groups[gn]):
+                        focusing = group_cache["focusing"]
+                        dof = group_cache["dof"]
+                        image_zpos = 0
+                        if tran.zpos:
+                            image_zpos = tran.zpos
+                        if tran.matrixtransform:
+                            image_zpos += tran.matrixtransform.zdw
+                        camera_zpos = 0
+                        if in_editor:
+                            camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
+                        else:
+                            if "master" in sle.camera_transform:
+                                props = sle.camera_transform["master"]
+                                if props.zpos:
+                                    camera_zpos = props.zpos
+                                if props.matrixtransform:
+                                    camera_zpos -= props.matrixtransform.zdw
+                        result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
+                        setattr(tran, "blur", result)
                 else:
                     if p not in ("child", "function"):
-                        setattr(tran, p, cs[fixed_index][0])
+                        v = cs[fixed_index][0]
+                        if p in ("matrixtransform", "matrixcolor"):
+                            v = v(1.0, None)
+                        setattr(tran, p, v)
 
         if "child" in check_points and check_points["child"]:
             cs = check_points["child"]
@@ -2156,30 +2185,26 @@ show {imagename}""".format(imagename=child)
 
 
     def set_group_keyframes(keyframes):
-        result = {}
-        group_cache = defaultdict(lambda:{})
-        for p, cs in keyframes.items():
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    group_cache[gn][p] = cs
-                    if len(group_cache[gn]) == len(props_groups[gn]):
-                        r = None
-                        if gn != "focusing":
-                            r = []
-                            sample = list(group_cache[gn].values())[0]
-                            for i in range(len(sample)):
-                                kwargs = {k:v[i][0] for k, v in group_cache[gn].items()}
-                                t = sample[i][1]
-                                w = sample[i][2]
-                                try:
-                                    r.append((generate_groups_clipboard[gn](**kwargs), t, w))
-                                except:
-                                    raise Exception(gn)
-                        if r:
-                            result[gn] = r
-                    break
-            else:
-                result[p] = cs
+        result = keyframes.copy()
+
+        for gn, ps in props_groups.items():
+            #focusing以外のグループプロパティーはここで纏める
+            if ps[0] in result and gn != "focusing":
+                args = []
+                for prop in ps:
+                    args.append(result[prop])
+                    del result[prop]
+                group_cs = []
+                for cs in zip(*args):
+                    v = tuple(c[0] for c in cs)
+                    if gn in ("matrixtransform", "matrixcolor"):
+                        v = generate_matrix_strings(v, matrix=gn)
+                    group_cs.append((v, cs[0][1], cs[0][2]))
+                result[gn] = group_cs
+
+        for p in ["focusing", "dof"]:
+            if p in result:
+                del result[p]
         return result
 
 
