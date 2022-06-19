@@ -251,11 +251,16 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             $key = p
                                             $value = get_value(p, default=True)
                                             $f = generate_changed(p)
-                                            $use_wide_range = is_wide_range(key)
+                                            $use_wide_range = is_wide_range(key, s)
                                             if isinstance(value, float):
                                                 $value_format = float_format
                                             else:
                                                 $value_format = int_format
+                                            $shown_p = p
+                                            if p.count("_") == 3:
+                                                $sign, num1, num2, p2 = p.split("_")
+                                                if sign in ("matrixtransform", "matrixcolor"):
+                                                    $shown_p = p2
                                             hbox:
                                                 if p == "perspective":
                                                     hbox:
@@ -302,7 +307,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 else:
                                                     hbox:
                                                         style_group "new_action_editor_c"
-                                                        textbutton indent*3+"  [p]" action None text_color "#FFF"
+                                                        textbutton indent*3+"  [shown_p]" action None text_color "#FFF"
                                                         add DraggableValue(value_format, key, f, is_force_plus(p),
                                                             text_size=16, text_color="#CCC", text_hover_underline=True)
                                                 # if key not in in_graphic_mode:
@@ -383,11 +388,16 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 $key = (tag, layer, p)
                                                 $value = get_value(key, default=True)
                                                 $f = generate_changed(key)
-                                                $use_wide_range = is_wide_range(key)
+                                                $use_wide_range = is_wide_range(key, s)
                                                 if isinstance(value, float):
                                                     $value_format = float_format
                                                 else:
                                                     $value_format = int_format
+                                                $shown_p = p
+                                                if p.count("_") == 3:
+                                                    $sign, num1, num2, p2 = p.split("_")
+                                                    if sign in ("matrixtransform", "matrixcolor"):
+                                                        $shown_p = p2
                                                 hbox:
                                                     if p == "child":
                                                         vbox:
@@ -443,7 +453,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     else:
                                                         hbox:
                                                             style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
+                                                            textbutton indent*3+"  [shown_p]":
                                                                 action None text_color "#FFF"
                                                             add DraggableValue(value_format, key, f, is_force_plus(p),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
@@ -1063,10 +1073,11 @@ screen _edit_keyframe(key, change_func=None):
     $use_wide_range=_viewers.is_wide_range(key)
     if isinstance(key, tuple):
         $n, l, p = key
+        $mkey = (n, l)
         $k_list = [key]
         $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
-        $check_result = _viewers.check_props_group(p)
+        $check_result = _viewers.check_props_group(p, mkey)
         if check_result is not None:
             $gn, ps = check_result
             $k_list = [(n, l, p) for p in ps]
@@ -1074,10 +1085,11 @@ screen _edit_keyframe(key, change_func=None):
             $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[(n, l, gn)]]
     else:
         $k_list = [key]
-        $p = key
+        $mkey = (n, l)
+        $p = "camera"
         $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
-        $check_result = _viewers.check_props_group(key)
+        $check_result = _viewers.check_props_group(key, mkey)
         if check_result is not None:
             $gn, ps = check_result
             if gn != "focusing":
@@ -1102,7 +1114,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action None
-                        if check_props_group(p) is None:
+                        if check_props_group(p, mkey) is None:
                             textbutton _("spline") action None
                         textbutton _("{}".format(v)) action [\
                             Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
@@ -1117,7 +1129,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        if check_props_group(p) is None:
+                        if check_props_group(p, mkey) is None:
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
@@ -1247,25 +1259,37 @@ init 1 python in _viewers:
 
     def expand_props_set(props_set, tag, scene_num):
         rv = []
-        if tag != "camera":
+        if tag == "camera":
+            state = camera_state_org[scene_num]
+        else:
             tag, layer = tag
+            state = get_image_state(layer, scene_num)[tag]
 
         for p in props_set:
-            if tag == "camera":
-                if p not in camera_state_org[scene_num]:
-                    continue
-                if p == "child":
-                    continue
-                if p in props_groups["focusing"] and (not persistent._viewer_focusing or not perspective_enabled(scene_num)):
-                    continue
+            if p in ("matrixtransform", "matrixcolor"):
+                matrixargs = []
+                for prop in state:
+                    if prop.count("_") == 3:
+                        sign, num1, num2, matrix_prop = prop.split("_")
+                        if sign == p:
+                            matrixargs.append(prop)
+                rv.extend(matrixargs)
             else:
-                if p not in get_image_state(layer, scene_num)[tag]:
-                    continue
-                if p in props_groups["focusing"]:
-                    continue
-                elif persistent._viewer_focusing and perspective_enabled(scene_num) and p == "blur":
-                    continue
-            rv.append(p)
+                if tag == "camera":
+                    if p not in state:
+                        continue
+                    if p == "child":
+                        continue
+                    if p in props_groups["focusing"] and (not persistent._viewer_focusing or not perspective_enabled(scene_num)):
+                        continue
+                else:
+                    if p not in state:
+                        continue
+                    if p in props_groups["focusing"]:
+                        continue
+                    elif persistent._viewer_focusing and perspective_enabled(scene_num) and p == "blur":
+                        continue
+                rv.append(p)
         return rv
 
 
@@ -1356,13 +1380,13 @@ init 1 python in _viewers:
         if not is_sound:
             if isinstance(key, tuple):
                 n, l, p = key
-                check_result = check_props_group(p)
+                check_result = check_props_group(p, (n, l))
                 if check_result is not None:
                     _, ps = check_result
                     key_list = [(n, l, p) for p in ps]
             else:
                 p = key
-                check_result = check_props_group(p)
+                check_result = check_props_group(p, "camera")
                 if check_result is not None:
                     gn, ps = check_result
                     if gn != "focusing":
@@ -1982,13 +2006,13 @@ init 1 python in _viewers:
             self.key_list = [key]
             if isinstance(key, tuple):
                 n, l, p = key
-                check_result = check_props_group(p)
+                check_result = check_props_group(p, (n, l))
                 if check_result is not None:
                     _, ps = check_result
                     self.key_list = [(n, l, p) for p in ps]
                 self.force_plus = is_force_plus(p)
             else:
-                check_result = check_props_group(key)
+                check_result = check_props_group(key, "camera")
                 if check_result is not None:
                     gn, ps = check_result
                     if gn != "focusing":
@@ -2211,13 +2235,13 @@ init 1 python in _viewers:
             if key is not None:
                 if isinstance(key, tuple):
                     n, l, p = key
-                    check_result = check_props_group(p)
+                    check_result = check_props_group(p, (n, l))
                     if check_result is not None:
                         _, ps = check_result
                         self.key_list = [(n, l, p) for p in ps]
                     self.force_plus = is_force_plus(p)
                 else:
-                    check_result = check_props_group(key)
+                    check_result = check_props_group(key, "camera")
                     if check_result is not None:
                         gn, ps = check_result
                         if gn != "focusing":
@@ -2980,10 +3004,11 @@ init 1 python in _viewers:
         (v, t, w) = check_point
         if isinstance(key, tuple):
             n, l, p = key
+            mkey = (n, l)
             k_list = [key]
             check_points_list = [check_points]
             loop_button_action = [ToggleDict(loops[current_scene], key)]
-            check_result = check_props_group(p)
+            check_result = check_props_group(p, mkey)
             if check_result is not None:
                 gn, ps = check_result
                 k_list = [(n, l, p) for p in ps]
@@ -2991,10 +3016,11 @@ init 1 python in _viewers:
                 loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
         else:
             k_list = [key]
+            mkey = "camera"
             p = key
             check_points_list = [check_points]
             loop_button_action = [ToggleDict(loops[current_scene], key)]
-            check_result = check_props_group(p)
+            check_result = check_props_group(p, mkey)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
@@ -3025,7 +3051,7 @@ init 1 python in _viewers:
             if i > 0 and in_graphic_mode:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
-            if check_props_group(p) is None:
+            if check_props_group(p, mkey) is None:
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 

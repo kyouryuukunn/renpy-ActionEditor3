@@ -85,13 +85,6 @@ lemma forum
  * blur transform property of each images are used for simulating camera blur in function transform prperty,
    so blur transform properties of each images aren't availabe when focusing is enabled.
    Set function property to None when you want to disable camera blur for already shownd images.
- * ActionEditor Can't get correct value If any other matrixtransform than below Matrixes are used.:
-   1. OffsetMatrix * RotateMatrix
-   2. OffsetMatrix
-   3. RotateMatrix
- * ActionEditor can't get correct value If any other matrixcolor than below Matrixes are used.:
-   1. InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
-   2. One of above matrixes
  * Unfortunately, The behavior of functions for function property isn't same as ATL.
    There are some different points.
    1. inherited_<property> have no value.
@@ -120,8 +113,8 @@ lemma forum
 
  If it is integer or float and required. :
 
- * `force_float`: it is always float.
  * `force_wide_range`: it has the same scale as integer even when it is float type.
+ * `force_narrow_range`: it has the same scale as float even when it is int type.
  * `force_plus`: it is always plus.
 
  If it is boolean type. :
@@ -132,39 +125,26 @@ lemma forum
 
  * `any_props` : This type isn't checked error. so you should pay attention to the input order.
 
-
- Property Group
-================
-
- For tuple, You can use `props_groups` where that key is the property name and that value
- is the tuple of each element name, so that they can be edited individually. Also
- set `generate_groups_clipboard` and `generate_groups_value` to combine individual
- values into one. example:
-
-    props_groups = {
-        "alignaround":["xalignaround", "yalignaround"], 
-        "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
-        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
-        "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
-        "crop":["cropX", "cropY", "cropW", "cropH"], 
-        "focusing":["focusing", "dof"], 
-    }
-
-    def generate_matrixtransform_value(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        return Matrix.offset(offsetX, offsetY, offsetZ)*Matrix.rotate(rotateX, rotateY, rotateZ)
-    generate_groups_value["matrixtransform"] = generate_matrixtransform_value
-
-    def generate_matrixtransform_clipboard(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
-        return v % (offsetX, offsetY, offsetZ, rotateX, rotateY, rotateZ)
-    generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
-
  Exclusive proparties like tile and pan should be set in exclusive. example:
 
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
+
+
+ Property Group
+================
+
+ For tuple, You can use `props_groups` where that key is the property name and that value
+ is the tuple of each element name, so that they can be edited individually. example:
+
+    props_groups = {
+        "alignaround":["xalignaround", "yalignaround"], 
+        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
+        "crop":["cropX", "cropY", "cropW", "cropH"], 
+        "focusing":["focusing", "dof"], 
+    }
 
 
  Image Viewer
@@ -272,13 +252,6 @@ lemma forum
  注意
 
  * focusingを有効化している間、function transform プロパティーで利用しているため各画像のblurは利用できなくなります。
- * matrixtransformプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
-   1. OffsetMatrix * RotateMatrix
-   2. OffsetMatrix
-   3. RotateMatrix
- * matrixcolorプロパティーの値をエディターで読み込むことは困難なため現在以下の順番、組み合わせのみに対応しています。
-   1. InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
-   2. 上記のマトリックス中の1つ
  * function ステートメントに関数を指定できますが、ActionEditorとATL中で関数が同じ動作をしないことに注意してください。
   以下の制限があります。
    1. inherited_(property) では値を取得できません
@@ -310,8 +283,8 @@ lemma forum
 
  整数または浮動小数の場合、必要なら以下に追加したいプロパティー名を加えます。:
 
- * `force_float`: 常に値が浮動小数になります。
  * `force_wide_range`: 値が浮動小数でも整数と同じ幅で値を調整できます。
+ * `force_narrow_range`: 値が整数でも浮動小数と同じ幅で値を調整できます。
  * `force_plus`: 常に値が正の数となります。
 
  真偽値の場合、以下に追加したいプロパティー名を加えます。:
@@ -322,38 +295,26 @@ lemma forum
 
  * `any_props` : 使用時はエラーチェックを行なえないので入力順番等に注意してください。
 
-
- プロパティーグループ
-================
-
- タプルなど複数の値で1つのプロパティーを設定するものは props_groups でプロパティー名をキーに、
- 各要素名を値にして登録すれば個別に編集できます。個別の値を1つにまとめるために 
- `generate_groups_clipboard`, `generate_groups_value` も設定してください。例:
-
-    props_groups = {
-        "alignaround":["xalignaround", "yalignaround"], 
-        "matrixtransform":["rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ"], 
-        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
-        "matrixcolor":["invert", "contrast", "saturate", "bright", "hue"], 
-        "crop":["cropX", "cropY", "cropW", "cropH"], 
-        "focusing":["focusing", "dof"], 
-    }
-
-    def generate_matrixtransform_value(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        return Matrix.offset(offsetX, offsetY, offsetZ)*Matrix.rotate(rotateX, rotateY, rotateZ)
-    generate_groups_value["matrixtransform"] = generate_matrixtransform_value
-
-    def generate_matrixtransform_clipboard(rotateX, rotateY, rotateZ, offsetX, offsetY, offsetZ):
-        v = "OffsetMatrix(%s, %s, %s)*RotateMatrix(%s, %s, %s)"
-        return v % (offsetX, offsetY, offsetZ, rotateX, rotateY, rotateZ)
-    generate_groups_clipboard["matrixtransform"] = generate_matrixtransform_clipboard
-
  tileとpanのような排他的なプロパティーはexclusiveにも登録してください。例:
 
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
+
+
+ プロパティーグループ
+================
+
+ 値がタプルであるプロパティーは props_groups でプロパティー名をキーに、
+ 各要素名を値にして登録すれば個別に編集できます。例:
+
+    props_groups = {
+        "alignaround":["xalignaround", "yalignaround"], 
+        "matrixanchor":["matrixanchorX", "matrixanchorY"], 
+        "crop":["cropX", "cropY", "cropW", "cropH"], 
+        "focusing":["focusing", "dof"], 
+    }
 
 
  画像ビューワー

@@ -125,7 +125,11 @@ init -1598 python in _viewers:
         movie_cache = {}
         props = sle.camera_transform["master"]
         for p in camera_props:
-            camera_state_org[current_scene][p] = getattr(props, p, None)
+            if p in ("matrixtransform", "matrixcolor"):
+                for prop, v in load_matrix(p, getattr(props, p, None)):
+                    camera_state_org[current_scene][prop] = v
+            else:
+                camera_state_org[current_scene][p] = getattr(props, p, None)
         for gn, ps in props_groups.items():
             for p in camera_props:
                 if p in ps:
@@ -170,6 +174,9 @@ init -1598 python in _viewers:
                     if p not in image_state_org[current_scene][layer][tag]:
                         if p == "child":
                             image_state_org[current_scene][layer][tag][p] = (image_name, None)
+                        elif p in ("matrixtransform", "matrixcolor"):
+                            for prop, v in load_matrix(p, getattr(state, p, None)):
+                                image_state_org[current_scene][layer][tag][prop] = v
                         else:
                             image_state_org[current_scene][layer][tag][p] = getattr(state, p, None)
                 for gn, ps in props_groups.items():
@@ -188,12 +195,73 @@ init -1598 python in _viewers:
             sle.set_layer_at_list(layer, [])
 
 
-    def check_props_group(prop):
+    def check_props_group(prop, tag=None, scene_num=None):
+        if prop.count("_") == 3 and prop.split("_")[0] in ("matrixtransform", "matrixcolor"):
+            if scene_num is None:
+                scene_num = current_scene
+            if tag == "camera":
+                state = camera_state_org[scene_num]
+            else:
+                tag, layer = tag
+                state = get_image_state(layer, scene_num)[tag]
+            gn = prop.split("_")[0]
+
+            matrixargs = []
+            for p in state:
+                if p.count("_") == 3:
+                    sign, _, _, _ = p.split("_")
+                    if sign == gn:
+                        matrixargs.append(p)
+            matrixargs.sort()
+            return gn, matrixargs
+
         for gn, ps in props_groups.items():
             if prop in ps:
                 return gn, ps
         else:
             return None
+
+
+    def load_matrix(matrix, value):
+        if matrix == "matrixtransform":
+            if value is None:
+                return [("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
+                        ("matrixtransform_2_1_offsetX", 0.), ("matrixtransform_2_2_offsetY", 0.), ("matrixtransform_2_3_offsetZ", 0.),
+                        ("matrixtransform_3_1_rotateX", 0.), ("matrixtransform_3_2_rotateY", 0.), ("matrixtransform_3_3_rotateZ", 0.)]
+            else:
+                rv = []
+                for i, (type, args) in enumerate(get_matrix_info(value)):
+                    if isinstance(type, ScaleMatrix):
+                        for j, x in enumerate(("X", "Y", "Z")):
+                            rv.append(("matrixtransform_{}_{}_{}{}".format(i+1, j+1, "scale", x), args[j]))
+                    elif isinstance(type, OffsetMatrix):
+                        for j, x in enumerate(("X", "Y", "Z")):
+                            rv.append(("matrixtransform_{}_{}_{}{}".format(i+1, j+1, "offset", x), args[j]))
+                    elif isinstance(type, RotateMatrix):
+                        for j, x in enumerate(("X", "Y", "Z")):
+                            rv.append(("matrixtransform_{}_{}_{}{}".format(i+1, j+1, "rotate", x), args[j]))
+                return rv
+        else:
+            if value is None:
+                return [("matrixcolor_1_1_invert", 0.), 
+                        ("matrixcolor_2_1_contrast", 1.), 
+                        ("matrixcolor_3_1_saturate", 1.),
+                        ("matrixcolor_4_1_bright", 0.),
+                        ("matrixcolor_5_1_hue", 0.)]
+            else:
+                rv = []
+                for i, (type, args) in enumerate(get_matrix_info(value)):
+                    if isinstance(type, InvertMatrix):
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "invert"), args[0]))
+                    elif isinstance(type, ContrastMatrix):
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "contrast"), args[0]))
+                    elif isinstance(type, SaturationMatrix):
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "saturate"), args[0]))
+                    elif isinstance(type, BrightnessMatrix):
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "bright"), args[0]))
+                    elif isinstance(type, HueMatrix):
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "hue"), args[0]))
+                return rv
 
 
     def get_matrix_info(matrix):
@@ -203,13 +271,13 @@ init -1598 python in _viewers:
                 args = getattr(origin.right, "args", None)
                 if args is None:
                     args = getattr(origin.right, "value")
-                matrix_info.append((type(origin.right), args))
+                matrix_info.append((origin.right, args))
                 _get_matrix_info(origin.left)
             else:
                 args = getattr(origin, "args", None)
                 if args is None:
                     args = getattr(origin, "value")
-                matrix_info.append((type(origin), args))
+                matrix_info.append((origin, args))
 
         origin = getattr(matrix, "origin", False)
         if not origin:
@@ -318,16 +386,27 @@ init -1598 python in _viewers:
     def is_force_plus(prop):
         if prop is None:
             return False
-        # if is_matrix_paras(prop):
-        #     prop = prop[:-1]
+        if prop.count("_") == 3:
+            sign, _, _, prop2 = prop.split("_")
+            if sign in ("matrixtransform", "matrixcolor"):
+                prop = prop2
         return prop in force_plus
 
 
-    def is_wide_range(key):
+    def is_wide_range(key, scene_num=None):
+        if scene_num is None:
+            scene_num = current_scene
         if isinstance(key, tuple):
             tag, layer, prop = key
         else:
             prop = key
+        if prop.count("_") == 3:
+            sign, _, _, prop2 = prop.split("_")
+            if sign in ("matrixtransform", "matrixcolor"):
+                if prop2 in force_wide_range:
+                    return True
+                if prop2 in force_narrow_range:
+                    return False
         if prop in force_wide_range:
             return True
         if prop in force_narrow_range:
@@ -448,9 +527,11 @@ init -1598 python in _viewers:
     def set_keyframe(key, value, recursion=False, time=None):
         if isinstance(key, tuple):
             tag, layer, prop = key
+            mkey = (tag, layer)
             state = get_image_state(layer)[tag]
         else:
             prop = key
+            mkey = "camera"
             state = camera_state_org[current_scene]
         if time is None:
             time = current_time
@@ -480,7 +561,7 @@ init -1598 python in _viewers:
                     (value, time, persistent._viewer_warper)]
         
         if not recursion:
-            check_result = check_props_group(prop)
+            check_result = check_props_group(prop, mkey)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
@@ -506,12 +587,33 @@ init -1598 python in _viewers:
                             camera_state_org[s][p] = middle_value
 
 
-    def generate_matrix_strings(args, matrix):
+    def generate_matrix_strings(args, matrix, ps):
+        rv = ""
         if matrix == "matrixtransform":
-            v = "OffsetMatrix({}, {}, {})*RotateMatrix({}, {}, {})".format(*args)
+            for i in range(0, len(ps), 3):
+                _, _, _, prop = ps[i].split("_")
+                if prop.startswith("offset"):
+                    rv += "OffsetMatrix({}, {}, {})*"
+                elif prop.startswith("rotate"):
+                    rv += "RotateMatrix({}, {}, {})*"
+                elif prop.startswith("scale"):
+                    rv += "ScaleMatrix({}, {}, {})*"
+            rv = rv[:-1].format(*args)
         else:
-            v = "InvertMatrix({})*ContrastMatrix({})*SaturationMatrix({})*BrightnessMatrix({})*HueMatrix({})".format(*args)
-        return v
+            for p in ps:
+                _, _, _, prop = p.split("_")
+                if prop == "invert":
+                    rv += "InvertMatrix({})*"
+                elif prop == "contrast":
+                    rv += "ContrastMatrix({})*"
+                elif prop == "saturate":
+                    rv += "SaturationMatrix({})*"
+                elif prop == "bright":
+                    rv += "BrightnessMatrix({})*"
+                elif prop == "hue":
+                    rv += "HueMatrix({})*"
+            rv = rv[:-1].format(*args)
+        return rv
 
 
     def play(play):
@@ -554,7 +656,7 @@ init -1598 python in _viewers:
             #focusing以外のグループプロパティーはここで纏める
             included_gp = {}
             for p in check_points:
-                check_result = check_props_group(p)
+                check_result = check_props_group(p, "camera", s)
                 if check_result is not None:
                     gn, ps = check_result
                     if gn != "focusing" and gn not in included_gp:
@@ -565,7 +667,7 @@ init -1598 python in _viewers:
                         for cs in zip(*args):
                             v = tuple(c[0] for c in cs)
                             if gn in ("matrixtransform", "matrixcolor"):
-                                v = generate_matrix_strings(v, matrix=gn)
+                                v = generate_matrix_strings(v, gn, ps)
                                 v = renpy.python.py_eval(v)
                             group_cs.append((v, cs[0][1], cs[0][2]))
                         included_gp[gn] = (ps, group_cs)
@@ -603,7 +705,7 @@ init -1598 python in _viewers:
                     #focusing以外のグループプロパティーはここで纏める
                     included_gp = {}
                     for p in check_points[layer][tag]:
-                        check_result = check_props_group(p)
+                        check_result = check_props_group(p, (tag, layer), s)
                         if check_result is not None:
                             gn, ps = check_result
                             if gn != "focusing":
@@ -614,7 +716,7 @@ init -1598 python in _viewers:
                                 for cs in zip(*args):
                                     v = tuple(c[0] for c in cs)
                                     if gn in ("matrixtransform", "matrixcolor"):
-                                        v = generate_matrix_strings(v, matrix=gn)
+                                        v = generate_matrix_strings(v, gn, ps)
                                         v = renpy.python.py_eval(v)
                                     group_cs.append((v, cs[0][1], cs[0][2]))
                                 included_gp[gn] = (ps, group_cs)
@@ -1142,6 +1244,9 @@ init -1598 python in _viewers:
                         image_state[current_scene][layer][added_tag][p] = (image_name, None)
                         if current_scene == 0 or current_time > scene_keyframes[current_scene][1]:
                             set_keyframe((added_tag, layer, p), (image_name, persistent._viewer_transition))
+                    elif p in ("matrixtransform", "matrixcolor"):
+                        for prop, v in load_matrix(p, None):
+                            image_state[current_scene][layer][added_tag][prop] = v
                     else:
                         image_state[current_scene][layer][added_tag][p] = getattr(renpy.store.default, p, None)
                 change_time(current_time)
@@ -1293,6 +1398,8 @@ init -1598 python in _viewers:
 
 
     def get_default(prop):
+        if prop.count("_") == 3:
+            _, _, _, prop = prop.split("_")
         return property_default_value[prop]
 
 
@@ -1389,10 +1496,10 @@ init -1598 python in _viewers:
                 elif k in any_props and isinstance(value, str):
                     value = "'" + value + "'"
                 camera_keyframes[k] = [(value, 0, None)]
-        camera_keyframes = set_group_keyframes(camera_keyframes)
+        camera_keyframes = set_group_keyframes(camera_keyframes, "camera")
         camera_properties = []
         for p in camera_state_org[current_scene]:
-            check_result = check_props_group(p)
+            check_result = check_props_group(p, "camera")
             if check_result is not None:
                 gn, ps = check_result
                 if gn not in camera_properties:
@@ -1436,12 +1543,12 @@ camera"""
                 elif k[2] in any_props and isinstance(value, str):
                     value = "'" + value + "'"
                 image_keyframes[k[2]] = [(value, 0, None)]
-        image_keyframes = set_group_keyframes(image_keyframes)
+        image_keyframes = set_group_keyframes(image_keyframes, (tag, layer))
         if check_focusing_used() and "blur" in image_keyframes:
             del image_keyframes["blur"]
         image_properties = []
         for p in get_image_state(layer)[tag]:
-            check_result = check_props_group(p)
+            check_result = check_props_group(p, (tag, layer))
             if check_result is not None:
                 gn, ps = check_result
                 if gn not in image_properties:
@@ -2211,13 +2318,13 @@ show {imagename}""".format(imagename=child)
         return animation_time - scene_start
 
 
-    def set_group_keyframes(keyframes):
+    def set_group_keyframes(keyframes, mkey, scene_num=None):
         result = keyframes.copy()
 
         #focusing以外のグループプロパティーはここで纏める
         included_gp = {}
         for p in result:
-            check_result = check_props_group(p)
+            check_result = check_props_group(p, mkey, scene_num)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
@@ -2228,7 +2335,7 @@ show {imagename}""".format(imagename=child)
                     for cs in zip(*args):
                         v = tuple(c[0] for c in cs)
                         if gn in ("matrixtransform", "matrixcolor"):
-                            v = generate_matrix_strings(v, matrix=gn)
+                            v = generate_matrix_strings(v, gn, ps)
                         group_cs.append((v, cs[0][1], cs[0][2]))
                     included_gp[gn] = (ps, group_cs)
         for gn, (ps, group_cs) in included_gp.items():
@@ -2398,7 +2505,7 @@ show {imagename}""".format(imagename=child)
                 string += "\n    play {} {}".format(channel, files)
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
             camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
-            camera_keyframes = set_group_keyframes(camera_keyframes)
+            camera_keyframes = set_group_keyframes(camera_keyframes, "camera", s)
             for k, v in camera_keyframes.items():
                 if k in any_props:
                     formated_v = []
@@ -2410,7 +2517,7 @@ show {imagename}""".format(imagename=child)
                     camera_keyframes[k] = formated_v
             camera_properties = []
             for p in camera_state_org[s]:
-                check_result = check_props_group(p)
+                check_result = check_props_group(p, "camera", s)
                 if check_result is not None:
                     gn, ps = check_result
                     if gn not in camera_properties:
@@ -2488,7 +2595,7 @@ show {imagename}""".format(imagename=child)
                 state = get_image_state(layer, s)
                 for tag, _ in zorder_list[s][layer]:
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                    image_keyframes = set_group_keyframes(image_keyframes)
+                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), s)
                     for k, v in image_keyframes.items():
                         if k in any_props:
                             formated_v = []
@@ -2502,7 +2609,7 @@ show {imagename}""".format(imagename=child)
                         del image_keyframes["blur"]
                     image_properties = []
                     for p in state[tag]:
-                        check_result = check_props_group(p)
+                        check_result = check_props_group(p, (tag, layer), s)
                         if check_result is not None:
                             if gn not in image_properties:
                                 image_properties.append(gn)
@@ -2677,7 +2784,7 @@ show {imagename}""".format(imagename=child)
                 if p not in camera_keyframes:
                     if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
                         camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]
-            camera_keyframes = set_group_keyframes(camera_keyframes)
+            camera_keyframes = set_group_keyframes(camera_keyframes, "camera", last_camera_scene)
             for k, v in camera_keyframes.items():
                 if k in any_props:
                     formated_v = []
@@ -2746,7 +2853,7 @@ show {imagename}""".format(imagename=child)
                 state = get_image_state(layer, last_scene)
                 for tag, _ in zorder_list[last_scene][layer]:
                     image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                    image_keyframes = set_group_keyframes(image_keyframes)
+                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), last_scene)
                     for k, v in image_keyframes.items():
                         if k in any_props:
                             formated_v = []
