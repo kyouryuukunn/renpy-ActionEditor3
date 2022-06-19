@@ -61,14 +61,7 @@ init -1598 python in _viewers:
     from math import sin, asin, cos, acos, atan, pi, sqrt
     from collections import defaultdict
     from renpy.display.image import images
-    import traceback
-
-    moved_time = 0
-    loops = [defaultdict(lambda:False)]
-    splines = [defaultdict(lambda:{})]
-    all_keyframes = [{}]
-    scene_keyframes = []
-
+    from traceback import format_exc
 
     class DuringTransitionDisplayble(renpy.Displayable):
     # create the image which is doing transition at the given time.
@@ -715,7 +708,7 @@ init -1598 python in _viewers:
             tran.crop_relative = crop_relative
         if time is None:
             time = st
-        group_cache = defaultdict(lambda:{})
+        group_cache = {}
         sle = renpy.game.context().scene_lists
         if in_editor and camera:
             tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
@@ -994,7 +987,7 @@ init -1598 python in _viewers:
                 v = to_changed_value(v, force_plus, use_wide_range)
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
                 return
             function(v, time=time)
@@ -1010,7 +1003,7 @@ init -1598 python in _viewers:
                     renpy.python.py_eval(v)
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
-                    + traceback.format_exc()
+                    + format_exc()
                     renpy.notify(message)
                     return
             persistent._viewer_transition = v
@@ -1041,7 +1034,7 @@ init -1598 python in _viewers:
                     renpy.python.py_eval(v)
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
-                    + traceback.format_exc()
+                    + format_exc()
                     renpy.notify(message)
                     return
             set_keyframe((tag, layer, "child"), (n, v), time=time)
@@ -1203,7 +1196,7 @@ init -1598 python in _viewers:
                         return
                 except Exception as e:
                     message = _("Please type a valid data") + "\n" \
-                    + traceback.format_exc()
+                    + format_exc()
                     renpy.notify(message)
                     return
                 set_keyframe(key, (value, f), time=scene_keyframes[current_scene][1])
@@ -1222,7 +1215,7 @@ init -1598 python in _viewers:
                 value = renpy.python.py_eval(value)
             except Exception as e:
                 message = _("Please type a valid data") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
                 return
             set_keyframe(key, value, time=time)
@@ -1392,7 +1385,7 @@ camera"""
             scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
-            + traceback.format_exc()
+            + format_exc()
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1459,7 +1452,7 @@ show {imagename}""".format(imagename=child)
             scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
-            + traceback.format_exc()
+            + format_exc()
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1493,7 +1486,7 @@ show {imagename}""".format(imagename=child)
             scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
         except Exception as e:
             message = _("Can't open clipboard") + "\n" \
-            + traceback.format_exc()
+            + format_exc()
             renpy.notify(message)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
@@ -1524,7 +1517,7 @@ show {imagename}""".format(imagename=child)
                 move_keyframe(v, old, keys, is_sound)
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
 
 
@@ -1538,7 +1531,7 @@ show {imagename}""".format(imagename=child)
                 move_all_keyframe(v, moved_time)
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
 
 
@@ -1552,7 +1545,7 @@ show {imagename}""".format(imagename=child)
                 change_time(v)
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
 
 
@@ -1573,7 +1566,7 @@ show {imagename}""".format(imagename=child)
                         renpy.notify(_("Please type int value"))
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
 
 
@@ -1772,7 +1765,7 @@ show {imagename}""".format(imagename=child)
                 move_scene(v, scene_num)
             except Exception as e:
                 message = _("Please type value") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
 
 
@@ -1787,7 +1780,7 @@ show {imagename}""".format(imagename=child)
                     renpy.python.py_eval(v)
                 except Exception as e:
                     message = _("Please Input Transition") + "\n" \
-                    + traceback.format_exc()
+                    + format_exc()
                     renpy.notify(message)
                     return
             scene_keyframes[scene_num] = (v, t, w)
@@ -1818,7 +1811,7 @@ show {imagename}""".format(imagename=child)
                         raise
         except Exception as e:
             message = _("Please Input filenames") + "\n" \
-            + traceback.format_exc()
+            + format_exc()
             renpy.notify(message)
             return
         duration = 0
@@ -2892,7 +2885,7 @@ show {imagename}""".format(imagename=child)
                 scrap.put(locals.SCRAP_TEXT, string.encode("utf-8"))
             except Exception as e:
                 message = _("Can't open clip board") + "\n" \
-                + traceback.format_exc()
+                + format_exc()
                 renpy.notify(message)
             else:
                 #syntax hilight error in vim
