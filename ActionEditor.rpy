@@ -891,7 +891,7 @@ init -1598 python in _viewers:
                                 s.origin = start[0]
                             v = renpy.atl.interpolate(g, s, goal[0], renpy.atl.PROPERTIES[p])
                         if p in props_groups["focusing"]:
-                            group_cache[p] = v
+                            group_cache[p] = g * (goal[0] - start[0]) + start[0]
                             if len(group_cache) == len(props_groups["focusing"]):
                                 focusing = group_cache["focusing"]
                                 dof = group_cache["dof"]
@@ -902,14 +902,12 @@ init -1598 python in _viewers:
                                     image_zpos += tran.matrixtransform.zdw
                                 camera_zpos = 0
                                 if in_editor:
-                                    camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
+                                    camera_zpos = get_value("zpos", default=True, scene_num=scene_num)
                                 else:
                                     if "master" in sle.camera_transform:
                                         props = sle.camera_transform["master"]
                                         if props.zpos:
                                             camera_zpos = props.zpos
-                                        if props.matrixtransform:
-                                            camera_zpos -= props.matrixtransform.zdw
                                 result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                                 setattr(tran, "blur", result)
                         else:
@@ -934,14 +932,12 @@ init -1598 python in _viewers:
                             image_zpos += tran.matrixtransform.zdw
                         camera_zpos = 0
                         if in_editor:
-                            camera_zpos = get_value("zpos", default=True, scene_num=scene_num) - get_value("offsetZ", default=True, scene_num=scene_num)
+                            camera_zpos = get_value("zpos", default=True, scene_num=scene_num)
                         else:
                             if "master" in sle.camera_transform:
                                 props = sle.camera_transform["master"]
                                 if props.zpos:
                                     camera_zpos = props.zpos
-                                if props.matrixtransform:
-                                    camera_zpos -= props.matrixtransform.zdw
                         result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                         setattr(tran, "blur", result)
                 else:
@@ -3009,7 +3005,7 @@ show {imagename}""".format(imagename=child)
                                 focusing_loop["dof_loop"] = loops[last_scene]["dof"]
                                 focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
                             else:
-                                focusing_func_string = "camera_blur({}, {})".format(focusing_cs)
+                                focusing_func_string = "camera_blur({})".format(focusing_cs)
                             # if "function" in image_keyframes:
                             #     function_string = image_keyframes["function"][0][0][0]
                             #     string += "{} mfn({}, {}) ".format("function", function_string, focusing_func_string)
