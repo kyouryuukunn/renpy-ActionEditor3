@@ -188,6 +188,14 @@ init -1598 python in _viewers:
             sle.set_layer_at_list(layer, [])
 
 
+    def check_props_group(prop):
+        for gn, ps in props_groups.items():
+            if prop in ps:
+                return gn, ps
+        else:
+            return None
+
+
     def get_matrix_info(matrix):
         matrix_info = []
         def _get_matrix_info(origin):
@@ -471,16 +479,19 @@ init -1598 python in _viewers:
                     (org, scene_keyframes[current_scene][1], persistent._viewer_warper),
                     (value, time, persistent._viewer_warper)]
         
-        for gn, ps in props_groups.items():
-            ps_set = set(ps)
-            if prop in ps_set and gn != "focusing" and not recursion:
-                ps_set.remove(prop)
-                for p in ps_set:
-                    if isinstance(key, tuple):
-                        key2 = (tag, layer, p)
-                    else:
-                        key2 = p
-                    set_keyframe(key2, get_value(key2, default=True), True, time=time)
+        if not recursion:
+            check_result = check_props_group(prop)
+            if check_result is not None:
+                gn, ps = check_result
+                if gn != "focusing":
+                    ps_set = set(ps)
+                    ps_set.remove(prop)
+                    for p in ps_set:
+                        if isinstance(key, tuple):
+                            key2 = (tag, layer, p)
+                        else:
+                            key2 = p
+                        set_keyframe(key2, get_value(key2, default=True), True, time=time)
         if not recursion:
             for s in range(current_scene+1, len(scene_keyframes)):
                 for i in range(s, -1, -1):
@@ -490,7 +501,7 @@ init -1598 python in _viewers:
                     if p in camera_state_org[s]:
                         middle_value = get_value(p, scene_keyframes[s][1], False, i)
                         if isinstance(middle_value, float):
-                            camera_state_org[s][p] = round(middle_value, 3)
+                            camera_state_org[s][p] = round(middle_value, 2)
                         else:
                             camera_state_org[s][p] = middle_value
 
@@ -540,21 +551,28 @@ init -1598 python in _viewers:
                 else:
                     if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
                         check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
-            for gn, ps in props_groups.items():
-                #focusing以外のグループプロパティーはここで纏める
-                if ps[0] in check_points and gn != "focusing":
-                    args = []
-                    for prop in ps:
-                        args.append(check_points[prop])
-                        del check_points[prop]
-                    group_cs = []
-                    for cs in zip(*args):
-                        v = tuple(c[0] for c in cs)
-                        if gn in ("matrixtransform", "matrixcolor"):
-                            v = generate_matrix_strings(v, matrix=gn)
-                            v = renpy.python.py_eval(v)
-                        group_cs.append((v, cs[0][1], cs[0][2]))
-                    check_points[gn] = group_cs
+            #focusing以外のグループプロパティーはここで纏める
+            included_gp = {}
+            for p in check_points:
+                check_result = check_props_group(p)
+                if check_result is not None:
+                    gn, ps = check_result
+                    if gn != "focusing" and gn not in included_gp:
+                        args = []
+                        for prop in ps:
+                            args.append(check_points[prop])
+                        group_cs = []
+                        for cs in zip(*args):
+                            v = tuple(c[0] for c in cs)
+                            if gn in ("matrixtransform", "matrixcolor"):
+                                v = generate_matrix_strings(v, matrix=gn)
+                                v = renpy.python.py_eval(v)
+                            group_cs.append((v, cs[0][1], cs[0][2]))
+                        included_gp[gn] = (ps, group_cs)
+            for gn, (ps, group_cs) in included_gp.items():
+                for prop in ps:
+                    del check_points[prop]
+                check_points[gn] = group_cs
             if not camera_is_used and s > 0:
                 loop.append(loop[s-1])
                 spline.append(spline[s-1])
@@ -582,26 +600,33 @@ init -1598 python in _viewers:
                         else:
                             if prop not in not_used_by_default or state[tag][prop] is not None:
                                 check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
-                    for gn, ps in props_groups.items():
-                        #focusing以外のグループプロパティーはここで纏める
-                        if ps[0] in check_points[layer][tag] and gn != "focusing":
-                            args = []
-                            for prop in ps:
-                                args.append(check_points[layer][tag][prop])
-                                del check_points[layer][tag][prop]
-                            group_cs = []
-                            for cs in zip(*args):
-                                v = tuple(c[0] for c in cs)
-                                if gn in ("matrixtransform", "matrixcolor"):
-                                    v = generate_matrix_strings(v, matrix=gn)
-                                    v = renpy.python.py_eval(v)
-                                group_cs.append((v, cs[0][1], cs[0][2]))
-                            check_points[layer][tag][gn] = group_cs
+                    #focusing以外のグループプロパティーはここで纏める
+                    included_gp = {}
+                    for p in check_points[layer][tag]:
+                        check_result = check_props_group(p)
+                        if check_result is not None:
+                            gn, ps = check_result
+                            if gn != "focusing":
+                                args = []
+                                for prop in ps:
+                                    args.append(check_points[layer][tag][prop])
+                                group_cs = []
+                                for cs in zip(*args):
+                                    v = tuple(c[0] for c in cs)
+                                    if gn in ("matrixtransform", "matrixcolor"):
+                                        v = generate_matrix_strings(v, matrix=gn)
+                                        v = renpy.python.py_eval(v)
+                                    group_cs.append((v, cs[0][1], cs[0][2]))
+                                included_gp[gn] = (ps, group_cs)
+                    for gn, (ps, group_cs) in included_gp.items():
+                        for prop in ps:
+                            del check_points[layer][tag][prop]
+                        check_points[layer][tag][gn] = group_cs
                     if persistent._viewer_focusing and perspective_enabled(s, time=t):
                         if "blur" in check_points[layer][tag]:
                             del check_points[layer][tag]["blur"]
                     else:
-                        for p in ["focusing", "dof"]:
+                        for p in ("focusing", "dof"):
                             if p in check_points[layer][tag]:
                                 del check_points[layer][tag][p]
             image_check_points.append(check_points)
@@ -765,7 +790,7 @@ init -1598 python in _viewers:
                             v = renpy.atl.interpolate(g, s, goal[0], renpy.atl.PROPERTIES[p])
                         if p in props_groups["focusing"]:
                             group_cache[p] = v
-                            if len(group_cache) == len(props_groups):
+                            if len(group_cache) == len(props_groups["focusing"]):
                                 focusing = group_cache["focusing"]
                                 dof = group_cache["dof"]
                                 image_zpos = 0
@@ -797,7 +822,7 @@ init -1598 python in _viewers:
                     fixed_index = -1
                 if p in props_groups["focusing"]:
                     group_cache[p] = cs[fixed_index][0]
-                    if len(group_cache) == len(props_groups[gn]):
+                    if len(group_cache) == len(props_groups["focusing"]):
                         focusing = group_cache["focusing"]
                         dof = group_cache["dof"]
                         image_zpos = 0
@@ -1367,11 +1392,11 @@ init -1598 python in _viewers:
         camera_keyframes = set_group_keyframes(camera_keyframes)
         camera_properties = []
         for p in camera_state_org[current_scene]:
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    if gn not in camera_properties:
-                        camera_properties.append(gn)
-                    break
+            check_result = check_props_group(p)
+            if check_result is not None:
+                gn, ps = check_result
+                if gn not in camera_properties:
+                    camera_properties.append(gn)
             else:
                 if p not in special_props:
                     camera_properties.append(p)
@@ -1416,11 +1441,11 @@ camera"""
             del image_keyframes["blur"]
         image_properties = []
         for p in get_image_state(layer)[tag]:
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    if gn not in image_properties:
-                        image_properties.append(gn)
-                    break
+            check_result = check_props_group(p)
+            if check_result is not None:
+                gn, ps = check_result
+                if gn not in image_properties:
+                    image_properties.append(gn)
             else:
                 if p not in special_props:
                     image_properties.append(p)
@@ -1640,10 +1665,10 @@ show {imagename}""".format(imagename=child)
         for i in range(current_scene-1, -1, -1):
             if camera_keyframes_exist(i):
                 break
-        for p in camera_props:
+        for p in camera_state_org[i]:
             middle_value = get_value(p, scene_keyframes[current_scene][1], False, i)
             if isinstance(middle_value, float):
-                camera_state_org[current_scene][p] = round(middle_value, 3)
+                camera_state_org[current_scene][p] = round(middle_value, 2)
             else:
                 camera_state_org[current_scene][p] = middle_value
         # if persistent._viewer_legacy_gui:
@@ -1683,7 +1708,7 @@ show {imagename}""".format(imagename=child)
             for p in camera_state_org[i]:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
-                    camera_state_org[s][p] = round(middle_value, 3)
+                    camera_state_org[s][p] = round(middle_value, 2)
                 else:
                     camera_state_org[s][p] = middle_value
         # if persistent._viewer_legacy_gui:
@@ -1745,7 +1770,7 @@ show {imagename}""".format(imagename=child)
             for p in camera_state_org[i]:
                 middle_value = get_value(p, scene_keyframes[s][1], False, i)
                 if isinstance(middle_value, float):
-                    camera_state_org[s][p] = round(middle_value, 3)
+                    camera_state_org[s][p] = round(middle_value, 2)
                 else:
                     camera_state_org[s][p] = middle_value
         for k, cs in all_keyframes[new_scene_num].items():
@@ -2190,24 +2215,31 @@ show {imagename}""".format(imagename=child)
     def set_group_keyframes(keyframes):
         result = keyframes.copy()
 
-        for gn, ps in props_groups.items():
-            #focusing以外のグループプロパティーはここで纏める
-            if ps[0] in result and gn != "focusing":
-                args = []
-                for prop in ps:
-                    args.append(result[prop])
-                    del result[prop]
-                group_cs = []
-                for cs in zip(*args):
-                    v = tuple(c[0] for c in cs)
-                    if gn in ("matrixtransform", "matrixcolor"):
-                        v = generate_matrix_strings(v, matrix=gn)
-                    group_cs.append((v, cs[0][1], cs[0][2]))
-                result[gn] = group_cs
+        #focusing以外のグループプロパティーはここで纏める
+        included_gp = {}
+        for p in result:
+            check_result = check_props_group(p)
+            if check_result is not None:
+                gn, ps = check_result
+                if gn != "focusing":
+                    args = []
+                    for prop in ps:
+                        args.append(result[prop])
+                    group_cs = []
+                    for cs in zip(*args):
+                        v = tuple(c[0] for c in cs)
+                        if gn in ("matrixtransform", "matrixcolor"):
+                            v = generate_matrix_strings(v, matrix=gn)
+                        group_cs.append((v, cs[0][1], cs[0][2]))
+                    included_gp[gn] = (ps, group_cs)
+        for gn, (ps, group_cs) in included_gp.items():
+            for prop  in ps:
+                del result[prop]
+            result[gn] = group_cs
 
-        for p in ["focusing", "dof"]:
-            if p in result:
-                del result[p]
+        for prop in ("focusing", "dof"):
+            if prop in result:
+                del result[prop]
         return result
 
 
@@ -2379,11 +2411,11 @@ show {imagename}""".format(imagename=child)
                     camera_keyframes[k] = formated_v
             camera_properties = []
             for p in camera_state_org[s]:
-                for gn, ps in props_groups.items():
-                    if p in ps:
-                        if gn not in camera_properties:
-                            camera_properties.append(gn)
-                        break
+                check_result = check_props_group(p)
+                if check_result is not None:
+                    gn, ps = check_result
+                    if gn not in camera_properties:
+                        camera_properties.append(gn)
                 else:
                     if p not in special_props:
                         camera_properties.append(p)
@@ -2471,11 +2503,10 @@ show {imagename}""".format(imagename=child)
                         del image_keyframes["blur"]
                     image_properties = []
                     for p in state[tag]:
-                        for gn, ps in props_groups.items():
-                            if p in ps:
-                                if gn not in image_properties:
-                                    image_properties.append(gn)
-                                break
+                        check_result = check_props_group(p)
+                        if check_result is not None:
+                            if gn not in image_properties:
+                                image_properties.append(gn)
                         else:
                             if p not in special_props:
                                 image_properties.append(p)

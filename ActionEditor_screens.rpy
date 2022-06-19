@@ -19,7 +19,6 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
     $is_force_plus = _viewers.is_force_plus
     $force_wide_range = _viewers.force_wide_range
     $props_sets = _viewers.props_sets
-    $props_groups = _viewers.props_groups
     $keyframes_exist = _viewers.keyframes_exist
     $generate_sound_menu = _viewers.generate_sound_menu
     $generate_menu = _viewers.generate_menu
@@ -1075,22 +1074,24 @@ screen _edit_keyframe(key, change_func=None):
         $k_list = [key]
         $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
-        for gn, ps in _viewers.props_groups.items():
-            if p in ps:
-                $k_list = [(n, l, p) for p in _viewers.props_groups[gn]]
-                $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
-                $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+        $check_result = _viewers.check_props_group(p)
+        if check_result is not None:
+            $gn, ps = check_result
+            $k_list = [(n, l, p) for p in ps]
+            $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
+            $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[(n, l, gn)]]
     else:
         $k_list = [key]
         $p = key
         $check_points_list = [check_points]
         $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], key)]
-        for gn, ps in _viewers.props_groups.items():
-            if key in ps:
-                if gn != "focusing":
-                    $k_list = _viewers.props_groups[gn]
-                    $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
-                    $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[gn]]
+        $check_result = _viewers.check_props_group(key)
+        if check_result is not None:
+            $gn, ps = check_result
+            if gn != "focusing":
+                $k_list = ps
+                $check_points_list = [_viewers.all_keyframes[_viewers.current_scene][k2] for k2 in k_list]
+                $loop_button_action = [ToggleDict(_viewers.loops[_viewers.current_scene], k2) for k2 in k_list+[gn]]
 
     modal True
     key "game_menu" action Hide("_edit_keyframe")
@@ -1109,7 +1110,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action None
-                        if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
+                        if check_props_group(p) is not None:
                             textbutton _("spline") action None
                         textbutton _("{}".format(v)) action [\
                             Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
@@ -1124,7 +1125,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        if p not in [prop for ps in _viewers.props_groups.values() for prop in ps]:
+                        if check_props_group(p) is not None:
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
@@ -1363,15 +1364,17 @@ init 1 python in _viewers:
         if not is_sound:
             if isinstance(key, tuple):
                 n, l, p = key
-                for gn, ps in props_groups.items():
-                    if p in ps:
-                        key_list = [(n, l, p) for p in props_groups[gn]]
+                check_result = check_props_group(p)
+                if check_result is not None:
+                    _, ps = check_result
+                    key_list = [(n, l, p) for p in ps]
             else:
                 p = key
-                for gn, ps in props_groups.items():
-                    if key in ps:
-                        if gn != "focusing":
-                            key_list = props_groups[gn]
+                check_result = check_props_group(p)
+                if check_result is not None:
+                    gn, ps = check_result
+                    if gn != "focusing":
+                        key_list = [(n, l, p) for p in ps]
 
         goal = pos_to_time(x)
         if move_keyframe(new=goal, old=time, keys=key_list, is_sound=is_sound):
@@ -1987,15 +1990,17 @@ init 1 python in _viewers:
             self.key_list = [key]
             if isinstance(key, tuple):
                 n, l, p = key
-                for gn, ps in props_groups.items():
-                    if p in ps:
-                        self.key_list = [(n, l, p) for p in props_groups[gn]]
+                check_result = check_props_group(p)
+                if check_result is not None:
+                    _, ps = check_result
+                    self.key_list = [(n, l, p) for p in ps]
                 self.force_plus = is_force_plus(p)
             else:
-                for gn, ps in props_groups.items():
-                    if key in ps:
-                        if gn != "focusing":
-                            self.key_list = props_groups[gn]
+                check_result = check_props_group(key)
+                if check_result is not None:
+                    gn, ps = check_result
+                    if gn != "focusing":
+                        self.key_list = ps
                 self.force_plus = is_force_plus(key)
 
             if is_wide_range(key):
@@ -2113,15 +2118,8 @@ init 1 python in _viewers:
             # self.key_list = [key]
             if isinstance(key, tuple):
                 n, l, p = key
-                # for gn, ps in props_groups.items():
-                #     if p in ps:
-                #         self.key_list = [(n, l, p) for p in props_groups[gn]]
                 self.force_plus = is_force_plus(p)
             else:
-                # for gn, ps in props_groups.items():
-                #     if key in ps:
-                #         if gn != "focusing":
-                #             self.key_list = props_groups[gn]
                 self.force_plus = is_force_plus(key)
             self.int_type = isinstance(get_value(key, default=True), int)
 
@@ -2221,15 +2219,17 @@ init 1 python in _viewers:
             if key is not None:
                 if isinstance(key, tuple):
                     n, l, p = key
-                    for gn, ps in props_groups.items():
-                        if p in ps:
-                            self.key_list = [(n, l, p) for p in props_groups[gn]]
+                    check_result = check_props_group(p)
+                    if check_result is not None:
+                        _, ps = check_result
+                        self.key_list = [(n, l, p) for p in ps]
                     self.force_plus = is_force_plus(p)
                 else:
-                    for gn, ps in props_groups.items():
-                        if key in ps:
-                            if gn != "focusing":
-                                self.key_list = props_groups[gn]
+                    check_result = check_props_group(key)
+                    if check_result is not None:
+                        gn, ps = check_result
+                        if gn != "focusing":
+                            self.key_list = ps
                     self.force_plus = is_force_plus(key)
 
             if in_graphic_mode:
@@ -3069,22 +3069,24 @@ init 1 python in _viewers:
             k_list = [key]
             check_points_list = [check_points]
             loop_button_action = [ToggleDict(loops[current_scene], key)]
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    k_list = [(n, l, p) for p in props_groups[gn]]
-                    check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                    loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+            check_result = check_props_group(p)
+            if check_result is not None:
+                gn, ps = check_result
+                k_list = [(n, l, p) for p in ps]
+                check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
+                loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
         else:
             k_list = [key]
             p = key
             check_points_list = [check_points]
             loop_button_action = [ToggleDict(loops[current_scene], key)]
-            for gn, ps in props_groups.items():
-                if p in ps:
-                    if gn != "focusing":
-                        k_list = props_groups[gn]
-                        check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                        loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
+            check_result = check_props_group(p)
+            if check_result is not None:
+                gn, ps = check_result
+                if gn != "focusing":
+                    k_list = ps
+                    check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
+                    loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
 
         button_list = []
 
@@ -3109,7 +3111,7 @@ init 1 python in _viewers:
             if i > 0 and in_graphic_mode:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
-            if p not in [prop for ps in props_groups.values() for prop in ps]:
+            if check_props_group(p):
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 
