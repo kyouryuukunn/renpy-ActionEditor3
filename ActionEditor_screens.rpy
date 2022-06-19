@@ -949,6 +949,8 @@ init -1598:
 screen _input_screen(message=_("type value"), default=""):
     modal True
     key "game_menu" action Return("")
+    if isinstance(default, float):
+        $default = round(default, 2)
 
     frame:
         style_group "action_editor_input"
