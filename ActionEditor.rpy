@@ -2422,7 +2422,7 @@ show {imagename}""".format(imagename=child)
                             else:
                                 warper = c[2]
                             string += """
-        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
+        {tab}{warper} {duration:.2f} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
                             for p2, cs2 in same_time_set:
                                 string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
                                 if cs2[i+1][1] in splines[s][xy_to_x(p2)] and splines[s][xy_to_x(p2)][cs2[i+1][1]]:
@@ -2528,7 +2528,7 @@ show {imagename}""".format(imagename=child)
                                     null = "Null({}, {})".format(w, h)
                                 if (t - last_time) > 0:
                                     string += """
-        {tab}{pause}""".format(tab=add_tab, pause=t-last_time)
+        {tab}{pause:.2f}""".format(tab=add_tab, pause=t-last_time)
                                 if i == 0 and (image is not None and transition is not None):
                                     string += """
         {tab}{child}""".format(tab=add_tab, child=null)
@@ -2566,7 +2566,7 @@ show {imagename}""".format(imagename=child)
                                     else:
                                         warper = c[2]
                                     string += """
-        {tab}{warper} {duration} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
+        {tab}{warper} {duration:.2f} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
                                     for p2, cs2 in same_time_set:
                                         string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
                                         if cs2[i+1][1] in splines[s][(tag, layer, xy_to_x(p2))] and splines[s][(tag, layer, xy_to_x(p2))][cs2[i+1][1]]:
@@ -2614,14 +2614,14 @@ show {imagename}""".format(imagename=child)
                 else:
                     pause_time = get_animation_delay() - scene_start
                 pause_time -= get_transition_delay(scene_tran)
-                pause_time = round(pause_time + 0.1, 3)
+                pause_time = pause_time + 0.1 #add margin
                 if pause_time > 0 or s != len(scene_keyframes)-1:
                     string += """
-    with Pause({})""".format(pause_time)
+    with Pause({:.2f})""".format(pause_time)
 
         if (persistent._viewer_hide_window and get_animation_delay() > 0) and len(scene_keyframes) == 1:
             string += """
-    with Pause({})""".format(round(get_animation_delay()+0.1, 3))
+    with Pause({:.2f})""".format(get_animation_delay()+0.1)
         if (persistent._viewer_hide_window and get_animation_delay() > 0 and persistent._viewer_allow_skip) \
             or len(scene_keyframes) > 1:
             for channel, times in sound_keyframes.items():
@@ -2681,7 +2681,7 @@ show {imagename}""".format(imagename=child)
                                 else:
                                     warper = c[2]
                                 string += """
-            {warper} {duration} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
+            {warper} {duration:.2f} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
                                 if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
                                     for knot in splines[last_camera_scene][p][c[1]]:
                                         string += " knot {}".format(knot)
@@ -2780,7 +2780,7 @@ show {imagename}""".format(imagename=child)
                                     else:
                                         warper = c[2]
                                     string += """
-            {warper} {duration} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
+            {warper} {duration:.2f} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
                                     if c[1] in splines[last_scene][(tag, layer, p)] and splines[last_scene][(tag, layer, p)][c[1]]:
                                         for knot in splines[last_scene][(tag, layer, p)][c[1]]:
                                             string += " knot {}".format(knot)
@@ -2812,7 +2812,7 @@ show {imagename}""".format(imagename=child)
                                 null = "Null({}, {})".format(w, h)
                             if (t - last_time) > 0:
                                 string += """
-            {pause}""".format(pause=t-last_time)
+            {pause:.2f}""".format(pause=t-last_time)
                             if i == 0 and (image is not None and transition is not None):
                                 string += """
             {child}""".format(child=null)
