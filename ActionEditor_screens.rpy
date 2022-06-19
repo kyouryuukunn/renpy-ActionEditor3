@@ -511,7 +511,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                         action None text_color "#FFF"
                                         size_group None
                                 fixed:
-                                    add TimeLine(s, "sounds", key=channel)
+                                    add TimeLine(s, "sounds", key=channel, use_wide_range=None)
                             hbox:
                                 $value = "None"
                                 $sorted_play_times = sorted(list(sound_keyframes[channel].keys()))
@@ -1564,7 +1564,7 @@ init 1 python in _viewers:
     class TimeLine(renpy.Displayable):
 
 
-        def __init__(self, scene, tag, props_set=None, key=None, changed=None, opened=None, in_graphic_mode=[]):
+        def __init__(self, scene, tag, props_set=None, key=None, changed=None, opened=None, in_graphic_mode=[], use_wide_range=None):
             super(TimeLine, self).__init__()
             from pygame import MOUSEMOTION
             from renpy.store import Function, Solid, Fixed
@@ -1573,7 +1573,7 @@ init 1 python in _viewers:
             self.props_set = props_set
             self.key = key
             self.changed=changed
-            self.use_wide_range = is_wide_range(key) if key is not None else None
+            self.use_wide_range = is_wide_range(key) if key is not None and use_wide_range else None
             self.opened=opened
             self.in_graphic_mode = in_graphic_mode
 
