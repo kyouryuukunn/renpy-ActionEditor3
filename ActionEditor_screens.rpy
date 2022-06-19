@@ -248,74 +248,72 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 textbutton indent*2+"- " + props_set_name action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                             fixed:
                                                 add TimeLine(s, "camera", props_set=props_set)
-                                        for p in props_set:
-                                            if p in _viewers.camera_state_org[s] and p != "child" and (p not in props_groups["focusing"] or \
-                                                (persistent._viewer_focusing and perspective_enabled(s))):
-                                                $key = p
-                                                $value = get_value(p, default=True)
-                                                $f = generate_changed(p)
-                                                $use_wide_range = is_wide_range(key)
-                                                if isinstance(value, float):
-                                                    $value_format = float_format
+                                        for p in _viewers.expand_props_set(props_set, "camera", s):
+                                            $key = p
+                                            $value = get_value(p, default=True)
+                                            $f = generate_changed(p)
+                                            $use_wide_range = is_wide_range(key)
+                                            if isinstance(value, float):
+                                                $value_format = float_format
+                                            else:
+                                                $value_format = int_format
+                                            hbox:
+                                                if p == "perspective":
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]":
+                                                            action None text_color "#FFF"
+                                                        textbutton "[value]":
+                                                            action [SelectedIf(keyframes_exist(key)),
+                                                            Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
+                                                            size_group None
+                                                elif p == "function":
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]":
+                                                            action None text_color "#FFF"
+                                                        textbutton "[value[0]]":
+                                                            action [SelectedIf(keyframes_exist(key)),
+                                                            Function(_viewers.edit_function, key)]
+                                                            size_group None
+                                                elif p in _viewers.any_props:
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]":
+                                                            action None text_color "#FFF"
+                                                        if isinstance(value, str):
+                                                            textbutton "'[value]'":
+                                                                action [SelectedIf(keyframes_exist(key)),
+                                                                Function(_viewers.edit_any, key)]
+                                                                size_group None
+                                                        else:
+                                                            textbutton "[value]":
+                                                                action [SelectedIf(keyframes_exist(key)),
+                                                                Function(_viewers.edit_any, key)]
+                                                                size_group None
+                                                elif p in _viewers.boolean_props:
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]":
+                                                            action None text_color "#FFF"
+                                                        textbutton "[value]":
+                                                            action [SelectedIf(keyframes_exist(key)),
+                                                            Function(_viewers.toggle_boolean_property, key)]
+                                                            size_group None
                                                 else:
-                                                    $value_format = int_format
-                                                hbox:
-                                                    if p == "perspective":
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action None text_color "#FFF"
-                                                            textbutton "[value]":
-                                                                action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.edit_any, p, time=scene_keyframes[current_scene][1])]
-                                                                size_group None
-                                                    elif p == "function":
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action None text_color "#FFF"
-                                                            textbutton "[value[0]]":
-                                                                action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.edit_function, key)]
-                                                                size_group None
-                                                    elif p in _viewers.any_props:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action None text_color "#FFF"
-                                                            if isinstance(value, str):
-                                                                textbutton "'[value]'":
-                                                                    action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.edit_any, key)]
-                                                                    size_group None
-                                                            else:
-                                                                textbutton "[value]":
-                                                                    action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.edit_any, key)]
-                                                                    size_group None
-                                                    elif p in _viewers.boolean_props:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]":
-                                                                action None text_color "#FFF"
-                                                            textbutton "[value]":
-                                                                action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.toggle_boolean_property, key)]
-                                                                size_group None
-                                                    else:
-                                                        hbox:
-                                                            style_group "new_action_editor_c"
-                                                            textbutton indent*3+"  [p]" action None text_color "#FFF"
-                                                            add DraggableValue(value_format, key, f, is_force_plus(p),
-                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                    # if key not in in_graphic_mode:
-                                                    if p not in _viewers.boolean_props | {"function", "perspective"}:
-                                                        fixed:
-                                                            add TimeLine(s, "camera", key=key, changed=f, opened=opened)
-                                                    # else:
-                                                    #     fixed:
-                                                    #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
-                                                    #         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                    hbox:
+                                                        style_group "new_action_editor_c"
+                                                        textbutton indent*3+"  [p]" action None text_color "#FFF"
+                                                        add DraggableValue(value_format, key, f, is_force_plus(p),
+                                                            text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                # if key not in in_graphic_mode:
+                                                if p not in _viewers.boolean_props | {"function", "perspective"}:
+                                                    fixed:
+                                                        add TimeLine(s, "camera", key=key, changed=f, opened=opened)
+                                                # else:
+                                                #     fixed:
+                                                #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                #         add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
                                     else:
                                         hbox:
                                             hbox:
@@ -382,84 +380,81 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         action Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode)
                                                 fixed:
                                                     add TimeLine(s, (tag, layer), props_set=props_set)
-                                            for p in props_set:
-                                                if p in _viewers.get_image_state(layer, s)[tag] and (p not in props_groups["focusing"] and (((persistent._viewer_focusing
-                                                    and perspective_enabled(s)) and p != "blur")
-                                                    or (not persistent._viewer_focusing or not perspective_enabled(s)))):
-                                                    $key = (tag, layer, p)
-                                                    $value = get_value(key, default=True)
-                                                    $f = generate_changed(key)
-                                                    $use_wide_range = is_wide_range(key)
-                                                    if isinstance(value, float):
-                                                        $value_format = float_format
-                                                    else:
-                                                        $value_format = int_format
-                                                    hbox:
-                                                        if p == "child":
-                                                            vbox:
-                                                                xfill False
-                                                                hbox:
-                                                                    style_group "new_action_editor_c"
-                                                                    textbutton indent*3+"  [value[0]]":
-                                                                        action [SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                        Function(_viewers.change_child, tag, layer, default=value[0])]
-                                                                        size_group None
-                                                                        text_language "unicode"
-                                                                hbox:
-                                                                    style_group "new_action_editor_c"
-                                                                    textbutton indent*3+"  with [value[1]]":
-                                                                        action [
-                                                                        SelectedIf(keyframes_exist((tag, layer, "child"))),
-                                                                        Function(_viewers.edit_transition, tag, layer)]
-                                                                        size_group None
-                                                                        text_language "unicode"
-                                                        elif p == "function":
+                                            for p in _viewers.expand_props_set(props_set, (tag, layer), s):
+                                                $key = (tag, layer, p)
+                                                $value = get_value(key, default=True)
+                                                $f = generate_changed(key)
+                                                $use_wide_range = is_wide_range(key)
+                                                if isinstance(value, float):
+                                                    $value_format = float_format
+                                                else:
+                                                    $value_format = int_format
+                                                hbox:
+                                                    if p == "child":
+                                                        vbox:
+                                                            xfill False
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]":
-                                                                    action None text_color "#FFF"
-                                                                textbutton "[value[0]]":
-                                                                    action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.edit_function, key)]
+                                                                textbutton indent*3+"  [value[0]]":
+                                                                    action [SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.change_child, tag, layer, default=value[0])]
                                                                     size_group None
-                                                        elif p in _viewers.any_props:
+                                                                    text_language "unicode"
                                                             hbox:
                                                                 style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]":
-                                                                    action None text_color "#FFF"
-                                                                if isinstance(value, str):
-                                                                    textbutton "'[value]'":
-                                                                        action [SelectedIf(keyframes_exist(key)),
-                                                                        Function(_viewers.edit_any, key)]
-                                                                        size_group None
-                                                                else:
-                                                                    textbutton "[value]":
-                                                                        action [SelectedIf(keyframes_exist(key)),
-                                                                        Function(_viewers.edit_any, key)]
-                                                                        size_group None
-                                                        elif p in _viewers.boolean_props:
-                                                            hbox:
-                                                                style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]":
-                                                                    action None text_color "#FFF"
+                                                                textbutton indent*3+"  with [value[1]]":
+                                                                    action [
+                                                                    SelectedIf(keyframes_exist((tag, layer, "child"))),
+                                                                    Function(_viewers.edit_transition, tag, layer)]
+                                                                    size_group None
+                                                                    text_language "unicode"
+                                                    elif p == "function":
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#FFF"
+                                                            textbutton "[value[0]]":
+                                                                action [SelectedIf(keyframes_exist(key)),
+                                                                Function(_viewers.edit_function, key)]
+                                                                size_group None
+                                                    elif p in _viewers.any_props:
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#FFF"
+                                                            if isinstance(value, str):
+                                                                textbutton "'[value]'":
+                                                                    action [SelectedIf(keyframes_exist(key)),
+                                                                    Function(_viewers.edit_any, key)]
+                                                                    size_group None
+                                                            else:
                                                                 textbutton "[value]":
                                                                     action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.toggle_boolean_property, key)]
+                                                                    Function(_viewers.edit_any, key)]
                                                                     size_group None
-                                                        else:
-                                                            hbox:
-                                                                style_group "new_action_editor_c"
-                                                                textbutton indent*3+"  [p]":
-                                                                    action None text_color "#FFF"
-                                                                add DraggableValue(value_format, key, f, is_force_plus(p),
-                                                                    text_size=16, text_color="#CCC", text_hover_underline=True)
-                                                        if p not in _viewers.boolean_props | {"function", "perspective"}:
-                                                            fixed:
-                                                                # if key not in in_graphic_mode:
-                                                                add TimeLine(s, (tag, layer), key=key, changed=f, opened=opened)
-                                                                # else:
-                                                                    # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
-                                                                    # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                                                    elif p in _viewers.boolean_props:
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#FFF"
+                                                            textbutton "[value]":
+                                                                action [SelectedIf(keyframes_exist(key)),
+                                                                Function(_viewers.toggle_boolean_property, key)]
+                                                                size_group None
+                                                    else:
+                                                        hbox:
+                                                            style_group "new_action_editor_c"
+                                                            textbutton indent*3+"  [p]":
+                                                                action None text_color "#FFF"
+                                                            add DraggableValue(value_format, key, f, is_force_plus(p),
+                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                    if p not in _viewers.boolean_props | {"function", "perspective"}:
+                                                        fixed:
+                                                            # if key not in in_graphic_mode:
+                                                            add TimeLine(s, (tag, layer), key=key, changed=f, opened=opened)
+                                                            # else:
+                                                                # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
+                                                                # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
                                     $new_opened = opened.copy()
                                     $new_opened[s] = opened[s].copy()
                                     $new_opened[s] = [o for o in opened if (not isinstance(o, tuple) or o[0] != tag) and o !=tag]
@@ -1255,6 +1250,30 @@ init -1598:
 
 init 1 python in _viewers:
     from renpy.store import Function, QueueEvent, Text, BarValue, DictEquality, ShowAlternateMenu
+
+
+    def expand_props_set(props_set, tag, scene_num):
+        rv = []
+        if tag != "camera":
+            tag, layer = tag
+
+        for p in props_set:
+            if tag == "camera":
+                if p not in camera_state_org[scene_num]:
+                    continue
+                if p == "child":
+                    continue
+                if p in props_groups["focusing"] and (not persistent._viewer_focusing or not perspective_enabled(scene_num)):
+                    continue
+            else:
+                if p not in get_image_state(layer, scene_num)[tag]:
+                    continue
+                if p in props_groups["focusing"]:
+                    continue
+                elif persistent._viewer_focusing and perspective_enabled(scene_num) and p == "blur":
+                    continue
+            rv.append(p)
+        return rv
 
 
     def return_start_time(start_time):
