@@ -181,12 +181,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     hbox:
                         style_group "new_action_editor_c"
                         textbutton "  [key]" action None text_color "#FFF"
-                        add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                        add DraggableValue(value_format, key, f, is_force_plus(p),
                             text_size=16, text_color="#CCC", text_hover_underline=True)
                     fixed:
                         # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
                         ysize None
-                        add TimeLine(current_scene, tag, key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
+                        add TimeLine(current_scene, tag, key=key, changed=f, opened=opened, in_graphic_mode=in_graphic_mode)
             else:
                 viewport:
                     mousewheel True
@@ -306,12 +306,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         hbox:
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [p]" action None text_color "#FFF"
-                                                            add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                                                            add DraggableValue(value_format, key, f, is_force_plus(p),
                                                                 text_size=16, text_color="#CCC", text_hover_underline=True)
                                                     # if key not in in_graphic_mode:
                                                     if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                         fixed:
-                                                            add TimeLine(s, "camera", key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                            add TimeLine(s, "camera", key=key, changed=f, opened=opened)
                                                     # else:
                                                     #     fixed:
                                                     #         ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
@@ -451,12 +451,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*3+"  [p]":
                                                                     action None text_color "#FFF"
-                                                                add DraggableValue(value_format, key, f, use_wide_range, is_force_plus(p),
+                                                                add DraggableValue(value_format, key, f, is_force_plus(p),
                                                                     text_size=16, text_color="#CCC", text_hover_underline=True)
                                                         if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                             fixed:
                                                                 # if key not in in_graphic_mode:
-                                                                add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened)
+                                                                add TimeLine(s, (tag, layer), key=key, changed=f, opened=opened)
                                                                 # else:
                                                                     # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
                                                                     # add TimeLine(s, (tag, layer), key=key, changed=f, use_wide_range=use_wide_range, opened=opened, in_graphic_mode=in_graphic_mode)
@@ -774,14 +774,14 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             else:
                                 $value_range = persistent._narrow_range
                                 $bar_page = .05
-                            if not use_wide_range or isinstance(value, float):
+                            if isinstance(value, float):
                                 $value_format = float_format
                             else:
                                 $value_format = int_format
                             hbox:
                                 textbutton "  [p]":
                                     action [SensitiveIf(p in all_keyframes[current_scene]),
-                                    SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, use_wide_range=use_wide_range, change_func=f)]
+                                    SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
                                 if p == "perspective":
                                     textbutton "[value]":
                                         action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)),
@@ -822,7 +822,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.get_image_state(layer, current_scene)[tag]:
+                    for p in _viewers.get_image_state(layer, current_scene)[tab]:
                         if p in props_set and (p not in props_groups["focusing"] and (((persistent._viewer_focusing 
                             and perspective_enabled()) and p != "blur") 
                             or (not persistent._viewer_focusing or not perspective_enabled()))):
@@ -844,7 +844,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 textbutton "  [p]":
                                     action [SensitiveIf(key in all_keyframes[current_scene]), 
                                     SelectedIf(keyframes_exist(key)), 
-                                    Show("_edit_keyframe", key=key, use_wide_range=use_wide_range, change_func=f)]
+                                    Show("_edit_keyframe", key=key, change_func=f)]
                                 if p == "child":
                                     textbutton "[value[0]]":
                                         action [SelectedIf(keyframes_exist((tab, layer, "child"))), 
@@ -1070,8 +1070,9 @@ screen _move_keyframes:
             xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
 
-screen _edit_keyframe(key, change_func=None, use_wide_range=False):
+screen _edit_keyframe(key, change_func=None):
     $check_points = _viewers.all_keyframes[_viewers.current_scene][key]
+    $use_wide_range=_viewers.is_wide_range(key)
     if isinstance(key, tuple):
         $n, l, p = key
         $k_list = [key]
@@ -1131,7 +1132,7 @@ screen _edit_keyframe(key, change_func=None, use_wide_range=False):
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
                                     key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
-                                    use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t)]
+                                    force_plus=_viewers.is_force_plus(p), time=t)]
                         textbutton _("{}".format(v)) action [\
                             Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
                             Function(_viewers.change_time, t)]
@@ -1142,11 +1143,12 @@ screen _edit_keyframe(key, change_func=None, use_wide_range=False):
             textbutton _("loop") action loop_button_action size_group None
             textbutton _("close") action Hide("_edit_keyframe") xalign .98 size_group None
 
-screen _spline_editor(change_func, key, prop, pre, post, default, use_wide_range, force_plus, time):
+screen _spline_editor(change_func, key, prop, pre, post, default, force_plus, time):
 
     modal True
     key "game_menu" action Hide("_spline_editor")
     $cs = _viewers.all_keyframes[_viewers.current_scene][key]
+    $use_wide_range = _viewers.is_wide_range(key)
     if use_wide_range:
         $value_range = persistent._wide_range
         $_page = 1
@@ -1403,7 +1405,7 @@ init 1 python in _viewers:
     class DraggableValue(renpy.Displayable):
 
 
-        def __init__(self, format, key, changed, use_wide_range, force_plus, clicked=None, alternate=None, **properties):
+        def __init__(self, format, key, changed, force_plus, clicked=None, alternate=None, **properties):
             super(DraggableValue, self).__init__(**properties)
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
@@ -1412,7 +1414,7 @@ init 1 python in _viewers:
             self.format = format
             self.key = key
             self.changed = changed
-            self.use_wide_range = use_wide_range
+            self.use_wide_range = is_wide_range(key)
             self.force_plus = force_plus
             self.int_type = isinstance(get_value(key, default=True), int)
             self.dragging = False
@@ -1522,7 +1524,7 @@ init 1 python in _viewers:
     class TimeLine(renpy.Displayable):
 
 
-        def __init__(self, scene, tag, props_set=None, key=None, changed=None, use_wide_range=None, opened=None, in_graphic_mode=[]):
+        def __init__(self, scene, tag, props_set=None, key=None, changed=None, opened=None, in_graphic_mode=[]):
             super(TimeLine, self).__init__()
             from pygame import MOUSEMOTION
             from renpy.store import Function, Solid, Fixed
@@ -1531,7 +1533,7 @@ init 1 python in _viewers:
             self.props_set = props_set
             self.key = key
             self.changed=changed
-            self.use_wide_range=use_wide_range
+            self.use_wide_range = is_wide_range(key) if key is not None else None
             self.opened=opened
             self.in_graphic_mode = in_graphic_mode
 
@@ -1603,8 +1605,7 @@ init 1 python in _viewers:
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
-                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
-                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            generate_menu(key=self.key, check_point=c, change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
             elif self.tag == "camera" and self.key is not None and self.graphic_mode:
@@ -1614,8 +1615,7 @@ init 1 python in _viewers:
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
-                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
-                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            generate_menu(key=self.key, check_point=c, change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
 
@@ -1658,8 +1658,7 @@ init 1 python in _viewers:
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
-                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
-                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            generate_menu(key=self.key, check_point=c, change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
             elif isinstance(self.tag, tuple) and self.key is not None and self.graphic_mode:
@@ -1669,8 +1668,7 @@ init 1 python in _viewers:
                     child = KeyFrame(key_child, t, key_hovere_child, key=self.key, in_graphic_mode=True,
                         clicked=Function(change_time, t),
                         alternate=ShowAlternateMenu(
-                            generate_menu(key=self.key, check_point=c, use_wide_range=self.use_wide_range,
-                                change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
+                            generate_menu(key=self.key, check_point=c, change_func=self.changed, opened=self.opened, in_graphic_mode=self.in_graphic_mode),
                             style_prefix="_viewers_alternate_menu"))
                     new_children.append(child)
 
@@ -3040,7 +3038,7 @@ init 1 python in _viewers:
         return button_list
 
 
-    def generate_menu(key, check_point, use_wide_range=False, change_func=None, opened=None, in_graphic_mode=[]):
+    def generate_menu(key, check_point, change_func=None, opened=None, in_graphic_mode=[]):
         from renpy.store import ToggleDict, Function, SelectedIf, SensitiveIf, Show
         check_points = all_keyframes[current_scene][key]
         i = check_points.index(check_point)
@@ -3079,7 +3077,7 @@ init 1 python in _viewers:
                 Function(edit_any, key, time=t)))
         else:
             button_list.append(( _("edit value: {}".format(v)),
-                [Function(edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=is_force_plus(p), time=t),
+                [Function(edit_value, change_func, default=v, use_wide_range=is_wide_range(key), force_plus=is_force_plus(p), time=t),
                 Function(change_time, t)]))
             if w.startswith("warper_generator"):
                 button_list.append(( _("open warper selecter: warper_generator"),
@@ -3096,7 +3094,7 @@ init 1 python in _viewers:
                         [SelectedIf(t in splines[current_scene][key]), 
                         Show("_spline_editor", change_func=change_func, 
                             key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
-                            use_wide_range=use_wide_range, force_plus=is_force_plus(p), time=t)]))
+                            force_plus=is_force_plus(p), time=t)]))
                 if len(check_points) >= 2:
                     if key in in_graphic_mode:
                         _in_graphic_mode = in_graphic_mode[:]

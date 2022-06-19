@@ -317,15 +317,25 @@ init -1598 python in _viewers:
 
     def is_wide_range(key):
         if isinstance(key, tuple):
-            _, _, prop = key
+            tag, layer, prop = key
         else:
             prop = key
         if prop in force_wide_range:
             return True
         if prop in force_narrow_range:
             return False
-        value = get_value(key, default=True)
-        return isinstance(value, int)
+        if key in all_keyframes[current_scene]:
+            v = all_keyframes[current_scene][key][-1][0]
+        else:
+            if isinstance(key, tuple):
+                state = get_image_state(layer)[tag]
+            else:
+                state = camera_state_org[current_scene]
+            if state[prop] is not None:
+                v = state[prop]
+            else:
+                v = get_default(prop)
+        return isinstance(v, int)
 
 
     def reset(key_list, time=None):
