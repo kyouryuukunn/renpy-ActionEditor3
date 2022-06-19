@@ -1110,7 +1110,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action None
-                        if check_props_group(p) is not None:
+                        if check_props_group(p) is None:
                             textbutton _("spline") action None
                         textbutton _("{}".format(v)) action [\
                             Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
@@ -1125,7 +1125,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        if check_props_group(p) is not None:
+                        if check_props_group(p) is None:
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
@@ -3111,7 +3111,7 @@ init 1 python in _viewers:
             if i > 0 and in_graphic_mode:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
-            if check_props_group(p):
+            if check_props_group(p) is None:
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 
