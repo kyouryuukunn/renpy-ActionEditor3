@@ -780,8 +780,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             $value_format = float_format
                         else:
                             $value_format = int_format
+                        $shown_p = p
+                        if p.count("_") == 3:
+                            $sign, num1, num2, p2 = p.split("_")
+                            if sign in ("matrixtransform", "matrixcolor"):
+                                $shown_p = p2
                         hbox:
-                            textbutton "  [p]":
+                            textbutton "  [shown_p]":
                                 action [SensitiveIf(p in all_keyframes[current_scene]),
                                 SelectedIf(keyframes_exist(p)), Show("_edit_keyframe", key=p, change_func=f)]
                             if p == "perspective":
@@ -839,8 +844,13 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                             $value_format = float_format
                         else:
                             $value_format = int_format
+                        $shown_p = p
+                        if p.count("_") == 3:
+                            $sign, num1, num2, p2 = p.split("_")
+                            if sign in ("matrixtransform", "matrixcolor"):
+                                $shown_p = p2
                         hbox:
-                            textbutton "  [p]":
+                            textbutton "  [shown_p]":
                                 action [SensitiveIf(key in all_keyframes[current_scene]), 
                                 SelectedIf(keyframes_exist(key)), 
                                 Show("_edit_keyframe", key=key, change_func=f)]
