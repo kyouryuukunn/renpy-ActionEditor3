@@ -1342,6 +1342,10 @@ init -1598 python in _viewers:
     def edit_any(key, time=None):
         if time is None:
             time = current_time
+        if isinstance(key, tuple):
+            prop = key[2]
+        else:
+            prop = key
         value = get_value(key, time)
         if isinstance(value, str):
             value = "'" + value + "'"
@@ -1349,6 +1353,9 @@ init -1598 python in _viewers:
         if value:
             try:
                 value = renpy.python.py_eval(value)
+                if not check_any_props[prop](value):
+                    renpy.notify(_("Please type a valid data"))
+                    return
             except Exception as e:
                 message = _("Please type a valid data") + "\n" \
                 + format_exc()

@@ -74,7 +74,7 @@ init -1600 python in _viewers:
             ("3D Matrix    ", ("matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
-            ("Effect       ", ("alpha", "blur", "additive", "matrixcolor", "dof", "focusing")),
+            ("Effect       ", ("blend", "alpha", "blur", "additive", "matrixcolor", "dof", "focusing")),
             ("Misc         ", ("zzoom", "perspective", "function", "xpan", "ypan", "xtile", "ytile")),
             )
 
@@ -98,7 +98,8 @@ init -1600 python in _viewers:
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
 
     boolean_props = {"zzoom"}
-    any_props = set()
+    any_props = {"blend"}
+    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
 
     #Exclusive variables
     #排他的な変数です。
@@ -112,6 +113,7 @@ init -1600 python in _viewers:
     #この順番でクリップボードデータが出力されます
     #ないものは出力されません
     sort_order_list = (
+    "blend",
     "pos",
     "anchor",
     "offset",
@@ -186,6 +188,7 @@ init 1600 python in _viewers:
     "ypan",
     "xtile",
     "ytile",
+    "blend",
     "function",
     )
 
@@ -278,4 +281,5 @@ init 1600 python in _viewers:
     "ytile": 1, 
     "function": (None, None), 
     "perspective": None, #Falseならカメラ動作せず、Noneなら普通の画像として動作
+    "blend": "normal",
     }
