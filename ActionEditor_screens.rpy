@@ -1409,8 +1409,8 @@ init 1 python in _viewers:
             x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
             y = int(y/preview_size)
         else:
-            (x, y) = (x/preview_size, y/preview_size)
-        return Text("({:>4}, {:>4})".format(x, y), style="new_action_editor_text"), 0.1
+            (x, y) = (int(x/preview_size), int(y/preview_size))
+        return Text("({:>4d}, {:>4d})".format(x, y), style="new_action_editor_text"), 0.1
 
 
     def rel_pos(st, at):
@@ -1422,7 +1422,7 @@ init 1 python in _viewers:
             (x, y) = (x/preview_size, y/preview_size)
         rx = x/float(config.screen_width)
         ry = y/float(config.screen_height)
-        return Text("({:>.3}, {:>.3})".format(rx, ry), style="new_action_editor_text"), 0.1
+        return Text("({:>.3f}, {:>.3f})".format(rx, ry), style="new_action_editor_text"), 0.1
 
 
     def show_current_time_idle(st, at):
