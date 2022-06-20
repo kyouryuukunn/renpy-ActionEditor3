@@ -252,15 +252,15 @@ init -1598 python in _viewers:
                 rv = []
                 for i, (type, args) in enumerate(get_matrix_info(value)):
                     if isinstance(type, InvertMatrix):
-                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "invert"), args[0]))
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "invert"), args))
                     elif isinstance(type, ContrastMatrix):
-                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "contrast"), args[0]))
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "contrast"), args))
                     elif isinstance(type, SaturationMatrix):
-                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "saturate"), args[0]))
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "saturate"), args))
                     elif isinstance(type, BrightnessMatrix):
-                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "bright"), args[0]))
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "bright"), args))
                     elif isinstance(type, HueMatrix):
-                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "hue"), args[0]))
+                        rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "hue"), args))
                 return rv
 
 
@@ -1354,7 +1354,7 @@ init -1598 python in _viewers:
             try:
                 value = renpy.python.py_eval(value)
                 if not check_any_props[prop](value):
-                    renpy.notify(_("Please type a valid data"))
+                    renpy.notify(_("{} is an invalid data".format(value)))
                     return
             except Exception as e:
                 message = _("Please type a valid data") + "\n" \
