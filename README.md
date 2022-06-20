@@ -116,6 +116,7 @@ lemma forum
  * `force_wide_range`: it has the same scale as integer even when it is float type.
  * `force_narrow_range`: it has the same scale as float even when it is int type.
  * `force_plus`: it is always plus.
+ * `force_float`: it is always float.
 
  If it is boolean type. :
 
@@ -292,6 +293,7 @@ lemma forum
  * `force_wide_range`: 値が浮動小数でも整数と同じ幅で値を調整できます。
  * `force_narrow_range`: 値が整数でも浮動小数と同じ幅で値を調整できます。
  * `force_plus`: 常に値が正の数となります。
+ * `force_float`: 常に値が浮動小数となります。
 
  真偽値の場合、以下に追加したいプロパティー名を加えます。:
 
