@@ -127,15 +127,22 @@ init -1598 python in _viewers:
         for p in camera_props:
             if p in ("matrixtransform", "matrixcolor"):
                 for prop, v in load_matrix(p, getattr(props, p, None)):
+                    if is_force_float(p) and isinstance(v, int):
+                        v = float(v)
                     camera_state_org[current_scene][prop] = v
             else:
-                camera_state_org[current_scene][p] = getattr(props, p, None)
+                v = getattr(props, p, None)
+                if is_force_float(p) and isinstance(v, int):
+                    v = float(v)
+                camera_state_org[current_scene][p] = v
         for gn, ps in props_groups.items():
             for p in camera_props:
                 if p in ps:
                     pvs = getattr(props, gn, None)
                     if pvs is not None:
                         for gp, v in zip(ps, pvs):
+                            if is_force_float(gp) and isinstance(v, int):
+                                v = float(v)
                             camera_state_org[current_scene][gp] = v
                     break
 
@@ -176,9 +183,14 @@ init -1598 python in _viewers:
                             image_state_org[current_scene][layer][tag][p] = (image_name, None)
                         elif p in ("matrixtransform", "matrixcolor"):
                             for prop, v in load_matrix(p, getattr(state, p, None)):
+                                if is_force_float(prop) and isinstance(v, int):
+                                    v = float(v)
                                 image_state_org[current_scene][layer][tag][prop] = v
                         else:
-                            image_state_org[current_scene][layer][tag][p] = getattr(state, p, None)
+                            v = getattr(state, p, None)
+                            if is_force_float(p) and isinstance(v, int):
+                                v = float(v)
+                            image_state_org[current_scene][layer][tag][p] = v
                 for gn, ps in props_groups.items():
                     for p in transform_props:
                         if p in ps:
@@ -381,6 +393,14 @@ init -1598 python in _viewers:
 
         else:
             return group
+
+
+    def is_force_float(prop):
+        if prop.count("_") == 3:
+            sign, _, _, prop2 = prop.split("_")
+            if sign in ("matrixtransform", "matrixcolor"):
+                prop = prop2
+        return prop in force_float
 
 
     def is_force_plus(prop):

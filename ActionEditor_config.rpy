@@ -96,6 +96,9 @@ init -1600 python in _viewers:
     #crop doesn't work when perspective True and rotate change the pos of image when perspective is not True
     #キーフレームを設定しなければ適用されない変数です。
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
+    #These variables are always float type.
+    #常に浮動小数になる変数です。
+    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ")
 
     boolean_props = {"zzoom"}
     any_props = {"blend"}
