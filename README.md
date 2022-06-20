@@ -123,7 +123,13 @@ lemma forum
 
  Others:
 
- * `any_props` : This type isn't checked error. so you should pay attention to the input order.
+ * `any_props` : I recommend using check_any_props which maps a property name
+   to the function. This is called with the value of the property and set the
+   property the value if result is  True. Otherwise, the error message is
+   shown.
+
+    any_props = {"blend"}
+    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
 
  Exclusive proparties like tile and pan should be set in exclusive. example:
 
@@ -293,7 +299,12 @@ lemma forum
 
  他の型の場合、以下に追加したいプロパティー名を加えます。:
 
- * `any_props` : 使用時はエラーチェックを行なえないので入力順番等に注意してください。
+ * `any_props` : check_any_propsを使用してエラーチェックをすると安全です。プロパティー名とチェック関数を対応させます。
+ プロパティーの値を引数に実行され、結果がTrueならその値を入力し、Falseならエラーメッセージを表示します。 例:
+
+    any_props = {"blend"}
+    #"blend"プロパティーの入力を(None, "normal", "add", "multiply", "min", "max")に限定する
+    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
 
  tileとpanのような排他的なプロパティーはexclusiveにも登録してください。例:
 
