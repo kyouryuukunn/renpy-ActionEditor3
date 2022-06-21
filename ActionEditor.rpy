@@ -1373,7 +1373,7 @@ init -1598 python in _viewers:
         if value:
             try:
                 value = renpy.python.py_eval(value)
-                if not check_any_props[prop](value):
+                if prop in check_any_props and not check_any_props[prop](value):
                     renpy.notify(_("{} is an invalid data".format(value)))
                     return
             except Exception as e:
