@@ -106,8 +106,9 @@ lemma forum
 
  * `props_set`: control where that is shwon in ActionEditor.
  * `sort_order_list`: control where that is shwon in clipboard.
- * `transform_props` or `camera_props`: Add the tuple which include that property name and default value.
+ * `transform_props` or `camera_props`: Add the the property name.
  Adding `transform_props` shows it in each images and Adding `camera_props` shows it in camera.
+ * `property_default_value`: Add the default value of the property.
 
  Further add the following variables according to the type of property.
 
@@ -284,7 +285,9 @@ lemma forum
 
  * `props_set`: ActionEditor上でプロパティーが表示される位置を指定します。
  * `sort_order_list`: クリップボードに出力されるプロパティーの順番を指定します。
- * `transform_props` または `camera_props`: プロパティー名とデフォルト値のタプルを追加してください。前者は画像の、後者はカメラの追加プロパティーを操作できるようにします。
+ * `transform_props` または `camera_props`: プロパティー名を追加してください。前者は画像に、後者はカメラにプロパティーを追加します。
+ * `transform_props` または `camera_props`: プロパティー名を追加してください。前者は画像に、後者はカメラにプロパティーを追加します。
+ * `property_default_value`: プロパティーのデフォルト値を設定してください。
  
  さらに追加したいプロパティーの型に応じて設定します。
 
