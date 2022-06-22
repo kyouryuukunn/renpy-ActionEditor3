@@ -108,9 +108,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
     add _viewers.screen_background
 
-    $_viewers.third_view = True
-    if _viewers.third_view and getattr(_viewers, "third_view_child", None) is not None:
-        add _viewers.third_view_child
+    # $_viewers.third_view = True
+    # if _viewers.third_view and getattr(_viewers, "third_view_child", None) is not None:
+    #     add _viewers.third_view_child
 
     frame:
         style_group "new_action_editor"

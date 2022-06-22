@@ -695,50 +695,50 @@ init -1598 python in _viewers:
                             group_cs.append((v, cs[0][1], cs[0][2]))
                         included_gp[gn] = (ps, group_cs)
 
-                        #viewer上ではmatrixtransformは符号と順番が反転する。回転順も反転するためz-y-x順の回転行列がないと対応不可
-                        if gn == "matrixtransform":
-                            viewer_group_cs = []
-                            #ScaleMatrixのみ逆数をとる
-                            scale_ps = []
-                            for i, prop in enumerate(ps):
-                                _, _, _, p_name = prop.split("_")
-                                if p_name.startswith("scale"):
-                                    scale_ps.append(i)
-                            for cs in zip(*args):
-                                org_v = tuple(c[0] for c in cs)
-                                viewer_v = []
-                                for i, e in enumerate(org_v):
-                                    if i in scale_ps:
-                                        if e == 0:
-                                            viewer_v.append(1000.) #inf
-                                        else:
-                                            viewer_v.append(1.0/e)
-                                    else:
-                                        viewer_v.append(-e)
-                                #matrixの順番を反転 marixの引数が3個単位と前提
-                                viewer_ps = []
-                                rviewer_v = []
-                                start_index = range(0, len(ps), 3)
-                                start_index.reverse()
-                                for i in start_index:
-                                    viewer_ps.extend((ps[i], ps[i+1], ps[i+2]))
-                                    rviewer_v.extend((viewer_v[i], viewer_v[i+1], viewer_v[i+2]))
-
-                                viewer_v = generate_matrix_strings(tuple(rviewer_v), gn, viewer_ps)
-                                viewer_v = renpy.python.py_eval(viewer_v)
-                                viewer_group_cs.append((viewer_v, cs[0][1], cs[0][2]))
-                            vcheck_points[gn] = viewer_group_cs
-                            renpy.store.test = viewer_group_cs
+                        # #viewer上ではmatrixtransformは符号と順番が反転する。回転順も反転するためz-y-x順の回転行列がないと対応不可
+                        # #その他課題 切り抜き、リアルタイム更新、設定ボタン,  rotateプロパティー
+                        # if gn == "matrixtransform":
+                        #     viewer_group_cs = []
+                        #     #ScaleMatrixのみ逆数をとる
+                        #     scale_ps = []
+                        #     for i, prop in enumerate(ps):
+                        #         _, _, _, p_name = prop.split("_")
+                        #         if p_name.startswith("scale"):
+                        #             scale_ps.append(i)
+                        #     for cs in zip(*args):
+                        #         org_v = tuple(c[0] for c in cs)
+                        #         viewer_v = []
+                        #         for i, e in enumerate(org_v):
+                        #             if i in scale_ps:
+                        #                 if e == 0:
+                        #                     viewer_v.append(1000.) #inf
+                        #                 else:
+                        #                     viewer_v.append(1.0/e)
+                        #             else:
+                        #                 viewer_v.append(-e)
+                        #         #matrixの順番を反転 marixの引数が3個単位と前提
+                        #         viewer_ps = []
+                        #         rviewer_v = []
+                        #         start_index = range(0, len(ps), 3)
+                        #         start_index.reverse()
+                        #         for i in start_index:
+                        #             viewer_ps.extend((ps[i], ps[i+1], ps[i+2]))
+                        #             rviewer_v.extend((viewer_v[i], viewer_v[i+1], viewer_v[i+2]))
+                        #
+                        #         viewer_v = generate_matrix_strings(tuple(rviewer_v), gn, viewer_ps)
+                        #         viewer_v = renpy.python.py_eval(viewer_v)
+                        #         viewer_group_cs.append((viewer_v, cs[0][1], cs[0][2]))
+                        #     vcheck_points[gn] = viewer_group_cs
 
             for gn, (ps, group_cs) in included_gp.items():
                 for prop in ps:
                     del check_points[prop]
                 check_points[gn] = group_cs
 
-            #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
-            for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos"):
-                if p in check_points:
-                    vcheck_points[p] = check_points[p]
+            # #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
+            # for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos"):
+            #     if p in check_points:
+            #         vcheck_points[p] = check_points[p]
 
             if not camera_is_used and s > 0:
                 loop.append(loop[s-1])
@@ -915,34 +915,34 @@ init -1598 python in _viewers:
                      loop=image_loop, spline=image_spline,
                      subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
 
-        third_view = True #TODO
-        if third_view and scene_num == current_scene and perspective_enabled(scene_num) and not persistent._viewer_legacy_gui:
-            preview_box = renpy.display.layout.MultiBox(layout='fixed')
-            preview_box.add(image_box)
-
-            perspective = camera_check_points["perspective"][0][0]
-            if perspective is True:
-                perspective = config.perspective
-
-            if perspective:
-                z11 = perspective[1]
-            camera_model = define_camera_model(z11)
-
-            # preview_box.add(camera_model)
-            preview_box.add(Transform(function=renpy.curry(transform)(
-                        check_points=viewer_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, 
-                        scene_num=scene_num, scene_checkpoints=scene_checkpoints))(camera_model))
-            third_view_box = renpy.display.layout.MultiBox(layout='fixed')
-            if aspect_16_9:
-                third_view_box.add(Solid("#555", xsize=1., ysize=1.))
-                third_view_box.add(Transform(perspective=True, zpos=5000, matrixtransform=Matrix.rotate(0, 0, 0))(preview_box))
-                # third_view_box = Transform(crop=(0, 0, config.screen_width, config.screen_height))(third_view_box)
-                third_view_child = Transform(zoom=(1 - preview_size)/2, xpos=(1 + preview_size)/2, ypos=((3 * preview_size - 1) / 4))(third_view_box)
-            else:
-                third_view_box.add(Solid("#555", xsize=1., ysize=1.))
-                third_view_box.add(Transform(perspective=True, zpos=5000)(preview_box))
-                # third_view_child = Transform(crop_relative=True, crop=(0., 0., 1., 1.))(third_view_child)
-                third_view_child = Transform(zoom=(1 - preview_size), xpos=preview_size, ypos=((2 * preview_size - 1) / 2))(third_view_box)
+        # third_view = True #TODO
+        # if third_view and scene_num == current_scene and perspective_enabled(scene_num) and not persistent._viewer_legacy_gui:
+        #     preview_box = renpy.display.layout.MultiBox(layout='fixed')
+        #     preview_box.add(image_box)
+        #
+        #     perspective = camera_check_points["perspective"][0][0]
+        #     if perspective is True:
+        #         perspective = config.perspective
+        #
+        #     if perspective:
+        #         z11 = perspective[1]
+        #     camera_model = define_camera_model(z11)
+        #
+        #     # preview_box.add(camera_model)
+        #     preview_box.add(Transform(function=renpy.curry(transform)(
+        #                 check_points=viewer_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, 
+        #                 scene_num=scene_num, scene_checkpoints=scene_checkpoints))(camera_model))
+        #     third_view_box = renpy.display.layout.MultiBox(layout='fixed')
+        #     if aspect_16_9:
+        #         third_view_box.add(Solid("#555", xsize=1., ysize=1.))
+        #         third_view_box.add(Transform(perspective=True, zpos=5000, matrixtransform=Matrix.rotate(0, 0, 0))(preview_box))
+        #         # third_view_box = Transform(crop=(0, 0, config.screen_width, config.screen_height))(third_view_box)
+        #         third_view_child = Transform(zoom=(1 - preview_size)/2, xpos=(1 + preview_size)/2, ypos=((3 * preview_size - 1) / 4))(third_view_box)
+        #     else:
+        #         third_view_box.add(Solid("#555", xsize=1., ysize=1.))
+        #         third_view_box.add(Transform(perspective=True, zpos=5000)(preview_box))
+        #         # third_view_child = Transform(crop_relative=True, crop=(0., 0., 1., 1.))(third_view_child)
+        #         third_view_child = Transform(zoom=(1 - preview_size), xpos=preview_size, ypos=((2 * preview_size - 1) / 2))(third_view_box)
 
         camera_box = renpy.display.layout.MultiBox(layout='fixed')
         #camera position doesn't have effect whithout box
