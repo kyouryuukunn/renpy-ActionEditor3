@@ -102,7 +102,17 @@ init -1600 python in _viewers:
 
     boolean_props = {"zzoom"}
     any_props = {"blend"}
-    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
+    def check_perspective(v):
+        if isinstance(v, (int, float)):
+            return True
+        if isinstance(v, tuple) and len(v) == 3:
+            for i in v:
+                if not isinstance(v, (int, float)):
+                    return False
+            else:
+                return True
+    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max"),
+                        "perspective":check_perspective}
 
     #Exclusive variables
     #排他的な変数です。
