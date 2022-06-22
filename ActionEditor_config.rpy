@@ -161,6 +161,7 @@ init -1600 python in _viewers:
     #clipboardで個別に出力するプロパティー
     special_props = {"child", "function"}
     in_editor = False
+    aspect_16_9 = round(float(config.screen_width)/config.screen_height, 2) == 1.78
 
 init 1600 python in _viewers:
     #The properties used in image tag tab

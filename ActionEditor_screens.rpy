@@ -90,7 +90,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode)]
 
         if persistent._show_camera_icon:
-            if _viewers.aspect_16_9():
+            if _viewers.aspect_16_9:
                 $xpos = int(config.screen_width * (1 - _viewers.preview_size) / 2)
                 $ypos = 0
             else:
@@ -107,6 +107,10 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             $tag_list.append(tag)
 
     add _viewers.screen_background
+
+    $_viewers.third_view = True
+    if _viewers.third_view and getattr(_viewers, "third_view_child", None) is not None:
+        add _viewers.third_view_child
 
     frame:
         style_group "new_action_editor"
@@ -548,7 +552,7 @@ init -1599 python in _viewers:
 
 init python in _viewers:
     box = Fixed()
-    if aspect_16_9():
+    if aspect_16_9:
         box.add(Solid(preview_background_color, xsize=config.screen_width, ysize=(1-preview_size), ypos=preview_size))
         box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xpos=0.))
         box.add(Solid(preview_background_color, xsize=(1-preview_size)/2, ysize=preview_size, xalign=1.))
@@ -1398,9 +1402,9 @@ init 1 python in _viewers:
                 p = key
                 check_result = check_props_group(p, "camera")
                 if check_result is not None:
-                    gn, ps = check_result
+                    _, ps = check_result
                     if gn != "focusing":
-                        key_list = [(n, l, p) for p in ps]
+                        key_list = [p for p in ps]
 
         goal = pos_to_time(x)
         if move_keyframe(new=goal, old=time, keys=key_list, is_sound=is_sound):
@@ -1415,7 +1419,7 @@ init 1 python in _viewers:
 
     def absolute_pos(st, at):
         (x, y) = renpy.get_mouse_pos()
-        if aspect_16_9():
+        if aspect_16_9:
             x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
             y = int(y/preview_size)
         else:
@@ -1425,7 +1429,7 @@ init 1 python in _viewers:
 
     def rel_pos(st, at):
         (x, y) = renpy.get_mouse_pos()
-        if aspect_16_9():
+        if aspect_16_9:
             x = int((x-config.screen_width*(1.-preview_size)/2)/preview_size)
             y = int(y/preview_size)
         else:
@@ -2335,7 +2339,7 @@ init 1 python in _viewers:
             super(ImagePins, self).__init__()
             from pygame import MOUSEMOTION
             from renpy.store import Fixed
-            if aspect_16_9():
+            if aspect_16_9:
                 self.xpos = int(config.screen_width * (1 - preview_size) / 2)
                 self.ypos = 0
             else:
