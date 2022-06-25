@@ -108,9 +108,10 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
     add _viewers.screen_background
 
-    # $_viewers.third_view = True
-    # if _viewers.third_view and getattr(_viewers, "third_view_child", None) is not None:
-    #     add _viewers.third_view_child
+    if persistent._viewer_sideview:
+        add DynamicDisplayable(_viewers.get_sideview, 0)
+        add DynamicDisplayable(_viewers.get_sideview, 1)
+        add DynamicDisplayable(_viewers.get_sideview, 2)
 
     frame:
         style_group "new_action_editor"
@@ -1005,6 +1006,8 @@ screen _action_editor_option():
             textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
             text _("Show/Hide camera and image icon")
             textbutton _("show icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
+            text _("Show/Hide side view (0:disable, 1:top view, 2:side view, 3:front view)")
+            textbutton _("show side view") action [SelectedIf(persistent._viewer_sideview), ToggleField(persistent, "_viewer_sideview")]
             text _("")
             text _("following options have effect for only New GUI")
             text _("Open only one page at once")
@@ -1269,6 +1272,13 @@ init -1598:
 
 init 1 python in _viewers:
     from renpy.store import Function, QueueEvent, Text, BarValue, DictEquality, ShowAlternateMenu
+
+
+    def get_sideview(st, at, i):
+        d = getattr(renpy.store._viewers, "third_view_child", Null())
+        if isinstance(d, list):
+            d = d[i]
+        return (d, 0)
 
 
     def expand_props_set(props_set, tag, scene_num):

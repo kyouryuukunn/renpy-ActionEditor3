@@ -62,6 +62,8 @@ init -1600 python in _viewers:
     # the list of channel for playing
     # ActionEditorで使用するチャンネルのリストです
     default_channel_list = ["sound"]
+    #default side view.
+    default_sideview = True
 
     default_graphic_editor_narrow_range = 2.
     default_graphic_editor_wide_range = 2000
