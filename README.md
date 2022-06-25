@@ -125,15 +125,21 @@ lemma forum
 
  Others:
 
- * `any_props` : I recommend using check_any_props which maps a property name
-   to the function. This is called with the value of the property and set the
-   property the value if result is  True. Otherwise, the error message is
-   shown.
+ * `any_props`: this accepts all types. I recommend also using `check_any_props` or `menu_props`.
+
+ * `check_any_props`: This maps a property name to the function. This is called
+   with the value of the property and set the property the value if result is
+   True. Otherwise, the error message is shown.
 
     any_props = {"blend"}
     check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
 
- Exclusive proparties like tile and pan should be set in exclusive. example:
+ * `menu_props` : use selectable buttons to change `anpy_props` instead of input screen.
+
+    any_props = {"blend"}
+    menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
+
+ Exclusive proparties like tile and pan should be set in `exclusive`. example:
 
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
@@ -304,14 +310,28 @@ lemma forum
 
  他の型の場合、以下に追加したいプロパティー名を加えます。:
 
- * `any_props` : check_any_propsを使用してエラーチェックをすると安全です。プロパティー名とチェック関数を対応させます。
- プロパティーの値を引数に実行され、結果がTrueならその値を入力し、Falseならエラーメッセージを表示します。 例:
+ * `any_props` 
+
+ `any_props` はすべての型を受け入れます。使用するなら `check_any_props` か `menu_props`と併用すると安全です。
+
+ * `check_any_props`
+
+ エラーチェックを設定します。プロパティー名とチェック関数を対応させる辞書です。
+ 関数はプロパティーの値を引数に実行され、結果がTrueならその値を入力し、Falseならエラーメッセージを表示します。 例:
 
     any_props = {"blend"}
     #"blend"プロパティーの入力を(None, "normal", "add", "multiply", "min", "max")に限定する
     check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max")}
 
- tileとpanのような排他的なプロパティーはexclusiveにも登録してください。例:
+ * `menu_props`
+
+ `any_props` の変更を直接入力ではなく選択制にします。 例:
+
+    any_props = {"blend"}
+    #"blend"プロパティー(None, "normal", "add", "multiply", "min", "max")からの選択制にする
+    menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
+
+ tileとpanのような排他的なプロパティーは `exclusive` にも登録してください。例:
 
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
