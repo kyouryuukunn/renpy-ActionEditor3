@@ -113,8 +113,9 @@ init -1600 python in _viewers:
                     return False
             else:
                 return True
-    check_any_props = {"blend":lambda v: v in (None, "normal", "add", "multiply", "min", "max"),
-                        "perspective":check_perspective}
+    check_any_props = {"perspective":check_perspective}
+    #properties which is included in any_props and is choiced by menu.
+    menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
 
     #Exclusive variables
     #排他的な変数です。

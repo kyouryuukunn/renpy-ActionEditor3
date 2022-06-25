@@ -1519,22 +1519,30 @@ init -1598 python in _viewers:
         else:
             prop = key
         value = get_value(key, time)
-        if isinstance(value, str):
-            value = "'" + value + "'"
-        value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
-        if value:
-            try:
-                value = renpy.python.py_eval(value)
-                if prop in check_any_props and not check_any_props[prop](value):
-                    renpy.notify(_("{} is an invalid data".format(value)))
+        if prop in menu_props:
+            global _return
+            _return = value
+            renpy.invoke_in_new_context(renpy.call_screen, "_value_menu", prop=prop, default=value)
+            value = _return
+        else:
+            if isinstance(value, str):
+                value = "'" + value + "'"
+            value = renpy.invoke_in_new_context(renpy.call_screen, "_input_screen", default=value)
+            if value:
+                try:
+                    value = renpy.python.py_eval(value)
+                    if prop in check_any_props and not check_any_props[prop](value):
+                        renpy.notify(_("{} is an invalid data".format(value)))
+                        return
+                except Exception as e:
+                    message = _("Please type a valid data") + "\n" \
+                    + format_exc()
+                    renpy.notify(message)
                     return
-            except Exception as e:
-                message = _("Please type a valid data") + "\n" \
-                + format_exc()
-                renpy.notify(message)
+            else:
                 return
-            set_keyframe(key, value, time=time)
-            change_time(current_time)
+        set_keyframe(key, value, time=time)
+        change_time(current_time)
 
 
     def toggle_boolean_property(key):

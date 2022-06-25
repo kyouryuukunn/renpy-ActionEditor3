@@ -291,15 +291,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         textbutton indent*3+"  [p]":
                                                             action None text_color "#FFF"
                                                         if isinstance(value, str):
-                                                            textbutton "'[value]'":
-                                                                action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.edit_any, key)]
-                                                                size_group None
+                                                            $caption = "'[value]'"
                                                         else:
-                                                            textbutton "[value]":
-                                                                action [SelectedIf(keyframes_exist(key)),
-                                                                Function(_viewers.edit_any, key)]
-                                                                size_group None
+                                                            $caption = "[value]"
+                                                        textbutton caption:
+                                                            action [SelectedIf(keyframes_exist(key)),
+                                                            Function(_viewers.edit_any, key)]
+                                                            size_group None
                                                 elif p in _viewers.boolean_props:
                                                     hbox:
                                                         style_group "new_action_editor_c"
@@ -437,15 +435,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             textbutton indent*3+"  [p]":
                                                                 action None text_color "#FFF"
                                                             if isinstance(value, str):
-                                                                textbutton "'[value]'":
-                                                                    action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.edit_any, key)]
-                                                                    size_group None
+                                                                $caption = "'[value]'"
                                                             else:
-                                                                textbutton "[value]":
-                                                                    action [SelectedIf(keyframes_exist(key)),
-                                                                    Function(_viewers.edit_any, key)]
-                                                                    size_group None
+                                                                $caption = "[value]"
+                                                            textbutton caption:
+                                                                action [SelectedIf(keyframes_exist(key)),
+                                                                Function(_viewers.edit_any, key)]
+                                                                size_group None
                                                     elif p in _viewers.boolean_props:
                                                         hbox:
                                                             style_group "new_action_editor_c"
@@ -804,13 +800,12 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     Function(_viewers.edit_function, p)]
                             elif p in _viewers.any_props:
                                 if isinstance(value, str):
-                                    textbutton "'[value]'":
-                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_any, p)]
+                                    $caption = "'[value]'"
                                 else:
-                                    textbutton "[value]":
-                                        action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_any, p)]
+                                    $caption = "[value]"
+                                textbutton caption:
+                                    action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.edit_any, p)]
                             elif p in _viewers.boolean_props:
                                 textbutton "[value]":
                                     action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
@@ -876,13 +871,12 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     Function(_viewers.edit_function, key)]
                             elif p in _viewers.any_props:
                                 if isinstance(value, str):
-                                    textbutton "'[value]'":
-                                        action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_any, key)]
+                                    $caption = "'[value]'"
                                 else:
-                                    textbutton "[value]":
-                                        action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
-                                        Function(_viewers.edit_any, key)]
+                                    $caption = "[value]"
+                                textbutton caption:
+                                    action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
+                                    Function(_viewers.edit_any, key)]
                             elif p in _viewers.boolean_props:
                                 textbutton "[value]":
                                     action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
@@ -1084,6 +1078,20 @@ screen _move_keyframes:
         bar adjustment ui.adjustment(range=persistent._time_range, value=_viewers.moved_time, changed=renpy.curry(_viewers.move_all_keyframe)(old=_viewers.moved_time)):
             xalign 1. yalign .5 style "action_editor_bar"
         textbutton _("close") action Hide("_move_keyframes") xalign .98
+
+screen _value_menu(prop, default):
+    key "game_menu" action [SetField(_viewers, "_return", default), Return()]
+    frame:
+        background "#000"
+        align (0.2, 0.8)
+        vbox:
+            for v in _viewers.menu_props[prop]:
+                if isinstance(v, str):
+                    $caption = "'[v]'"
+                else:
+                    $caption = "[v]"
+                textbutton caption:
+                    action [SetField(_viewers, "_return", v), Return()]
 
 screen _edit_keyframe(key, change_func=None):
     $check_points = _viewers.all_keyframes[_viewers.current_scene][key]
