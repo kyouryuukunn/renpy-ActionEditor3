@@ -1000,7 +1000,7 @@ screen _action_editor_option():
             textbutton "[persistent._time_range]" action Function(_viewers.edit_range_value, persistent, "_time_range", False)
             text _("Show/Hide camera and image icon")
             textbutton _("show icon") action [SelectedIf(persistent._show_camera_icon), ToggleField(persistent, "_show_camera_icon")]
-            text _("Show/Hide side view (0:disable, 1:top view, 2:side view, 3:front view)")
+            text _("Show/Hide side view (This is heavy and make the preview unsmoother)")
             textbutton _("show side view") action [SelectedIf(persistent._viewer_sideview), ToggleField(persistent, "_viewer_sideview")]
             text _("")
             text _("following options have effect for only New GUI")
