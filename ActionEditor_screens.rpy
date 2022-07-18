@@ -3064,16 +3064,16 @@ init 1 python in _viewers:
 
         if p == "child":
             button_list.append((("edit child: {}".format(v[0])), 
-                Function(change_child, n, l, time=t, default=v[0])))
+                [Function(change_child, n, l, time=t, default=v[0]), Function(change_time, current_time)]))
             button_list.append((("edit transform: {}".format(v[1])), 
-                Function(edit_transition, n, l, time=t)))
+                [Function(edit_transition, n, l, time=t), Function(change_time, current_time)]))
         elif p in boolean_props | any_props:
             button_list.append((("edit value: {}".format(v)), 
-                Function(edit_any, key, time=t)))
+                [Function(edit_any, key, time=t), Function(change_time, current_time)]))
         else:
             button_list.append(( _("edit value: {}".format(v)),
                 [Function(edit_value, change_func, default=v, use_wide_range=is_wide_range(key), force_plus=is_force_plus(p), time=t),
-                Function(change_time, t)]))
+                Function(change_time, current_time)]))
             if w.startswith("warper_generator"):
                 button_list.append(( _("open warper selecter: warper_generator"),
                     [Function(edit_warper, check_points=check_points_list, old=t, value_org=w)]))
@@ -3097,7 +3097,7 @@ init 1 python in _viewers:
                     else:
                         _in_graphic_mode = in_graphic_mode + [key]
                     button_list.append(( _("toggle graphic editor"), [SelectedIf(key in in_graphic_mode), Show("_new_action_editor", opened=opened, in_graphic_mode=_in_graphic_mode)]))
-            button_list.append(( _("reset"), Function(reset, key)))
+            button_list.append(( _("reset"), [Function(reset, key, time=t), Function(change_time, current_time)]))
 
         button_list.append(( _("edit time: {}".format(t)), Function(edit_move_keyframe, keys=k_list, old=t)))
         button_list.append(( _("remove"),
