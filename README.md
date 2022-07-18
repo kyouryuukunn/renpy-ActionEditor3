@@ -8,21 +8,17 @@
 
  Ren'Py <http://www.renpy.org/>
 
-![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
-
- youtube samples:
-
- * Ren'Py ActionEditor Update 220505 <https://www.youtube.com/watch?v=AXf4JQVq3v8>
- * Ren'Py ActionEditor Update 220305 <https://www.youtube.com/watch?v=7Mosa88gY-c>
- * Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
- * Ren'Py Action Editor Introduction <https://www.youtube.com/watch?v=VMMBj4-7k_Q>
- * How to use spline in Action Editor with graphic editor <https://www.youtube.com/watch?v=qmGSsJbTYx4>
- * Quick Overview of the 3D Camera for Ren'Py <https://www.youtube.com/watch?v=lhA8Ib3iKE8>
-
 lemma forum
 <https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
 
+![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
 
+ youtube samples:
+ * Tutorials チュートリアル <https://www.youtube.com/playlist?list=PLVAQBcrPbK5J33EbslA6sRSsNAeUZ92EG>
+
+ * Introduce ATL_functions <https://www.youtube.com/watch?v=AXf4JQVq3v8>
+ * Introduce generate warper <https://www.youtube.com/watch?v=7Mosa88gY-c>
+ * Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
 
 
 
