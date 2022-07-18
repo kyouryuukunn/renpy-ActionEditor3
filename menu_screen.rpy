@@ -41,11 +41,14 @@ init python:
 
 
 init -1500:
+    $_alternate_menu_pos = None
     screen _alternate_menu(button_list, menu_width=300, menu_height=200, style_prefix=None):
-        key ["game_menu", "dismiss"] action Hide("_alternate_menu")
+        key ["game_menu", "dismiss"] action [Hide("_alternate_menu"), SetVariable("_alternate_menu_pos", None)]
         modal True
 
-        $(x, y) = renpy.get_mouse_pos()
+        if _alternate_menu_pos is None:
+            $_alternate_menu_pos = renpy.get_mouse_pos()
+        $(x, y) = _alternate_menu_pos
 
         frame:
             if style_prefix:
@@ -64,4 +67,4 @@ init -1500:
                 for text, action in button_list:
                     if not isinstance(action, list):
                         $action = [action]
-                    textbutton text action action+[Hide("_alternate_menu")]
+                    textbutton text action action+[Hide("_alternate_menu"), SetVariable("_alternate_menu_pos", None)]
