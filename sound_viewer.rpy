@@ -74,7 +74,7 @@ init -2000 python in _viewers:
 
     def put_clipboard_text(s):
         from pygame import scrap, locals
-        scrap.put(locals.SCRAP_TEXT, s)
+        scrap.put(locals.SCRAP_TEXT, s, string.encode("utf-8"))
         renpy.notify("'{}'\nis copied to clipboard".format(s))
 
     def completion(filter_string, filtered_list):
