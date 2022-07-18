@@ -2131,7 +2131,7 @@ show {imagename}""".format(imagename=child)
         try:
             for f in v[1:-1].split(","):
                 if "<silence" not in f:
-                    evaled = renpy.python.py_eval(f, locals=renpy.python.store_dicts["store.audio"])
+                    evaled = renpy.python.py_eval(f.strip(), locals=renpy.python.store_dicts["store.audio"])
                     if not renpy.loadable(evaled):
                         raise
         except Exception as e:
