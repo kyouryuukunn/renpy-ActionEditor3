@@ -829,7 +829,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
             for i, (props_set_name, props_set) in enumerate(props_sets):
                 if i == opened:
                     textbutton "- " + props_set_name action [SelectedIf(True), NullAction()]
-                    for p in _viewers.expand_props_set(props_set, (tag, layer), current_scene):
+                    for p in _viewers.expand_props_set(props_set, (tab, layer), current_scene):
                         $key = (tab, layer, p)
                         $value = get_value(key, default=True)
                         $f = generate_changed(key)
