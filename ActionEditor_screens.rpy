@@ -185,8 +185,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     hbox:
                         style_group "new_action_editor_c"
                         textbutton "  [key]" action None text_color "#FFF"
-                        add DraggableValue(value_format, key, f, is_force_plus(p),
-                            text_size=16, text_color="#CCC", text_hover_underline=True)
+                        add DraggableValue(value_format, key, f, is_force_plus(p))
                     fixed:
                         # ysize int(config.screen_height*(1-_viewers.preview_size)-_viewers.time_column_height)
                         ysize None
@@ -311,8 +310,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     hbox:
                                                         style_group "new_action_editor_c"
                                                         textbutton indent*3+"  [shown_p]" action None text_color "#FFF"
-                                                        add DraggableValue(value_format, key, f, is_force_plus(p),
-                                                            text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                        add DraggableValue(value_format, key, f, is_force_plus(p))
                                                 # if key not in in_graphic_mode:
                                                 if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                     fixed:
@@ -456,8 +454,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                             style_group "new_action_editor_c"
                                                             textbutton indent*3+"  [shown_p]":
                                                                 action None text_color "#FFF"
-                                                            add DraggableValue(value_format, key, f, is_force_plus(p),
-                                                                text_size=16, text_color="#CCC", text_hover_underline=True)
+                                                            add DraggableValue(value_format, key, f, is_force_plus(p))
                                                     if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                         fixed:
                                                             # if key not in in_graphic_mode:
@@ -574,6 +571,9 @@ init -1597:
         color "#CCC"
         outlines [ (absolute(2), "#000", absolute(0), absolute(0)) ]
         size 16
+    style draggable_value is new_action_editor_text
+    style hover_draggable_value is draggable_value:
+        underline True
     if (renpy.version_tuple[0] == 7 and renpy.version_tuple[1] >= 5) or renpy.version_tuple[0] > 7:
         style new_action_editor_text language "unicode"
     style new_action_editor_button_text is new_action_editor_text:
@@ -1477,7 +1477,7 @@ init 1 python in _viewers:
     class DraggableValue(renpy.Displayable):
 
 
-        def __init__(self, format, key, changed, force_plus, clicked=None, alternate=None, **properties):
+        def __init__(self, format, key, changed, force_plus, clicked=None, alternate=None, style="draggable_value", hover_style="hover_draggable_value", **properties):
             super(DraggableValue, self).__init__(**properties)
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
@@ -1490,14 +1490,8 @@ init 1 python in _viewers:
             self.force_plus = force_plus
             self.int_type = isinstance(get_value(key, default=True), int)
             self.dragging = False
-            self.kwargs = {}
-            for k, v in properties.items():
-                if k.startswith("text_") and not k.startswith("text_hover_"):
-                    self.kwargs[k[5:]] = v
-            self.hover_kwargs = dict(self.kwargs)
-            for k, v in properties.items():
-                if k.startswith("text_hover_"):
-                    self.hover_kwargs[k[11:]] = v
+            self.text_style = style
+            self.hover_text_style = hover_style
 
             if self.use_wide_range:
                 self.change_per_pix = int(persistent._viewers_wide_dragg_speed)
@@ -1528,10 +1522,10 @@ init 1 python in _viewers:
         def render(self, width, height, st, at):
             value = get_value(self.key, default=True)
             if self.hovered:
-                kwargs = self.hover_kwargs
+                style = self.hover_text_style
             else:
-                kwargs = self.kwargs
-            d = Text(self.format.format(value), align=(.5, .5), **kwargs)
+                style = self.text_style
+            d = Text(self.format.format(value), align=(.5, .5), style=style)
             box = Fixed()
             box.add(d)
             render = box.render(width, height, st, at)

@@ -198,7 +198,14 @@ lemma forum
  function statement in ATL block. For more information, see that file.
 
 
+ Text Size
+================
+ 
+ All text style is changeable by new_action_editor_text style.
 
+    init:
+        style new_action_editor_text:
+            size 10
 
 
 
@@ -389,3 +396,13 @@ lemma forum
 
  ATL_funcctions.rpy に ATL function ステートメントでの使用を意図した関数群を用意しました。
  使用方法は該当ファイルを参照してください。
+
+
+ 文字サイズ
+================
+ 
+ new_action_editor_text スタイルから全てのテキストのスタイルを変更できます。
+
+    init:
+        style new_action_editor_text:
+            size 10
