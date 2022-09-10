@@ -188,7 +188,7 @@ init -1598 python in _viewers:
                 try:
                     image_name = " ".join(image_name_tuple)
                 except:
-                    raise Exception(image_name_tuple)
+                    raise Exception(image_name_tuple, layer, tag)
                 image_state_org[current_scene][layer][tag] = {}
 
                 pos = renpy.get_placement(d)
@@ -219,8 +219,8 @@ init -1598 python in _viewers:
                             break
 
         # init camera, layer and images
-        renpy.scene()
         for layer in config.layers:
+            renpy.scene(layer)
             sle.set_layer_at_list(layer, [], camera=True)
             sle.set_layer_at_list(layer, [])
 

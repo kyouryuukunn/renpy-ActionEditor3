@@ -207,7 +207,13 @@ lemma forum
         style new_action_editor_text:
             size 10
 
+ Trouble shooting
+================
 
+Layout is corrupted
+
+ Too long tag names and big size of fonts corrupt the layout of ActionEditor.
+ In that case, try to adjust the size of font by the above manner.
 
 
 
@@ -406,3 +412,16 @@ lemma forum
     init:
         style new_action_editor_text:
             size 10
+
+
+ よくあるトラブル
+================
+ レイアウトが崩れる
+
+ ActionEditorではタグ名が長過ぎる、フォントサイズが大きすぎる場合はレイアウトが崩れます。
+ それらしい症状が発生した場合は上記の方法でフォントサイズを調整してください。
+
+ 次のエラーが発生する
+ NameError: name '_open_image_viewer' is not defined
+
+ 旧版ActionEditorのファイルがあるゲームに本ActionEditor3のスクリプトファイルをコピーした場合に発生します。旧版とは互換性がないため、以前のActionEditorにあったファイルとスクリプト中で追加関数を使用していればそちらも削除してから、本ActionEditor3のファイルをコピーしてください。
