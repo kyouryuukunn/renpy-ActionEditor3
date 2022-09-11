@@ -80,6 +80,7 @@ init -1598 python in _viewers:
     from collections import defaultdict
     from renpy.display.image import images
     from traceback import format_exc
+    debug = False
 
     class DuringTransitionDisplayble(renpy.Displayable):
     # create the image which is doing transition at the given time.
@@ -188,7 +189,9 @@ init -1598 python in _viewers:
                 try:
                     image_name = " ".join(image_name_tuple)
                 except:
-                    raise Exception(image_name_tuple, layer, tag)
+                    if debug:
+                        raise Exception(image_name_tuple, layer, tag)
+                    continue
                 image_state_org[current_scene][layer][tag] = {}
 
                 pos = renpy.get_placement(d)
@@ -2779,6 +2782,8 @@ show {imagename}""".format(imagename=child)
             for layer in image_state_org[s]:
                 state = get_image_state(layer, s)
                 for tag, _ in zorder_list[s][layer]:
+                    if tag not in state:
+                        continue
                     image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), s)
                     for k, v in image_keyframes.items():
@@ -3037,6 +3042,8 @@ show {imagename}""".format(imagename=child)
             for layer in image_state_org[last_scene]:
                 state = get_image_state(layer, last_scene)
                 for tag, _ in zorder_list[last_scene][layer]:
+                    if tag not in state:
+                        continue
                     image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
                     image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), last_scene)
                     for k, v in image_keyframes.items():
