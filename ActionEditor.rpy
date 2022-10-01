@@ -273,6 +273,8 @@ init -1598 python in _viewers:
                     elif isinstance(type, RotateMatrix):
                         for j, x in enumerate(("X", "Y", "Z")):
                             rv.append(("matrixtransform_{}_{}_{}{}".format(i+1, j+1, "rotate", x), args[j]))
+                    # else:
+                    #     renpy.notify(_("ActionEditor doesn't support ") + str(type))
                 return rv
         else:
             if value is None:
@@ -294,6 +296,8 @@ init -1598 python in _viewers:
                         rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "bright"), args))
                     elif isinstance(type, HueMatrix):
                         rv.append(("matrixcolor_{}_{}_{}".format(i+1, 1, "hue"), args))
+                    # else:
+                    #     renpy.notify(_("ActionEditor doesn't support ") + str(type))
                 return rv
 
 
@@ -303,13 +307,17 @@ init -1598 python in _viewers:
             if isinstance(origin, _MultiplyMatrix):
                 args = getattr(origin.right, "args", None)
                 if args is None:
-                    args = getattr(origin.right, "value")
+                    args = getattr(origin.right, "value", None)
+                if args is None:
+                    args = getattr(origin.right, "color")
                 matrix_info.append((origin.right, args))
                 _get_matrix_info(origin.left)
             else:
                 args = getattr(origin, "args", None)
                 if args is None:
-                    args = getattr(origin, "value")
+                    args = getattr(origin, "value", None)
+                if args is None:
+                    args = getattr(origin, "color")
                 matrix_info.append((origin, args))
 
         origin = getattr(matrix, "origin", False)

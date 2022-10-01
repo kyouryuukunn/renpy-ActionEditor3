@@ -91,6 +91,8 @@ lemma forum
 
  * Skipping animations may not work when those include the tags which are already shown and have loop animations.
    When using functions other than camera_blur, these may cause malfunction after skip.
+ * ActionEditor supports ScaleMatrix, OffsetMatrix, RotateMatrix and ignores other matrixtransforms.
+ * ActionEditor supports InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix and ignores other matrixcolors.
 
 
  How to add desired properties to the editor.
@@ -289,6 +291,8 @@ Layout is corrupted
  * アニメーション開始前から同じタグの画像がすでに表示されており、かつそのタグのアニメーションにループが含まれている場合は正常に動作しません。
  参考リンク
  http://akakyouryuu.com/renpy/renpy%e3%81%aeatl%e3%82%a2%e3%83%8b%e3%83%a1%e3%83%bc%e3%82%b7%e3%83%a7%e3%83%b3%e3%82%92%e3%82%af%e3%83%aa%e3%83%83%e3%82%af%e3%81%a7%e3%82%b9%e3%82%ad%e3%83%83%e3%83%97%e3%81%a7%e3%81%8d%e3%82%8b/
+ * matrixtransformはScaleMatrix, OffsetMatrix, RotateMatrixのみサポートしています。それ以外は無視されます。
+ * matrixcolorはInvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrixのみサポートしています。それ以外は無視されます。
 
 
  任意のプロパティーをエディターに追加する方法
