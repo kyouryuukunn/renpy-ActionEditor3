@@ -1241,9 +1241,10 @@ init -1598 python in _viewers:
             # d = FixedTimeDisplayable(Movie(play=prefix+file_name, mask=None, loop=False), time, at)
             widget = d
             # raise Exception((d._play, d.mask))
-        elif name_tuple in images:
-            widget = FixedTimeDisplayable(images[name_tuple], time, at)
+        # elif name_tuple in images:
+        #     widget = FixedTimeDisplayable(images[name_tuple], time, at)
         else:
+            #easy displayableではすべてImageReference objectになるがなにか問題あるか?
             widget = FixedTimeDisplayable(renpy.easy.displayable(name), time, at)
         return widget
 
