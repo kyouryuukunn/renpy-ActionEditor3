@@ -1962,8 +1962,9 @@ show {imagename}""".format(imagename=child)
             image_state[current_scene][l] = {}
             image_state_org[current_scene][l] = {}
             zorder_list[current_scene][l] = []
-        loops.insert(current_scene, defaultdict(lambda:False))
-        splines.insert(current_scene, defaultdict(lambda:{}))
+
+        loops.insert(current_scene, defaultdict(_False))
+        splines.insert(current_scene, defaultdict(dict))
         for i in range(current_scene-1, -1, -1):
             if camera_keyframes_exist(i):
                 break
@@ -2376,16 +2377,21 @@ show {imagename}""".format(imagename=child)
         return False
 
 
+    def _False():
+        return False
+
+
     def open_action_editor():
         global current_time, current_scene, scene_keyframes, zorder_list, sound_keyframes, all_keyframes, playing, in_editor, loops, splines
+
         if not config.developer:
             return
         playing = False
         current_time = 0.0 #current_time is always float
         current_scene = 0
         moved_time = 0
-        loops = [defaultdict(lambda:False)]
-        splines = [defaultdict(lambda:{})]
+        loops = [defaultdict(_False)]
+        splines = [defaultdict(dict)]
         sound_keyframes = {}
         all_keyframes = [{}]
         zorder_list = [{}]
