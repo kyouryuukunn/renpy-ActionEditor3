@@ -176,11 +176,13 @@ init -1598 python in _viewers:
                 if isinstance(d, renpy.display.screen.ScreenDisplayable):
                     continue
                 image_name_tuple = getattr(d, "name", None)
-                if image_name_tuple is None:
-                    child = getattr(d, "child", None)
+                child = d
+                while image_name_tuple is None:
+                    child = getattr(child, "child", None)
                     image_name_tuple = getattr(child, "name", None)
-                if image_name_tuple is None:
-                    child = getattr(d, "raw_child", None)
+                child = d
+                while image_name_tuple is None:
+                    child = getattr(child, "raw_child", None)
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
                     continue
@@ -194,31 +196,55 @@ init -1598 python in _viewers:
                     continue
                 image_state_org[current_scene][layer][tag] = {}
 
-                pos = renpy.get_placement(d)
-                state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
-                    image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
+                    child = d
+                    while child is not None:
+                        pos = renpy.get_placement(child)
+                        v = getattr(pos, p, None)
+                        if v != get_default(p):
+                            image_state_org[current_scene][layer][tag][p] = v
+                            break
+                        child = getattr(child, "child", None)
+                    else:
+                        image_state_org[current_scene][layer][tag][p] = v
                 for p in transform_props:
                     if p not in image_state_org[current_scene][layer][tag]:
                         if p == "child":
                             image_state_org[current_scene][layer][tag][p] = (image_name, None)
-                        elif p in ("matrixtransform", "matrixcolor"):
+                        elif p in ("matrixtransform", "matrixcolor"): #TODO
                             for prop, v in load_matrix(p, getattr(state, p, None)):
                                 if is_force_float(prop) and isinstance(v, int):
                                     v = float(v)
                                 image_state_org[current_scene][layer][tag][prop] = v
                         else:
-                            v = getattr(state, p, None)
-                            if is_force_float(p) and isinstance(v, int):
-                                v = float(v)
-                            image_state_org[current_scene][layer][tag][p] = v
+                            child = d
+                            while child is not None:
+                                state = getattr(child, "state", None)
+                                if state is None:
+                                    continue
+                                v = getattr(state, p, None)
+                                if v != get_default(p) and v is not None: #TODO group property の扱い
+                                    if is_force_float(p) and isinstance(v, int):
+                                        v = float(v)
+                                    image_state_org[current_scene][layer][tag][p] = v
+                                    break
+                                child = getattr(child, "child", None)
+                            else:
+                                if is_force_float(p) and isinstance(v, int):
+                                    v = float(v)
+                                image_state_org[current_scene][layer][tag][p] = v
                 for gn, ps in props_groups.items():
                     for p in transform_props:
                         if p in ps:
-                            pvs = getattr(d, gn, None)
-                            if pvs is not None:
-                                for gp, v in zip(ps, pvs):
-                                    image_state_org[current_scene][layer][tag][gp] = v
+                            child = d
+                            while child is not None: #TODO
+                                pvs = getattr(child, gn, None)
+                                if pvs is not None:
+                                    for gp, v in zip(ps, pvs):
+                                        image_state_org[current_scene][layer][tag][gp] = v
+                                    break
+                                child = getattr(child, "child", None)
+                            else:
                             break
 
         # init camera, layer and images
