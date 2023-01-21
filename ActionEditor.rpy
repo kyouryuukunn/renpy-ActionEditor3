@@ -10,6 +10,7 @@
 #warper後の時間が丸められていない場合がある
 
 #課題
+#時間変化のあるat節その他は再現できない
 #cameraではset_childを使用していないのでat節の再現ができない
 #orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -209,11 +210,6 @@ init -1598 python in _viewers:
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
                     continue
-
-                child = getattr(d, "child", None)
-                child = getattr(child, "child", None)
-                if child is not None:
-                    renpy.store._viewers.at_clauses_flag = True
 
                 name = " ".join(image.name)
                 try:
