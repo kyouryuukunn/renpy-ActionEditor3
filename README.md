@@ -22,7 +22,7 @@ lemma forum
 
 
 
- Endglish Document
+ English Document
 ================
 
  This script adds Ren'py the ability to adjust and view transform properties of images
@@ -212,10 +212,17 @@ lemma forum
  Trouble shooting
 ================
 
-Layout is corrupted
+ Layout is corrupted
 
  Too long tag names and big size of fonts corrupt the layout of ActionEditor.
  In that case, try to adjust the size of font by the above manner.
+
+
+ Known issue
+================
+
+ ActionEditor can't show the images with "at clause" correctly.
+ ActionEditor can't show movie displayable correctly.
 
 
 
@@ -429,3 +436,9 @@ Layout is corrupted
  NameError: name '_open_image_viewer' is not defined
 
  旧版ActionEditorのファイルがあるゲームに本ActionEditor3のスクリプトファイルをコピーした場合に発生します。旧版とは互換性がないため、以前のActionEditorにあったファイルとスクリプト中で追加関数を使用していればそちらも削除してから、本ActionEditor3のファイルをコピーしてください。
+
+ 既知の問題
+================
+
+ at 節を使用した画像を正常に表示できない
+ Movie Displayableを正常に表示できない
