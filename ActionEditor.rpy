@@ -142,22 +142,27 @@ init -1598 python in _viewers:
         image_state.append({})
         camera_state_org.append({})
         movie_cache = {}
-        props = sle.camera_transform["master"]
+        d = sle.camera_transform["master"]
+
+        pos = renpy.get_placement(d)
+        for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
+            camera_state_org[current_scene][p] = getattr(pos, p, None)
         for p in camera_props:
-            if p in ("matrixtransform", "matrixcolor"):
-                for prop, v in load_matrix(p, getattr(props, p, None)):
+            if p not in camera_state_org[current_scene]:
+                if p in ("matrixtransform", "matrixcolor"):
+                    for prop, v in load_matrix(p, getattr(d, p, None)):
+                        if is_force_float(p) and isinstance(v, int):
+                            v = float(v)
+                        camera_state_org[current_scene][prop] = v
+                else:
+                    v = getattr(d, p, None)
                     if is_force_float(p) and isinstance(v, int):
                         v = float(v)
-                    camera_state_org[current_scene][prop] = v
-            else:
-                v = getattr(props, p, None)
-                if is_force_float(p) and isinstance(v, int):
-                    v = float(v)
-                camera_state_org[current_scene][p] = v
+                    camera_state_org[current_scene][p] = v
         for gn, ps in props_groups.items():
             for p in camera_props:
                 if p in ps:
-                    pvs = getattr(props, gn, None)
+                    pvs = getattr(d, gn, None)
                     if pvs is not None:
                         for gp, v in zip(ps, pvs):
                             if is_force_float(gp) and isinstance(v, int):
@@ -176,11 +181,13 @@ init -1598 python in _viewers:
                 if isinstance(d, renpy.display.screen.ScreenDisplayable):
                     continue
                 image_name_tuple = getattr(d, "name", None)
-                if image_name_tuple is None:
-                    child = getattr(d, "child", None)
+                child = d
+                while image_name_tuple is None:
+                    child = getattr(child, "child", None)
                     image_name_tuple = getattr(child, "name", None)
-                if image_name_tuple is None:
-                    child = getattr(d, "raw_child", None)
+                child = d
+                while image_name_tuple is None:
+                    child = getattr(child, "raw_child", None)
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
                     continue
@@ -218,6 +225,8 @@ init -1598 python in _viewers:
                             pvs = getattr(d, gn, None)
                             if pvs is not None:
                                 for gp, v in zip(ps, pvs):
+                                    if is_force_float(gp) and isinstance(v, int):
+                                        v = float(v)
                                     image_state_org[current_scene][layer][tag][gp] = v
                             break
 
