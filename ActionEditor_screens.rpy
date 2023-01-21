@@ -3050,26 +3050,26 @@ init 1 python in _viewers:
             mkey = (n, l)
             k_list = [key]
             check_points_list = [check_points]
-            loop_button_action = [ToggleDict(loops[current_scene], key)]
+            loop_button_action = [SelectedIf(loops[current_scene][key]), ToggleDict(loops[current_scene], key)]
             check_result = check_props_group(p, mkey)
             if check_result is not None:
                 gn, ps = check_result
                 k_list = [(n, l, p) for p in ps]
                 check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+                loop_button_action = [SelectedIf(loops[current_scene][k_list+[(n, l, gn)][0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
         else:
             k_list = [key]
             mkey = "camera"
             p = key
             check_points_list = [check_points]
-            loop_button_action = [ToggleDict(loops[current_scene], key)]
+            loop_button_action = [SelectedIf(loops[current_scene][key]), ToggleDict(loops[current_scene], key)]
             check_result = check_props_group(p, mkey)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
                     k_list = ps
                     check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                    loop_button_action = [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
+                    loop_button_action = [SelectedIf(loops[current_scene][k_list+[gn][0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
 
         button_list = []
 
