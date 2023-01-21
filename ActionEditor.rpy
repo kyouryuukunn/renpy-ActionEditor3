@@ -10,6 +10,7 @@
 #warper後の時間が丸められていない場合がある
 
 #課題
+#cameraではset_childを使用していないのでat節の再現ができない
 #orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #removeボタンを上記とともに画像タグの右クリックメニューへ
@@ -149,6 +150,16 @@ init -1598 python in _viewers:
         if child is not None:
             renpy.store._viewers.at_clauses_flag = True
 
+        child = getattr(d, "child", None)
+        at_list = []
+        while child is not None:
+            trans = get_transform_name(child)
+            if trans is not None:
+                at_list.append(trans)
+            child = getattr(child, "child", None)
+        at_list.reverse()
+        camera_state_org[current_scene]["at_list"] = at_list
+
         # get_placementを使用するとat節を使用しても正味の位置を所得できる
         pos = renpy.get_placement(d)
         state = getattr(d, "state", None)
@@ -213,6 +224,16 @@ init -1598 python in _viewers:
                     continue
                 image_state_org[current_scene][layer][tag] = {}
 
+                child = getattr(d, "child", None)
+                at_list = []
+                while child is not None:
+                    trans = get_transform_name(child)
+                    if trans is not None:
+                        at_list.append(trans)
+                    child = getattr(child, "child", None)
+                at_list.reverse()
+                image_state_org[current_scene][layer][tag]["at_list"] = at_list
+
                 pos = renpy.get_placement(d)
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
@@ -247,6 +268,44 @@ init -1598 python in _viewers:
             renpy.scene(layer)
             sle.set_layer_at_list(layer, [], camera=True)
             sle.set_layer_at_list(layer, [])
+
+
+    def get_transform_name(obj):
+        atl = getattr(obj, "atl", None)
+        if atl is None:
+            return None
+
+        for name, _, _ in renpy.dump.transforms:
+            transform = getattr(renpy.store, name, None)
+            if transform is not None and transform.atl is atl:
+                return (name, obj.context.context)
+        else:
+            return None
+
+
+    def apply_at_list(child, at_list):
+        if not at_list:
+            return child
+        for name, kwargs in at_list:
+            child = getattr(renpy.store, name)(child=child, **kwargs)
+        return child
+
+
+    def expand_at_list(at_list):
+        rv = ""
+        for name, kwargs in at_list:
+            if kwargs:
+                para = ""
+                for k, v in kwargs.items():
+                    para += "{}={}, ".format(k, v)
+                else:
+                    para = para[:-2]
+                rv += "{}({}), ".format(name, para)
+            else:
+                rv += "{}, ".format(name)
+        else:
+            rv = rv[:-2]
+        return rv
 
 
     def check_props_group(prop, tag=None, scene_num=None):
@@ -729,6 +788,8 @@ init -1598 python in _viewers:
                 else:
                     if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
                         check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
+            at_list = camera_state_org[0].get("at_list")
+            check_points["at_list"] = [(at_list, 0, None)]
             #focusing以外のグループプロパティーはここで纏める
             included_gp = {}
             for p in check_points:
@@ -812,6 +873,8 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
+                    at_list = state[tag].get("at_list")
+                    check_points[layer][tag]["at_list"] = [(at_list, 0, None)]
                     for prop in state[tag]:
                         if not exclusive_check((tag, layer, prop), s):
                             continue
@@ -1053,6 +1116,9 @@ init -1598 python in _viewers:
             tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
 
         for p, cs in check_points.items():
+            if p == "at_list":
+                continue
+
             if not cs: #恐らく不要
                 break
 
@@ -1148,6 +1214,7 @@ init -1598 python in _viewers:
                         setattr(tran, p, v)
 
         if "child" in check_points and check_points["child"]:
+            at_list = check_points["at_list"][0][0]
             cs = check_points["child"]
             for i in range(-1, -len(cs), -1):
                 checkpoint = cs[i][1]
@@ -1160,16 +1227,16 @@ init -1598 python in _viewers:
                         tran.set_child(Null())
                         break
                     elif start[0][0] is None:
-                        new_widget = get_widget(goal[0][0], time, at)
+                        new_widget = get_widget(goal[0][0], time, at, at_list)
                         w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                         old_widget = Null(w, h)
                     elif goal[0][0] is None:
-                        old_widget = get_widget(start[0][0], time, at)
+                        old_widget = get_widget(start[0][0], time, at, at_list)
                         w, h = renpy.render(old_widget, 0, 0, 0, 0).get_size()
                         new_widget = Null(w, h)
                     else:
-                        old_widget = get_widget(start[0][0], time, at)
-                        new_widget = get_widget(goal[0][0], time, at)
+                        old_widget = get_widget(start[0][0], time, at, at_list)
+                        new_widget = get_widget(goal[0][0], time, at, at_list)
                     if time - checkpoint >= get_transition_delay(goal[0][1]):
                         child = new_widget
                     else:
@@ -1190,7 +1257,7 @@ init -1598 python in _viewers:
                     fixed_time = time-checkpoint
                     if fixed_time < 0:
                         fixed_time = 0
-                    new_widget = get_widget(goal[0][0], time, at)
+                    new_widget = get_widget(goal[0][0], time, at, at_list)
                     w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                     old_widget = Null(w, h)
                     if fixed_time >= get_transition_delay(goal[0][1]):
@@ -1222,7 +1289,7 @@ init -1598 python in _viewers:
         return 0
 
 
-    def get_widget(name, time, at):
+    def get_widget(name, time, at, at_list):
         name_tuple = tuple(name.split())
         if name_tuple in images and isinstance(images[name_tuple], Movie):
             d_org = images[name_tuple]
@@ -1263,10 +1330,14 @@ init -1598 python in _viewers:
             widget = d
             # raise Exception((d._play, d.mask))
         # elif name_tuple in images:
-        #     widget = FixedTimeDisplayable(images[name_tuple], time, at)
+            # child = images[name_tuple]
+            # child = apply_at_list(child, at_list)
+            # widget = FixedTimeDisplayable(child, time, at)
         else:
             #easy displayableではすべてImageReference objectになるがなにか問題あるか?
-            widget = FixedTimeDisplayable(renpy.easy.displayable(name), time, at)
+            child = renpy.easy.displayable(name)
+            child = apply_at_list(child, at_list)
+            widget = FixedTimeDisplayable(child, time, at)
         return widget
 
 
@@ -2853,6 +2924,9 @@ show {imagename}""".format(imagename=child)
                                     image_name = last_child
                         string += """
     show {}""".format(image_name)
+                        at_list = state[tag].get("at_list")
+                        if at_list:
+                            string += " at {}".format(expand_at_list(at_list))
                         if image_name.split()[0] != tag:
                             string += " as {}".format(tag)
                         if layer != "master":
@@ -3112,6 +3186,9 @@ show {imagename}""".format(imagename=child)
                                 image_name = last_child
                     string += """
     show {}""".format(image_name)
+                    at_list = state[tag].get("at_list")
+                    if at_list:
+                        string += " at {}".format(expand_at_list(at_list))
                     if image_name.split()[0] != tag:
                         string += " as {}".format(tag)
                     if layer != "master":

@@ -221,7 +221,7 @@ lemma forum
  Known issue
 ================
 
- ActionEditor can't show the images with "at clause" correctly.
+ ActionEditor can't show camera with "at clause" correctly.
  ActionEditor can't show movie displayable correctly.
 
 
@@ -440,5 +440,5 @@ lemma forum
  既知の問題
 ================
 
- at 節を使用した画像を正常に表示できない
+ at 節を使用したcameraを正常に表示できない
  Movie Displayableを正常に表示できない
