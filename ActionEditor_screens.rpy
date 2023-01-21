@@ -2,6 +2,10 @@
 screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mode=[]):
     default layer = "master"
     python:
+        if _viewers.at_clauses_flag:
+            renpy.notify(_("ActionEditor can't show images with 'at clause'"))
+            _viewers.at_clauses_flag = False
+
         int_format = "{:> }" 
         float_format = "{:> .2f}"
 
@@ -630,6 +634,9 @@ init -1597:
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
     python:
+        if _viewers.at_clauses_flag:
+            renpy.notify(_("ActionEditor can't show images with 'at clause'"))
+            _viewers.at_clauses_flag = False
         int_format = "{:> }" 
         float_format = "{:> .2f}"
         generate_changed = _viewers.generate_changed

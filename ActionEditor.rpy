@@ -144,25 +144,32 @@ init -1598 python in _viewers:
         movie_cache = {}
         d = sle.camera_transform["master"]
 
+        child = getattr(d, "child", None)
+        child = getattr(child, "child", None)
+        if child is not None:
+            renpy.store._viewers.at_clauses_flag = True
+
+        # get_placementを使用するとat節を使用しても正味の位置を所得できる
         pos = renpy.get_placement(d)
+        state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
         for p in camera_props:
             if p not in camera_state_org[current_scene]:
                 if p in ("matrixtransform", "matrixcolor"):
-                    for prop, v in load_matrix(p, getattr(d, p, None)):
+                    for prop, v in load_matrix(p, getattr(state, p, None)):
                         if is_force_float(p) and isinstance(v, int):
                             v = float(v)
                         camera_state_org[current_scene][prop] = v
                 else:
-                    v = getattr(d, p, None)
+                    v = getattr(state, p, None)
                     if is_force_float(p) and isinstance(v, int):
                         v = float(v)
                     camera_state_org[current_scene][p] = v
         for gn, ps in props_groups.items():
             for p in camera_props:
                 if p in ps:
-                    pvs = getattr(d, gn, None)
+                    pvs = getattr(state, gn, None)
                     if pvs is not None:
                         for gp, v in zip(ps, pvs):
                             if is_force_float(gp) and isinstance(v, int):
@@ -191,6 +198,11 @@ init -1598 python in _viewers:
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
                     continue
+
+                child = getattr(d, "child", None)
+                child = getattr(child, "child", None)
+                if child is not None:
+                    renpy.store._viewers.at_clauses_flag = True
 
                 name = " ".join(image.name)
                 try:
@@ -222,7 +234,7 @@ init -1598 python in _viewers:
                 for gn, ps in props_groups.items():
                     for p in transform_props:
                         if p in ps:
-                            pvs = getattr(d, gn, None)
+                            pvs = getattr(state, gn, None)
                             if pvs is not None:
                                 for gp, v in zip(ps, pvs):
                                     if is_force_float(gp) and isinstance(v, int):
@@ -2449,6 +2461,7 @@ show {imagename}""".format(imagename=child)
             sound_keyframes[c] = {}
         for c in renpy.audio.audio.channels:
             renpy.music.stop(c)
+        renpy.store._viewers.at_clauses_flag = False
         action_editor_init()
         in_editor = True
         _window = renpy.store._window
