@@ -10,7 +10,6 @@
 #warper後の時間が丸められていない場合がある
 
 #課題
-#時間変化のあるat節その他は再現できない
 #cameraではset_childを使用していないのでat節の再現ができない
 #orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -210,6 +209,11 @@ init -1598 python in _viewers:
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
                     continue
+
+                child = getattr(d, "child", None)
+                child = getattr(child, "child", None)
+                if child is not None:
+                    renpy.store._viewers.at_clauses_flag = True
 
                 name = " ".join(image.name)
                 try:
@@ -1118,15 +1122,16 @@ init -1598 python in _viewers:
             if not cs: #恐らく不要
                 break
 
-            if p+"_loop" in loop and loop[p+"_loop"] and cs[-1][1]:
-                if time % cs[-1][1] != 0:
-                    time = time % cs[-1][1]
-
             scene_start = cs[0][1]
+            looped_time = time
+            if p+"_loop" in loop and loop[p+"_loop"] and cs[-1][1]:
+                if (time - scene_start) % (cs[-1][1] - scene_start) != 0:
+                    looped_time = (time - scene_start) % (cs[-1][1] - scene_start) + scene_start
+
             for i in range(1, len(cs)):
                 checkpoint = cs[i][1]
                 pre_checkpoint = cs[i-1][1]
-                if time >= scene_start and time < checkpoint:
+                if looped_time >= scene_start and looped_time < checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
                     if p not in ("child", "function"):
@@ -1136,7 +1141,7 @@ init -1598 python in _viewers:
                                 warper = renpy.python.py_eval(goal[2])
                             else:
                                 warper = renpy.atl.warpers[goal[2]]
-                            g = warper((time - pre_checkpoint) / (checkpoint - pre_checkpoint))
+                            g = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                         else:
                             g = 1.
 
@@ -1178,7 +1183,7 @@ init -1598 python in _viewers:
                             setattr(tran, p, v)
                     break
             else:
-                if time < scene_start:
+                if looped_time < scene_start:
                     fixed_index = 0
                 else:
                     fixed_index = -1
@@ -1212,32 +1217,38 @@ init -1598 python in _viewers:
         if "child" in check_points and check_points["child"]:
             at_list = check_points["at_list"][0][0]
             cs = check_points["child"]
+
+            scene_start = cs[0][1]
+            looped_time = time
+            if "child_loop" in loop and loop["child_loop"] and cs[-1][1]:
+                if (time - scene_start) % (cs[-1][1] - scene_start) != 0:
+                    looped_time = (time - scene_start) % (cs[-1][1] - scene_start) + scene_start
+
             for i in range(-1, -len(cs), -1):
                 checkpoint = cs[i][1]
                 pre_checkpoint = cs[i-1][1]
-                scene_start = cs[0][1]
-                if time >= scene_start and time >= checkpoint:
+                if looped_time >= scene_start and looped_time >= checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
                     if start[0][0] is None and goal[0][0] is None:
                         tran.set_child(Null())
                         break
                     elif start[0][0] is None:
-                        new_widget = get_widget(goal[0][0], time, at, at_list)
+                        new_widget = get_widget(goal[0][0], looped_time, at, at_list)
                         w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                         old_widget = Null(w, h)
                     elif goal[0][0] is None:
-                        old_widget = get_widget(start[0][0], time, at, at_list)
+                        old_widget = get_widget(start[0][0], looped_time, at, at_list)
                         w, h = renpy.render(old_widget, 0, 0, 0, 0).get_size()
                         new_widget = Null(w, h)
                     else:
-                        old_widget = get_widget(start[0][0], time, at, at_list)
-                        new_widget = get_widget(goal[0][0], time, at, at_list)
-                    if time - checkpoint >= get_transition_delay(goal[0][1]):
+                        old_widget = get_widget(start[0][0], looped_time, at, at_list)
+                        new_widget = get_widget(goal[0][0], looped_time, at, at_list)
+                    if looped_time - checkpoint >= get_transition_delay(goal[0][1]):
                         child = new_widget
                     else:
                         transition = renpy.python.py_eval("renpy.store."+goal[0][1])
-                        during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, time-checkpoint, 0)
+                        during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, looped_time-checkpoint, 0)
                         child = during_transition_displayable
                         if side_view:
                             child = add_thick(child)
@@ -1250,10 +1261,10 @@ init -1598 python in _viewers:
                 if goal[0][0] is None:
                     child = Null()
                 else:
-                    fixed_time = time-checkpoint
+                    fixed_time = looped_time-checkpoint
                     if fixed_time < 0:
                         fixed_time = 0
-                    new_widget = get_widget(goal[0][0], time, at, at_list)
+                    new_widget = get_widget(goal[0][0], looped_time, at, at_list)
                     w, h = renpy.render(new_widget, 0, 0, 0, 0).get_size()
                     old_widget = Null(w, h)
                     if fixed_time >= get_transition_delay(goal[0][1]):
@@ -1722,15 +1733,16 @@ init -1598 python in _viewers:
                 if time >= cs[i][1]:
                     return cs[i][0]
 
-        if loops[scene_num][key] and cs[-1][1]:
-            if time % cs[-1][1] != 0:
-                time = time % cs[-1][1]
-
         scene_start = cs[0][1]
+        looped_time = time
+        if loops[scene_num][key] and cs[-1][1]:
+            if (time - scene_start) % (cs[-1][1] - scene_start) != 0:
+                looped_time = (time - scene_start) % (cs[-1][1] - scene_start) + scene_start
+
         for i in range(1, len(cs)):
             checkpoint = cs[i][1]
             pre_checkpoint = cs[i-1][1]
-            if time >= scene_start and time < checkpoint:
+            if looped_time >= scene_start and looped_time < checkpoint:
                 start = cs[i-1]
                 goal = cs[i]
                 if checkpoint != pre_checkpoint:
@@ -1738,7 +1750,7 @@ init -1598 python in _viewers:
                         warper = renpy.python.py_eval(goal[2])
                     else:
                         warper = renpy.atl.warpers[goal[2]]
-                    g = warper((time - pre_checkpoint) / (checkpoint - pre_checkpoint))
+                    g = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                 else:
                     g = 1.
                 default_vault = get_default(prop)
@@ -1763,7 +1775,7 @@ init -1598 python in _viewers:
                     return v
                 break
         else:
-            if time >= scene_start:
+            if looped_time >= scene_start:
                 return cs[-1][0]
             else:
                 return cs[0][0]
