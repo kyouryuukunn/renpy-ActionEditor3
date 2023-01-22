@@ -108,13 +108,13 @@ init -1598 python in _viewers:
             super(FixedTimeDisplayable, self).__init__(**properties)
 
             self.d = d
-            self.st = st
-            self.at = at
+            self.fixed_st = st
+            self.fixed_at = at
         
 
+        #単純にst, atを上書きしただけでは動作しない accelerator.pyx等とatl.pyを確認する
         def render(self, width, height, st, at):
-            #st, at is 0 allways?
-            return self.d.render(width, height, self.st, self.at)
+            return self.d.render(width, height, self.fixed_st, self.fixed_at)
 
 
     class RenderToDisplayable(renpy.Displayable):
@@ -145,10 +145,10 @@ init -1598 python in _viewers:
         movie_cache = {}
         d = sle.camera_transform["master"]
 
-        child = getattr(d, "child", None)
-        child = getattr(child, "child", None)
-        if child is not None:
-            renpy.store._viewers.at_clauses_flag = True
+        # child = getattr(d, "child", None)
+        # child = getattr(child, "child", None)
+        # if child is not None:
+        #     renpy.store._viewers.at_clauses_flag = True
 
         child = getattr(d, "child", None)
         at_list = []
@@ -166,8 +166,8 @@ init -1598 python in _viewers:
         # しかし、そのまま所得すると今度はATL内で使用したtransformも所得できなくなる
         # Displayable内にATL中のtransformの情報があるが、内部での優先順位がよくわからない
         # d.atl.statements[..].expressions = [(transform, None), ...]
-        pos = renpy.get_placement(d)
-        # pos = d
+        # pos = renpy.get_placement(d)
+        pos = d
         state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
@@ -216,11 +216,6 @@ init -1598 python in _viewers:
                 if image_name_tuple is None:
                     continue
 
-                child = getattr(d, "child", None)
-                child = getattr(child, "child", None)
-                if child is not None:
-                    renpy.store._viewers.at_clauses_flag = True
-
                 name = " ".join(image.name)
                 try:
                     image_name = " ".join(image_name_tuple)
@@ -240,8 +235,8 @@ init -1598 python in _viewers:
                 at_list.reverse()
                 image_state_org[current_scene][layer][tag]["at_list"] = at_list
 
-                pos = renpy.get_placement(d)
-                # pos = d
+                # pos = renpy.get_placement(d)
+                pos = d
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
@@ -295,7 +290,29 @@ init -1598 python in _viewers:
             return child
         for name, kwargs in at_list:
             child = getattr(renpy.store, name)(child=child, **kwargs)
+        #この方法では位置プロパティーは継承できない
         return child
+
+
+    def get_at_list_props(at_list, prop, st, at):
+        if not at_list:
+            return None
+        at_list_d = []
+        for name, kwargs in at_list:
+            at_list_d.append(getattr(renpy.store, name)(**kwargs))
+
+        # rv = None
+        # for i in at_list_d:
+        #     v = getattr(i, prop, None)
+        #     if v is not None:
+        #         rv = v
+
+        rv = at_list_d[0]()
+        for i in at_list_d[1:]:
+            rv = i(rv)
+        rv = getattr(renpy.get_placement(rv), prop, None)
+
+        return rv
 
 
     def expand_at_list(at_list):
@@ -786,6 +803,10 @@ init -1598 python in _viewers:
             check_points = {}
             vcheck_points = {}
             camera_is_used = False
+            props_use_default = []
+            at_list = camera_state_org[0].get("at_list")
+            check_points["at_list"] = [(at_list, 0, None)]
+
             for prop in camera_state_org[s]:
                 if not exclusive_check(prop, s):
                     continue
@@ -793,10 +814,13 @@ init -1598 python in _viewers:
                     check_points[prop] = all_keyframes[s][prop]
                     camera_is_used = True
                 else:
-                    if prop not in not_used_by_default or camera_state_org[s][prop] is not None:
+                    if camera_state_org[s][prop] is not None:
+                        check_points[prop] = [(get_value(prop, default=False, scene_num=s), t, None)]
+                    elif prop not in not_used_by_default:
                         check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
-            at_list = camera_state_org[0].get("at_list")
-            check_points["at_list"] = [(at_list, 0, None)]
+                        props_use_default.append(prop)
+
+            check_points["props_use_default"] = [(props_use_default, t, None)]
             #focusing以外のグループプロパティーはここで纏める
             included_gp = {}
             for p in check_points:
@@ -860,6 +884,8 @@ init -1598 python in _viewers:
                 for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos"):
                     if p in check_points:
                         vcheck_points[p] = check_points[p]
+                vcheck_points["props_use_default"] = check_points["props_use_default"]
+                vcheck_points["at_list"] = check_points["at_list"]
 
             if not camera_is_used and s > 0:
                 loop.append(loop[s-1])
@@ -880,8 +906,9 @@ init -1598 python in _viewers:
                 check_points[layer] = {}
                 for tag in state:
                     check_points[layer][tag] = {}
+                    props_use_default = []
                     at_list = state[tag].get("at_list")
-                    check_points[layer][tag]["at_list"] = [(at_list, 0, None)]
+                    check_points[layer][tag]["at_list"] = [(at_list, t, None)]
                     for prop in state[tag]:
                         if not exclusive_check((tag, layer, prop), s):
                             continue
@@ -890,8 +917,13 @@ init -1598 python in _viewers:
                         elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
                             check_points[layer][tag][prop] = camera_check_points[s][prop]
                         else:
-                            if prop not in not_used_by_default or state[tag][prop] is not None:
+                            if state[tag][prop] is not None:
+                                check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=False, scene_num=s), t, None)]
+                            elif prop not in not_used_by_default:
                                 check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
+                                props_use_default.append(prop)
+
+                    check_points[layer][tag]["props_use_default"] = [(props_use_default, t, None)]
                     #focusing以外のグループプロパティーはここで纏める
                     included_gp = {}
                     for p in check_points[layer][tag]:
@@ -1123,8 +1155,6 @@ init -1598 python in _viewers:
             tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
 
         for p, cs in check_points.items():
-            if p == "at_list":
-                continue
 
             if not cs: #恐らく不要
                 break
@@ -1141,7 +1171,7 @@ init -1598 python in _viewers:
                 if looped_time >= scene_start and looped_time < checkpoint:
                     start = cs[i-1]
                     goal = cs[i]
-                    if p not in ("child", "function"):
+                    if p not in ("child", "function", "at_list", "props_use_default"):
 
                         if checkpoint != pre_checkpoint:
                             if goal[2].startswith("warper_generator"):
@@ -1215,8 +1245,15 @@ init -1598 python in _viewers:
                         result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
                         setattr(tran, "blur", result)
                 else:
-                    if p not in ("child", "function"):
+                    if p not in ("child", "function", "at_list", "props_use_default"):
                         v = cs[fixed_index][0]
+                        #inherit position properties from 'at clauses' if not given.
+                        if p in check_points["props_use_default"][0][0] and p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
+                            at_v = get_at_list_props(check_points["at_list"][0][0], p, time, at)
+                            if at_v is not None:
+                                v = at_v
+                            # if "child" in check_points and check_points["child"][0][0][0] == "t0 a" and p == "xpos":
+                            #     raise Exception(check_points["child"], check_points["props_use_default"][0][0])
                         if p in ("matrixtransform", "matrixcolor"):
                             v = v(1.0, None)
                         setattr(tran, p, v)
@@ -1356,6 +1393,7 @@ init -1598 python in _viewers:
 
 
     def exclusive_check(key, scene_num=None):
+        #check exclusive properties
         if scene_num is None:
             scene_num = current_scene
         if isinstance(key, tuple):
@@ -1524,6 +1562,7 @@ init -1598 python in _viewers:
                 image_name = " ".join(n)
                 added_tag = name.split()[0]
                 image_state[current_scene][layer][added_tag] = {}
+                image_state[current_scene][layer][added_tag]["at_list"] = [("default", {})]
                 zorder_list[current_scene][layer].append((added_tag, 0))
                 for p in transform_props:
                     if p == "child":
@@ -1534,7 +1573,7 @@ init -1598 python in _viewers:
                         for prop, v in load_matrix(p, None):
                             image_state[current_scene][layer][added_tag][prop] = v
                     else:
-                        image_state[current_scene][layer][added_tag][p] = getattr(renpy.store.default, p, None)
+                        image_state[current_scene][layer][added_tag][p] = None
                 change_time(current_time)
                 # if persistent._viewer_legacy_gui:
                 #     renpy.show_screen("_action_editor")
@@ -1867,13 +1906,6 @@ show {imagename}""".format(imagename=child)
                 string += " as {tagname}".format(tagname=tag)
         if layer != "master":
                 string += " onlayer {layer}".format(layer=layer)
-        if tag in image_state[current_scene][layer]:
-            string += """:
-    default"""
-            if persistent._one_line_one_prop:
-                string += "\n        "
-            else:
-                string += " "
         for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes]):
             if string.find(":") < 0:
                 string += ":\n        "
