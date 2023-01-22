@@ -161,7 +161,13 @@ init -1598 python in _viewers:
         camera_state_org[current_scene]["at_list"] = at_list
 
         # get_placementを使用するとat節を使用しても正味の位置を所得できる
+        # しかし位置が振動するようなtransformをat節で使用していると、
+        # ActionEditor起動時の位置で初期化されてしまう
+        # しかし、そのまま所得すると今度はATL内で使用したtransformも所得できなくなる
+        # Displayable内にATL中のtransformの情報があるが、内部での優先順位がよくわからない
+        # d.atl.statements[..].expressions = [(transform, None), ...]
         pos = renpy.get_placement(d)
+        # pos = d
         state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
@@ -235,6 +241,7 @@ init -1598 python in _viewers:
                 image_state_org[current_scene][layer][tag]["at_list"] = at_list
 
                 pos = renpy.get_placement(d)
+                # pos = d
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
