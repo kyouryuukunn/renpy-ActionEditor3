@@ -3056,7 +3056,7 @@ init 1 python in _viewers:
                 gn, ps = check_result
                 k_list = [(n, l, p) for p in ps]
                 check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                loop_button_action = [SelectedIf(loops[current_scene][k_list+[(n, l, gn)][0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
+                loop_button_action = [SelectedIf(loops[current_scene][(k_list+[(n, l, gn)])[0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[(n, l, gn)]]
         else:
             k_list = [key]
             mkey = "camera"
@@ -3069,7 +3069,7 @@ init 1 python in _viewers:
                 if gn != "focusing":
                     k_list = ps
                     check_points_list = [all_keyframes[current_scene][k2] for k2 in k_list]
-                    loop_button_action = [SelectedIf(loops[current_scene][k_list+[gn][0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
+                    loop_button_action = [SelectedIf(loops[current_scene][(k_list+[gn])[0]])] + [ToggleDict(loops[current_scene], k2) for k2 in k_list+[gn]]
 
         button_list = []
 
