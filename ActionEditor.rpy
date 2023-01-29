@@ -41,6 +41,9 @@ init python in _viewers:
     from renpy.store import RotateMatrix, OffsetMatrix, ScaleMatrix, _MultiplyMatrix
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
+    def action_editor_version():
+        return "230129"
+
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
         from math import sin, cos, pi
@@ -163,9 +166,10 @@ init -1598 python in _viewers:
         # get_placementを使用するとat節を使用しても正味の位置を所得できる
         # しかし位置が振動するようなtransformをat節で使用していると、
         # ActionEditor起動時の位置で初期化されてしまう
-        # しかし、そのまま所得すると今度はATL内で使用したtransformも所得できなくなる
+        # そのまま所得すると今度はATL内で使用したtransformも所得できなくなる
         # Displayable内にATL中のtransformの情報があるが、内部での優先順位がよくわからない
         # d.atl.statements[..].expressions = [(transform, None), ...]
+        # そのまま所得し、ATL内にtransformを含めない前提とする
         # pos = renpy.get_placement(d)
         pos = d
         state = getattr(d, "state", None)
