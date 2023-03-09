@@ -73,7 +73,7 @@ init -1600 python in _viewers:
 
     props_sets = (
             ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate")), 
-            ("3D Matrix    ", ("xrotate", "yrotate", "zrotate", "orientation", "poi", "matrixtransform",)),
+            ("3D Matrix    ", ("xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "poi", "matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
             ("Effect       ", ("blend", "alpha", "blur", "additive", "matrixcolor", "dof", "focusing")),
@@ -85,11 +85,12 @@ init -1600 python in _viewers:
         "matrixanchor":["matrixanchorX", "matrixanchorY"], 
         "crop":["cropX", "cropY", "cropW", "cropH"], 
         "focusing":["focusing", "dof"], 
+        "orientation":["xorientation", "yorientation", "zorientation"], 
     }
 
     #These variables are always wide range even if it is float type.
     #浮動小数であっても整数と同じスケールで表示される変数です。
-    force_wide_range = {"rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan", "xrotate", "yrotate", "zrotate"}
+    force_wide_range = {"rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan", "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation"}
     force_narrow_range = {"xtile", "ytile"}
     #These variables are always plus
     #常に正数になる変数です。
@@ -100,10 +101,10 @@ init -1600 python in _viewers:
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
     #These variables are always float type.
     #常に浮動小数になる変数です。
-    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate")
+    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation")
 
     boolean_props = {"zzoom"}
-    any_props = {"blend", "orientation", "poi"}
+    any_props = {"blend", "poi"}
     def check_perspective(v):
         if isinstance(v, (int, float)):
             return True
@@ -201,7 +202,9 @@ init 1600 python in _viewers:
     "xrotate",
     "yrotate",
     "zrotate",
-    "orientation",
+    "xorientation",
+    "yorientation",
+    "zorientation",
     "poi",
     "matrixtransform",
     "dof",
@@ -247,7 +250,9 @@ init 1600 python in _viewers:
     "xrotate",
     "yrotate",
     "zrotate",
-    "orientation",
+    "xorientation",
+    "yorientation",
+    "zorientation",
     "poi",
     "matrixtransform",
     "dof",
@@ -293,7 +298,10 @@ init 1600 python in _viewers:
     "xrotate":0.,
     "yrotate":0.,
     "zrotate":0.,
-    "orientation": None,
+    "xorientation": 0.,
+    "yorientation": 0.,
+    "zorientation": 0.,
+    "orientation": (0., 0., 0.),
     "poi": None,
     "offsetX": 0.,
     "offsetY": 0.,
