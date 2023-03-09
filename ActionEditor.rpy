@@ -42,7 +42,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230129"
+        return "230309_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -884,10 +884,24 @@ init -1598 python in _viewers:
                 check_points[gn] = group_cs
 
             #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
+            #These properties are shown in side viewer(function property has danger of including blur)
             if persistent._viewer_sideview:
-                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos"):
+                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "poi"):
                     if p in check_points:
-                        vcheck_points[p] = check_points[p]
+                        if p == "zpos":
+                            perspective = check_points["perspective"][0][0]
+                            if perspective:
+                                if perspective is True:
+                                    perspective = config.perspective
+
+                                if isinstance(perspective, (int, float)):
+                                    z11 = perspective
+                                else:
+                                    z11 = perspective[1]
+
+                                vcheck_points[p] = [(v + z11, t, w) for v, t, w in check_points[p]]
+                        else:
+                            vcheck_points[p] = check_points[p]
                 vcheck_points["props_use_default"] = check_points["props_use_default"]
                 vcheck_points["at_list"] = check_points["at_list"]
 
@@ -1064,10 +1078,10 @@ init -1598 python in _viewers:
         d1 = degrees(atan2(config.screen_height, config.screen_width))
         d2 = (90 - d1)*2
         d3 = degrees(atan2(z11, sqrt(config.screen_height**2 + config.screen_width**2)/2))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.offset(0, 0, z11)*Matrix.rotate(0, d3, d1))(Solid("#F00", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.offset(0, 0, z11)*Matrix.rotate(0, d3, d1+d2))(Solid("#0F0", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.offset(0, 0, z11)*Matrix.rotate(0, d3, 3*d1+d2))(Solid("#0FF", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.offset(0, 0, z11)*Matrix.rotate(0, d3, 3*d1+2*d2))(Solid("#939", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1))(Solid("#F00", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1+d2))(Solid("#0F0", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+d2))(Solid("#0FF", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+2*d2))(Solid("#939", xsize=inf, ysize=bold)))
 
         return Transform(align=(.5, .5))(camera_model)
 
@@ -1341,6 +1355,7 @@ init -1598 python in _viewers:
         #     tran.angle = 315
         #     tran.radius=0.71
         #     renpy.store.test = tran.alignaround
+
         return 0
 
 

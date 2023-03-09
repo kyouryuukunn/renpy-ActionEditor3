@@ -73,7 +73,7 @@ init -1600 python in _viewers:
 
     props_sets = (
             ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate")), 
-            ("3D Matrix    ", ("matrixtransform",)),
+            ("3D Matrix    ", ("xrotate", "yrotate", "zrotate", "orientation", "poi", "matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
             ("Effect       ", ("blend", "alpha", "blur", "additive", "matrixcolor", "dof", "focusing")),
@@ -89,7 +89,7 @@ init -1600 python in _viewers:
 
     #These variables are always wide range even if it is float type.
     #浮動小数であっても整数と同じスケールで表示される変数です。
-    force_wide_range = {"rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan"}
+    force_wide_range = {"rotate", "rotateX", "rotateY", "rotateZ", "offsetX", "offsetY", "offsetZ", "zpos", "xoffset", "yoffset", "hue", "dof", "focusing", "angle", "xpan", "ypan", "xrotate", "yrotate", "zrotate"}
     force_narrow_range = {"xtile", "ytile"}
     #These variables are always plus
     #常に正数になる変数です。
@@ -100,10 +100,10 @@ init -1600 python in _viewers:
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
     #These variables are always float type.
     #常に浮動小数になる変数です。
-    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ")
+    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate")
 
     boolean_props = {"zzoom"}
-    any_props = {"blend"}
+    any_props = {"blend", "orientation", "poi"}
     def check_perspective(v):
         if isinstance(v, (int, float)):
             return True
@@ -143,6 +143,11 @@ init -1600 python in _viewers:
     "radius",
     "angle",
     "zpos", 
+    "xrotate",
+    "yrotate",
+    "zrotate",
+    "orientation",
+    "poi",
     "matrixtransform", 
     "matrixanchor", 
     "rotate", 
@@ -193,6 +198,11 @@ init 1600 python in _viewers:
     "cropY",
     "cropW",
     "cropH",
+    "xrotate",
+    "yrotate",
+    "zrotate",
+    "orientation",
+    "poi",
     "matrixtransform",
     "dof",
     "focusing",
@@ -234,6 +244,11 @@ init 1600 python in _viewers:
     "cropY",
     "cropW",
     "cropH",
+    "xrotate",
+    "yrotate",
+    "zrotate",
+    "orientation",
+    "poi",
     "matrixtransform",
     "dof",
     "focusing",
@@ -275,6 +290,11 @@ init 1600 python in _viewers:
     "cropW": 1., 
     "cropH": 1., 
     "crop": (0., 0., 1., 1.), 
+    "xrotate":0.,
+    "yrotate":0.,
+    "zrotate":0.,
+    "orientation": None,
+    "poi": None,
     "offsetX": 0.,
     "offsetY": 0.,
     "offsetZ": 0.,
