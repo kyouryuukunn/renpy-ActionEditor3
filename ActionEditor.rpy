@@ -367,9 +367,7 @@ init -1598 python in _viewers:
     def load_matrix(matrix, value):
         if matrix == "matrixtransform":
             if value is None:
-                return [("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
-                        ("matrixtransform_2_1_offsetX", 0.), ("matrixtransform_2_2_offsetY", 0.), ("matrixtransform_2_3_offsetZ", 0.),
-                        ("matrixtransform_3_1_rotateX", 0.), ("matrixtransform_3_2_rotateY", 0.), ("matrixtransform_3_3_rotateZ", 0.)]
+                return default_matrixtransform
             else:
                 rv = []
                 for i, (type, args) in enumerate(get_matrix_info(value)):
@@ -387,11 +385,7 @@ init -1598 python in _viewers:
                 return rv
         else:
             if value is None:
-                return [("matrixcolor_1_1_invert", 0.), 
-                        ("matrixcolor_2_1_contrast", 1.), 
-                        ("matrixcolor_3_1_saturate", 1.),
-                        ("matrixcolor_4_1_bright", 0.),
-                        ("matrixcolor_5_1_hue", 0.)]
+                return default_matrixcolor
             else:
                 rv = []
                 for i, (type, args) in enumerate(get_matrix_info(value)):

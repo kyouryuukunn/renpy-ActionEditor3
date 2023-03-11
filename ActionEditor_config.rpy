@@ -136,7 +136,18 @@ init -1600 python in _viewers:
         )
     disallow_spline = ("focusing", "matrixtransform", "matrixcolor")
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
-
+    default_matrixtransform = [
+        ("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
+        ("matrixtransform_2_1_rotateX", 0.), ("matrixtransform_2_2_rotateY", 0.), ("matrixtransform_2_3_rotateZ", 0.),
+        ("matrixtransform_3_1_offsetX", 0.), ("matrixtransform_3_2_offsetY", 0.), ("matrixtransform_3_3_offsetZ", 0.),
+    ]
+    default_matrixcolor = [
+        ("matrixcolor_1_1_invert", 0.), 
+        ("matrixcolor_2_1_contrast", 1.), 
+        ("matrixcolor_3_1_saturate", 1.),
+        ("matrixcolor_4_1_bright", 0.),
+        ("matrixcolor_5_1_hue", 0.), 
+    ]
     #The order of properties in clipboard data.
     #この順番でクリップボードデータが出力されます
     #ないものは出力されません
