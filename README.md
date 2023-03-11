@@ -200,7 +200,7 @@ lemma forum
  function statement in ATL block. For more information, see that file.
 
 
- ATL functions
+ Matrix
 ================
 
  The default matrix and order for each is as follows.
@@ -438,7 +438,7 @@ lemma forum
  使用方法は該当ファイルを参照してください。
 
 
- ATL functions
+ Matrix
 ================
 
  デフォルトのマトリックスと順番はそれぞれ以下のようになっています。
