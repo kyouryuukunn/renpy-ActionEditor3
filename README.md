@@ -209,6 +209,7 @@ lemma forum
     matrixcolors: InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
 
  You can change default matrix, that order and default value by editing default_matrixtransform or default_matrixcolor in ActionEditor_config.rpy.
+
     default_matrixtransform = [
         ("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
         ("matrixtransform_2_1_offsetX", 0.), ("matrixtransform_2_2_offsetY", 0.), ("matrixtransform_2_3_offsetZ", 0.),
@@ -442,9 +443,12 @@ lemma forum
 ================
 
  デフォルトのマトリックスと順番はそれぞれ以下のようになっています。
- matrixtransform: ScaleMatrix*OffsetMatrix*RotateMatrix
- matrixcolors: InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
+
+    matrixtransform: ScaleMatrix*OffsetMatrix*RotateMatrix
+    matrixcolors: InvertMatrix*ContrastMatrix*SaturationMatrix*BrightnessMatrix*HueMatrix
+
  マトリックスの組み合わと順番、デフォルト値はActionEditor_config.rpyの以下の変数で変更できます。
+
     default_matrixtransform = [
         ("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
         ("matrixtransform_2_1_offsetX", 0.), ("matrixtransform_2_2_offsetY", 0.), ("matrixtransform_2_3_offsetZ", 0.),
