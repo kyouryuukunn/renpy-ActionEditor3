@@ -115,6 +115,16 @@ init -1600 python in _viewers:
             else:
                 return True
     check_any_props = {"perspective":check_perspective}
+    def check_poi(v):
+        if isinstance(v, tuple) and len(v) == 3:
+            x, y, z = v
+            if isinstance(x, (int, float)) and isinstance(y, (int, float)) and isinstance(z, (int, float)):
+                return True
+        elif v is None:
+            return True
+        else:
+            return False
+    check_any_props = {"poi":check_poi}
     #properties which is included in any_props and is choiced by menu.
     menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
 
