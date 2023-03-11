@@ -10,6 +10,7 @@
 #warper後の時間が丸められていない場合がある
 
 #課題
+#orientationにsplineを指定できないように
 #cameraではset_childを使用していないのでat節の再現ができない
 #orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -42,7 +43,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230309_1"
+        return "230129"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -570,6 +571,7 @@ init -1598 python in _viewers:
                 persistent._viewer_warper = default_warper_org
             else:
                 splines[current_scene][key][time][knot_number] = v
+                update_gn_spline(key, time)
             change_time(time)
         return changed
 
@@ -1100,9 +1102,9 @@ init -1598 python in _viewers:
                                 warper = renpy.python.py_eval(goal[2])
                             else:
                                 warper = renpy.atl.warpers[goal[2]]
-                            g = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
+                            complete = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                         else:
-                            g = 1.
+                            complete = 1.
 
                         knots = []
                         if spline is not None and p+"_spline" in spline and checkpoint in spline[p+"_spline"]:
@@ -1111,16 +1113,27 @@ init -1598 python in _viewers:
                                 knots = [start[0]] + knots + [goal[0]]
 
                         if knots:
-                            v = renpy.atl.interpolate_spline(g, knots)
+                            v = renpy.atl.interpolate_spline(complete, knots)
                         elif p not in props_groups["focusing"]:
-                            s = start[0]
-                            if p in ("matrixtransform", "matrixcolor"):
-                                s = start[0](None, 1.0)
-                                s.origin = start[0]
-                            v = renpy.atl.interpolate(g, s, goal[0], renpy.atl.PROPERTIES[p])
+                            old = start[0]
+                            new = goal[0]
+                            if p == "orientation":
+                                if old is None:
+                                    old = (0.0, 0.0, 0.0)
+                                if new is not None:
+                                    v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                                elif complete >= 1:
+                                    v = None
+                                else:
+                                    v = old
+                            else:
+                                if p in ("matrixtransform", "matrixcolor"):
+                                    old = start[0](None, 1.0)
+                                    old.origin = start[0]
+                                v = renpy.atl.interpolate(complete, old, new, renpy.atl.PROPERTIES[p])
                         if p in props_groups["focusing"]:
                             if not side_view:
-                                group_cache[p] = g * (goal[0] - start[0]) + start[0]
+                                group_cache[p] = complete * (goal[0] - start[0]) + start[0]
                                 if len(group_cache) == len(props_groups["focusing"]):
                                     focusing = group_cache["focusing"]
                                     dof = group_cache["dof"]
@@ -1678,9 +1691,11 @@ init -1598 python in _viewers:
                 key = prop
         if isinstance(key, tuple):
             tag, layer, prop = key
+            mkey = (tag, layer)
             state = get_image_state(layer, scene_num)[tag]
         else:
             prop = key
+            mkey = "camera"
             state = camera_state_org[scene_num]
         if key not in all_keyframes[scene_num]:
             v = state[prop]
@@ -1716,32 +1731,97 @@ init -1598 python in _viewers:
             if looped_time >= scene_start and looped_time < checkpoint:
                 start = cs[i-1]
                 goal = cs[i]
+
                 if checkpoint != pre_checkpoint:
                     if goal[2].startswith("warper_generator"):
                         warper = renpy.python.py_eval(goal[2])
                     else:
                         warper = renpy.atl.warpers[goal[2]]
-                    g = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
+                    complete = warper((looped_time - pre_checkpoint) / (checkpoint - pre_checkpoint))
                 else:
-                    g = 1.
-                default_vault = get_default(prop)
+                    complete = 1.
+
                 if goal[0] is not None or prop in boolean_props | any_props:
-                    if start[0] is None:
-                        start_v = default_vault
+                    check_result = check_props_group(prop, mkey, scene_num)
+                    if check_result:
+                        gn, ps = check_result
+
+                    if check_result and gn not in ("focusing", "matrixtransform", "matrixcolor"):
+                        old = []
+                        new = []
+                        default_value = get_default(prop)
+                        for p in ps:
+                            if isinstance(key, tuple):
+                                key2 = (key[0], key[1], p)
+                            else:
+                                key2 = p
+                            old.append(all_keyframes[scene_num][key2][i-1][0])
+                            new.append(all_keyframes[scene_num][key2][i][0])
+
+                        old = tuple(old)
+                        new = tuple(new)
+
+                        knots = []
+                        if checkpoint in splines[scene_num][gn]:
+                            knots = splines[scene_num][gn][checkpoint]
+                            if knots:
+                                knots = [old] + knots + [new]
+
                     else:
-                        start_v = start[0]
-                    knots = []
-                    if checkpoint in splines[scene_num][key]:
-                        knots = splines[scene_num][key][checkpoint]
-                        if knots:
-                            knots = [start_v] + knots + [goal[0]]
+                        default_value = get_default(prop)
+                        if start[0] is None:
+                            old = default_value
+                        else:
+                            old = start[0]
+                        new = goal[0]
+
+                        knots = []
+                        if checkpoint in splines[scene_num][key]:
+                            knots = splines[scene_num][key][checkpoint]
+                            if knots:
+                                knots = [old] + knots + [new]
+
                     if knots:
-                        v = renpy.atl.interpolate_spline(g, knots)
-                    elif prop in boolean_props | any_props:
-                        v = renpy.atl.interpolate(g, start[0], goal[0], renpy.atl.PROPERTIES[prop])
+                        v = renpy.atl.interpolate_spline(complete, knots)
+                    elif check_result and gn in ("focusing", "matrixtransform", "matrixcolor"):
+                        v = complete*(new-old)+old
+                    elif check_result:
+                        if gn == "orientation":
+                            new = new
+
+                            if old is None:
+                                old = (0.0, 0.0, 0.0)
+                            if new is not None:
+                                v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                            elif complete >= 1:
+                                v = None
+                            else:
+                                v = old
+                        else:
+                            try:
+                                v = renpy.atl.interpolate(complete, old, new, renpy.atl.PROPERTIES[gn])
+                            except:
+                                raise Exception((old, new, gn))
                     else:
-                        v = g*(goal[0]-start_v)+start_v
-                    if isinstance(goal[0], int):
+                        if prop == "orientation":
+                            new = new
+
+                            if old is None:
+                                old = (0.0, 0.0, 0.0)
+                            if new is not None:
+                                v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                            elif complete >= 1:
+                                v = None
+                            else:
+                                v = old
+                        else:
+                            v = renpy.atl.interpolate(complete, old, new, renpy.atl.PROPERTIES[prop])
+
+                    if check_result and gn not in ("focusing", "matrixtransform", "matrixcolor"):
+                        index = ps.index(prop)
+                        v = v[index]
+
+                    if isinstance(new, int):
                         v = int(v)
                     return v
                 break
@@ -2368,7 +2448,60 @@ show {imagename}""".format(imagename=child)
             return False
 
 
-    def add_knot(key, time, default, knot_number=None):
+    def update_gn_spline(key, time, scene_num=None):
+        if scene_num is None:
+            scene_num = current_scene
+        if isinstance(key, tuple):
+            tag, layer, prop = key
+            mkey = (tag, layer)
+        else:
+            prop = key
+            mkey = "camera"
+
+        check_result = check_props_group(prop, mkey, scene_num)
+        if check_result:
+            gn, ps = check_result
+
+            pre_knots = []
+            for p in ps:
+                if mkey == "camera":
+                    key2 = p
+                    gn_key = gn
+                else:
+                    key2 = (tag, layer, p)
+                    gn_key = (tag, layer, gn)
+                pre_knots.append(splines[scene_num][key2][time])
+            knots = []
+            for knot in zip(*pre_knots):
+                knots.append(tuple(knot))
+            splines[scene_num][gn_key][time] = knots
+
+
+    def add_knot(key, time, default, knot_number=None, recursion=False):
+
+        if not recursion:
+            if isinstance(key, tuple):
+                tag, layer, prop = key
+                mkey = (tag, layer)
+            else:
+                prop = key
+                mkey = "camera"
+
+            check_result = check_props_group(prop, mkey, current_scene)
+            if check_result:
+                gn, ps = check_result
+                for p in ps:
+                    if p != prop:
+                        if mkey == "camera":
+                            key2 = p
+                        else:
+                            key2 = (tag, layer, p)
+                        cs = all_keyframes[current_scene][key2]
+                        for i, (v, t, w) in enumerate(cs):
+                            if t == time:
+                                d2 = cs[i-1][0]
+                                add_knot(key2, time, d2, knot_number, recursion=True)
+
         if time in splines[current_scene][key]:
             if knot_number is not None:
                 splines[current_scene][key][time].insert(knot_number, default)
@@ -2377,8 +2510,31 @@ show {imagename}""".format(imagename=child)
         else:
             splines[current_scene][key][time] = [default]
 
+        if not recursion:
+            update_gn_spline(key, time)
 
-    def remove_knot(key, time, i):
+
+    def remove_knot(key, time, i, recursion=False):
+
+        if not recursion:
+            if isinstance(key, tuple):
+                tag, layer, prop = key
+                mkey = (tag, layer)
+            else:
+                prop = key
+                mkey = "camera"
+
+            check_result = check_props_group(prop, mkey, current_scene)
+            if check_result:
+                gn, ps = check_result
+                for p in ps + [gn]:
+                    if p != prop:
+                        if mkey == "camera":
+                            key2 = p
+                        else:
+                            key2 = (tag, layer, p)
+                        remove_knot(key2, time, i, recursion=True)
+
         if time in splines[current_scene][key]:
             splines[current_scene][key][time].pop(i)
             if not splines[current_scene][key][time]:

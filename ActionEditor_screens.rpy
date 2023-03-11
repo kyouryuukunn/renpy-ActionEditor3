@@ -1171,11 +1171,11 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        if _viewers.check_props_group(p, mkey) is None:
+                        if _viewers.check_props_group(p, mkey) is None or _viewers.check_props_group(p, mkey)[0] not in _viewers.disallow_spline:
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
-                                    key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, \
+                                    key=key, pre=check_points[i-1], post=check_points[i], default=v, \
                                     force_plus=_viewers.is_force_plus(p), time=t)]
                         textbutton _("{}".format(v)) action [\
                             Function(_viewers.edit_value, change_func, default=v, use_wide_range=use_wide_range, force_plus=_viewers.is_force_plus(p), time=t), \
@@ -1187,7 +1187,7 @@ screen _edit_keyframe(key, change_func=None):
             textbutton _("loop") action loop_button_action size_group None
             textbutton _("close") action Hide("_edit_keyframe") xalign .98 size_group None
 
-screen _spline_editor(change_func, key, prop, pre, post, default, force_plus, time):
+screen _spline_editor(change_func, key, pre, post, default, force_plus, time):
 
     modal True
     key "game_menu" action Hide("_spline_editor")
@@ -2228,6 +2228,7 @@ init 1 python in _viewers:
             else:
                 v = round(float(v), 2)
             splines[self.scene][self.key][self.key_time][self.knot_num] = v
+            update_gn_spline(self.key, self.key_time, self.scene)
             renpy.restart_interaction()
 
 
@@ -3094,12 +3095,13 @@ init 1 python in _viewers:
             if i > 0 and in_graphic_mode:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
-            if check_props_group(p, mkey) is None:
+            check_result = check_props_group(p, mkey)
+            if check_result is None or check_result[0] not in disallow_spline:
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 
                         Show("_spline_editor", change_func=change_func, 
-                            key=key, prop=p, pre=check_points[i-1], post=check_points[i], default=v, 
+                            key=key, pre=check_points[i-1], post=check_points[i], default=v, 
                             force_plus=is_force_plus(p), time=t)]))
                 if len(check_points) >= 2:
                     if key in in_graphic_mode:

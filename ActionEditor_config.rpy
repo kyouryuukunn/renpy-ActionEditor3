@@ -134,6 +134,7 @@ init -1600 python in _viewers:
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
+    disallow_spline = ("focusing", "matrixtransform", "matrixcolor")
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
 
     #The order of properties in clipboard data.
