@@ -32,7 +32,7 @@ lemma forum
 
  About old version
 ================
- This is available in v7.6 or v8.1 later.
+ This is available in v7.4.5 later.
  To use in older version, use old version ActionEditor.
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
 
@@ -230,10 +230,8 @@ lemma forum
 ================
  本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
 
- バージョンについて
+ 旧バージョンについて
 ================
-
- Ren'Py v7.6 または v8.1で動作します。
 
  Ren'Py v7.4.5から追加された3Dステージ機能により、旧版にあった自作の3Dカメラ再現関数は不要になりました。
  v7.4.5以前のバージョンでは旧版のActionEditorを使用してください。

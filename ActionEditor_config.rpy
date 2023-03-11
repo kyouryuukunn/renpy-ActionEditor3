@@ -186,7 +186,7 @@ init 1600 python in _viewers:
     #The properties used in image tag tab
     #画像タブに表示されるプロパティー
     #(property name,  default value)
-    transform_props = (
+    transform_props = [
     "child",
     "xpos",
     "ypos",
@@ -209,13 +209,6 @@ init 1600 python in _viewers:
     "cropY",
     "cropW",
     "cropH",
-    "xrotate",
-    "yrotate",
-    "zrotate",
-    "xorientation",
-    "yorientation",
-    "zorientation",
-    "poi",
     "matrixtransform",
     "dof",
     "focusing",
@@ -230,12 +223,12 @@ init 1600 python in _viewers:
     "ytile",
     "blend",
     "function",
-    )
+    ]
 
     #The properties used in camera tab
     #カメラタブに表示されるプロパティー
     #(property name,  default value)
-    camera_props = (
+    camera_props = [
     "xpos",
     "ypos",
     "zpos",
@@ -257,13 +250,6 @@ init 1600 python in _viewers:
     "cropY",
     "cropW",
     "cropH",
-    "xrotate",
-    "yrotate",
-    "zrotate",
-    "xorientation",
-    "yorientation",
-    "zorientation",
-    "poi",
     "matrixtransform",
     "dof",
     "focusing",
@@ -277,7 +263,28 @@ init 1600 python in _viewers:
     "ytile",
     "perspective",
     "function",
-    )
+    ]
+
+    Major = renpy.version(True)[0]
+    minor = renpy.version(True)[1]
+    if Major >= 8 and minor >= 1 or Major == 7 and minor >= 6:
+        transform_props += [
+        "xrotate",
+        "yrotate",
+        "zrotate",
+        "xorientation",
+        "yorientation",
+        "zorientation",
+        "poi"]
+
+        camera_props += [
+        "xrotate",
+        "yrotate",
+        "zrotate",
+        "xorientation",
+        "yorientation",
+        "zorientation",
+        "poi"]
 
     property_default_value = {
     "child": (None, None), 
