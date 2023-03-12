@@ -2,8 +2,6 @@
 #既知の問題
 #childのみならばparallelなくてよい
 #cameraではset_childを使用していないのでat節の再現ができない
-#cropのviewer上での結果と実際の結果が違う
-#ATL内でtransformを使用し、次にATLブロックつきで表示されたときにviewerを開くとviewer上ではそのtransformが引き継がれていない
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -36,7 +34,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230312_3"
+        return "230312_4"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -157,15 +155,8 @@ init -1598 python in _viewers:
         at_list.reverse()
         camera_state_org[current_scene]["at_list"] = at_list
 
-        # get_placementを使用するとat節を使用しても正味の位置を所得できる
-        # しかし位置が振動するようなtransformをat節で使用していると、
-        # ActionEditor起動時の位置で初期化されてしまう
-        # そのまま所得すると今度はATL内で使用したtransformも所得できなくなる
-        # Displayable内にATL中のtransformの情報があるが、内部での優先順位がよくわからない
-        # d.atl.statements[..].expressions = [(transform, None), ...]
-        # そのまま所得し、ATL内にtransformを含めない前提とする
-        # pos = renpy.get_placement(d)
-        pos = d
+        if d is not None:
+            pos = renpy.get_placement(d)
         state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
@@ -233,8 +224,7 @@ init -1598 python in _viewers:
                 at_list.reverse()
                 image_state_org[current_scene][layer][tag]["at_list"] = at_list
 
-                # pos = renpy.get_placement(d)
-                pos = d
+                pos = renpy.get_placement(d)
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
