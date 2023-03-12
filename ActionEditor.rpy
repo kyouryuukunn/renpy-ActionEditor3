@@ -1,24 +1,15 @@
 
-#変更
-
-#修正
-
-
 #既知の問題
 #childのみならばparallelなくてよい
-#colormatrix, transformmatrixは十分再現できない
-#warper後の時間が丸められていない場合がある
+#cameraではset_childを使用していないのでat節の再現ができない
 
 #課題
-#orientationにsplineを指定できないように
-#cameraではset_childを使用していないのでat節の再現ができない
-#orientationが採用されたら補間方法に追加する
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
-#removeボタンを上記とともに画像タグの右クリックメニューへ
-#動画と同期できない(用本体の最適化)
+#本家ではレイヤー機能を使ってほしそう
+#removeボタンを画像タグの右クリックメニューへ追加
+#動画およびat節で指定されたアニメーションtransformと同期できない(要本体の最適化)
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
-#ベジュ曲線
 
 #極座標表示対応
 #ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
@@ -43,7 +34,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230311_2"
+        return "230312_2"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -1792,10 +1783,7 @@ init -1598 python in _viewers:
                             else:
                                 v = old
                         else:
-                            try:
-                                v = renpy.atl.interpolate(complete, old, new, renpy.atl.PROPERTIES[gn])
-                            except:
-                                raise Exception((old, new, gn))
+                            v = renpy.atl.interpolate(complete, old, new, renpy.atl.PROPERTIES[gn])
                     else:
                         if prop == "orientation":
                             new = new
@@ -3031,6 +3019,7 @@ show {imagename}""".format(imagename=child)
                     for p in state[tag]:
                         check_result = check_props_group(p, (tag, layer), s)
                         if check_result is not None:
+                            gn, ps = check_result
                             if gn not in image_properties:
                                 image_properties.append(gn)
                         else:

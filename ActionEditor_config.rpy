@@ -72,8 +72,9 @@ init -1600 python in _viewers:
     preview_background_color="#111"
 
     props_sets = (
-            ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate")), 
-            ("3D Matrix    ", ("xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "poi", "matrixtransform",)),
+            ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate",
+                               "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "poi",)), 
+            ("3D Matrix    ", ("matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
             ("Effect       ", ("blend", "alpha", "blur", "additive", "matrixcolor", "dof", "focusing")),
