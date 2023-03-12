@@ -1171,7 +1171,7 @@ screen _edit_keyframe(key, change_func=None):
                         textbutton "[v[1]]" action Function(_viewers.edit_transition, n, l, time=t) size_group None
                     else:
                         textbutton _("{}".format(w)) action Function(_viewers.edit_warper, check_points=check_points_list, old=t, value_org=w)
-                        if _viewers.check_props_group(p, mkey) is None or _viewers.check_props_group(p, mkey)[0] not in _viewers.disallow_spline:
+                        if (_viewers.check_props_group(p, mkey) is None and p not in _viewers.disallow_spline) or (_viewers.check_props_group(p, mkey)[0] not in _viewers.disallow_spline):
                             textbutton _("spline") action [\
                                 SelectedIf(t in _viewers.splines[_viewers.current_scene][key]), \
                                 Show("_spline_editor", change_func=change_func, \
@@ -3096,7 +3096,7 @@ init 1 python in _viewers:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
             check_result = check_props_group(p, mkey)
-            if check_result is None or check_result[0] not in disallow_spline:
+            if (check_result is None and p not in _viewers.disallow_spline) or (check_result[0] not in disallow_spline):
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 

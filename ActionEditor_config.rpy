@@ -134,7 +134,7 @@ init -1600 python in _viewers:
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
             ({"xtile", "ytile"}, {"xpan", "ypan"}), 
         )
-    disallow_spline = ("focusing", "matrixtransform", "matrixcolor")
+    disallow_spline = ("focusing", "matrixtransform", "matrixcolor", "orientation")
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
     default_matrixtransform = [
         ("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
