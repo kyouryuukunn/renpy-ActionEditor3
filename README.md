@@ -245,7 +245,7 @@ lemma forum
  Known issue
 ================
 
- ActionEditor can't show camera with "at clause" correctly.
+ ActionEditor can't show camera and displayable with "at clause" includeing animation correctly.
  ActionEditor can't show movie displayable correctly.
 
 
@@ -488,5 +488,5 @@ lemma forum
  既知の問題
 ================
 
- at 節を使用したcameraを正常に表示できない
+ アニメーションするat 節を使用したcamera, displayableは正常に表示できない
  Movie Displayableを正常に表示できない
