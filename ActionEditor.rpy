@@ -4,13 +4,6 @@
 #cameraではset_childを使用していないのでat節の再現ができない
 #cropのviewer上での結果と実際の結果が違う
 #ATL内でtransformを使用し、次にATLブロックつきで表示されたときにviewerを開くとviewer上ではそのtransformが引き継がれていない
-#at節で表示している画像がreload後にviewer上で再現できていない
-#以下のようにat節の内容をATLブロックで上書きしているとき、viewer上でxposを変更しないと出力したクリップボードにはxposが含まれないためxposがずれる
-#
-# show test at default:
-#     xpos 0.7
-# show test at default: #at節がなくても直前のat_listは引き継がれている
-#     ...
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -43,7 +36,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230312_2"
+        return "230312_3"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -284,8 +277,11 @@ init -1598 python in _viewers:
 
         for name, _, _ in renpy.dump.transforms:
             transform = getattr(renpy.store, name, None)
-            if transform is not None and transform.atl is atl:
-                return (name, obj.context.context)
+            if transform is not None:
+                #定義場所が同じなら同じと判定
+                #リロードで再定義されるのでisでは判定できない
+                if transform.atl.loc == atl.loc:
+                    return (name, obj.context.context)
         else:
             return None
 
