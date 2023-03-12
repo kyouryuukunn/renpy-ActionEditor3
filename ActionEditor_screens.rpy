@@ -3096,7 +3096,7 @@ init 1 python in _viewers:
                 button_list.append(( _("use warper generator"),
                     [SelectedIf(w.startswith("warper_generator")), Function(use_warper_generator, check_points=check_points_list, old=t)]))
             check_result = check_props_group(p, mkey)
-            if (check_result is None and p not in _viewers.disallow_spline) or (check_result[0] not in disallow_spline):
+            if (check_result is None and p not in disallow_spline) or (check_result[0] not in disallow_spline):
                 if i > 0:
                     button_list.append(( _("spline editor"),
                         [SelectedIf(t in splines[current_scene][key]), 
