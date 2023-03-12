@@ -43,7 +43,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230311_1"
+        return "230312_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -156,7 +156,7 @@ init -1598 python in _viewers:
 
         child = getattr(d, "child", None)
         at_list = []
-        while child is not None:
+        while child is not None and type(child) is not renpy.display.layout.MultiBox:
             trans = get_transform_name(child)
             if trans is not None:
                 at_list.append(trans)
