@@ -2,6 +2,15 @@
 #既知の問題
 #childのみならばparallelなくてよい
 #cameraではset_childを使用していないのでat節の再現ができない
+#cropのviewer上での結果と実際の結果が違う
+#ATL内でtransformを使用し、次にATLブロックつきで表示されたときにviewerを開くとviewer上ではそのtransformが引き継がれていない
+#at節で表示している画像がreload後にviewer上で再現できていない
+#以下のようにat節の内容をATLブロックで上書きしているとき、viewer上でxposを変更しないと出力したクリップボードにはxposが含まれないためxposがずれる
+#
+# show test at default:
+#     xpos 0.7
+# show test at default: #at節がなくても直前のat_listは引き継がれている
+#     ...
 
 #課題
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
@@ -3035,17 +3044,14 @@ show {imagename}""".format(imagename=child)
                                     image_name = last_child
                         string += """
     show {}""".format(image_name)
-                        at_list = state[tag].get("at_list")
-                        if at_list:
-                            string += " at {}".format(expand_at_list(at_list))
+                        if tag in image_state[s][layer]:
+                            string += " at default"
                         if image_name.split()[0] != tag:
                             string += " as {}".format(tag)
                         if layer != "master":
                             string += " onlayer {}".format(layer)
                         string += """:
         """
-                        if tag in image_state[s][layer]:
-                            string += "default "
                         string += "subpixel True "
                         if "crop" in image_keyframes:
                             string += "crop_relative True "
@@ -3297,9 +3303,6 @@ show {imagename}""".format(imagename=child)
                                 image_name = last_child
                     string += """
     show {}""".format(image_name)
-                    at_list = state[tag].get("at_list")
-                    if at_list:
-                        string += " at {}".format(expand_at_list(at_list))
                     if image_name.split()[0] != tag:
                         string += " as {}".format(tag)
                     if layer != "master":
