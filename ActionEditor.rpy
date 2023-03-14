@@ -34,7 +34,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230312_4"
+        return "230315_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -155,8 +155,10 @@ init -1598 python in _viewers:
         at_list.reverse()
         camera_state_org[current_scene]["at_list"] = at_list
 
-        if d is not None:
-            pos = renpy.get_placement(d)
+        #cameraはget_placementを使用すると座標が所得できない
+        # if d is not None:
+        #     pos = renpy.get_placement(d)
+        pos = d
         state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
