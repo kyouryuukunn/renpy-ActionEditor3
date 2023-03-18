@@ -73,7 +73,7 @@ init -1600 python in _viewers:
 
     props_sets = (
             ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate",
-                               "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "poi",)), 
+                               "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "point_to",)), 
             ("3D Matrix    ", ("matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
             ("Zoom/Crop    ", ("xzoom", "yzoom", "zoom", "cropX", "cropY", "cropW", "cropH")), 
@@ -105,7 +105,7 @@ init -1600 python in _viewers:
     force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation")
 
     boolean_props = {"zzoom"}
-    any_props = {"blend", "poi"}
+    any_props = {"blend", "point_to"}
     def check_perspective(v):
         if isinstance(v, (int, float)):
             return True
@@ -121,11 +121,17 @@ init -1600 python in _viewers:
             x, y, z = v
             if isinstance(x, (int, float)) and isinstance(y, (int, float)) and isinstance(z, (int, float)):
                 return True
+        elif isinstance(v, tuple) and len(v) == 2:
+            tag, layer = v
+            if isinstance(tag, (str, bool)) and isinstance(layer, str):
+                return True
+        elif v is True or isinstance(v, str):
+            return True
         elif v is None:
             return True
         else:
             return False
-    check_any_props = {"poi":check_poi}
+    check_any_props = {"point_to":check_poi}
     #properties which is included in any_props and is choiced by menu.
     menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
 
@@ -171,7 +177,7 @@ init -1600 python in _viewers:
     "yrotate",
     "zrotate",
     "orientation",
-    "poi",
+    "point_to",
     "matrixtransform", 
     "matrixanchor", 
     "rotate", 
@@ -288,7 +294,7 @@ init 1600 python in _viewers:
         "xorientation",
         "yorientation",
         "zorientation",
-        "poi"]
+        "point_to"]
 
         camera_props += [
         "xrotate",
@@ -297,7 +303,7 @@ init 1600 python in _viewers:
         "xorientation",
         "yorientation",
         "zorientation",
-        "poi"]
+        "point_to"]
 
     property_default_value = {
     "child": (None, None), 
@@ -332,7 +338,7 @@ init 1600 python in _viewers:
     "yorientation": 0.,
     "zorientation": 0.,
     "orientation": (0., 0., 0.),
-    "poi": None,
+    "point_to": None,
     "offsetX": 0.,
     "offsetY": 0.,
     "offsetZ": 0.,

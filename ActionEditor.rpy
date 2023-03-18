@@ -808,10 +808,10 @@ init -1598 python in _viewers:
             #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
             #These properties are shown in side viewer(function property has danger of including blur)
             if persistent._viewer_sideview:
-                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "poi"):
+                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
                     if p in check_points:
                         cs = check_points[p]
-                        if p in ("zpos", "poi"):
+                        if p in ("zpos", "point_to"):
                             perspective = check_points["perspective"][0][0]
                             if perspective:
                                 if perspective is True:
