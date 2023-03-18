@@ -4,6 +4,7 @@
 #cameraではset_childを使用していないのでat節の再現ができない
 
 #課題
+#poiのタグ指定は再現できない(内部でレイヤーから対象の情報をとっている。自前実装するか裏側で実際に表示しておく)
 #複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
 #本家ではレイヤー機能を使ってほしそう
 #removeボタンを画像タグの右クリックメニューへ追加
@@ -34,7 +35,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230315_1"
+        return "230319_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -64,6 +65,39 @@ init python in _viewers:
         rv.wdw = 1
 
         return rv
+
+    #Rzyx(a, b, c)をRxyz(x, y, z)に変換
+    def zyx_to_xyz(a, b, c):
+        from math import sin, cos, pi, sqrt, acos, asin
+
+        sina = sin(pi*a/180)
+        cosa = cos(pi*a/180)
+        sinb = sin(pi*b/180)
+        cosb = cos(pi*b/180)
+        sinc = sin(pi*c/180)
+        cosc = cos(pi*c/180)
+
+        siny = min(1, max(-sina * sinc + cosa * sinb * cosc, -1))
+        cosy = sqrt(1 - siny**2)
+        if cosy != 0:
+            cosx = min(1, max(cosa * cosb / cosy, -1))
+            cosz = min(1, max(cosb * cosc / cosy, -1))
+        else:
+            cosx = 1
+            cosz = 1
+
+        x = acos(cosx) * 180 /pi
+        y = asin(siny) * 180 /pi
+        z = acos(cosz) * 180 /pi
+
+        #assume cosy > 0
+        if sina * cosc + cosa * sinb * sinc < 0:
+            x = 360 - x
+
+        if cosa * sinc + sina * sinb * cosc < 0:
+            z = 360 - z
+
+        return (x, y, z)
 
     class RotateMatrix2(renpy.store.TransformMatrix):
         nargs = 3
@@ -776,7 +810,8 @@ init -1598 python in _viewers:
             if persistent._viewer_sideview:
                 for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "poi"):
                     if p in check_points:
-                        if p == "zpos":
+                        cs = check_points[p]
+                        if p in ("zpos", "poi"):
                             perspective = check_points["perspective"][0][0]
                             if perspective:
                                 if perspective is True:
@@ -787,9 +822,25 @@ init -1598 python in _viewers:
                                 else:
                                     z11 = perspective[1]
 
-                                vcheck_points[p] = [(v + z11, t, w) for v, t, w in check_points[p]]
+                                if p == "zpos":
+                                    vcheck_points[p] = [(v + z11, t, w) for v, t, w in cs]
+                                else:
+                                    side_view_prepared_poi = []
+                                    for c in cs:
+                                        if isinstance(c[0], tuple) and len(c[0]) == 3:
+                                            camera_xpos = get_value("xpos", c[1], True, s) + config.screen_width / 2
+                                            camera_ypos = get_value("ypos", c[1], True, s) + config.screen_height / 2
+                                            camera_zpos = get_value("zpos", c[1], True, s) + z11
+                                            side_view_prepared_poi.append(((2*camera_xpos-c[0][0], 2*camera_ypos-c[0][1], 2*camera_zpos-c[0][2]), c[1], c[2] ))
+                                        else:
+                                            side_view_prepared_poi.append(c)
+                                    vcheck_points[p] = side_view_prepared_poi
+                                    # vcheck_points[p] = cs
+                        elif p == "orientation":
+                            #cameraのorientation,  xyzrotate, poiは反転が必要
+                            vcheck_points[p] = [(zyx_to_xyz(c[0][0], c[0][1], c[0][2]), c[1], c[2] ) for c in cs]
                         else:
-                            vcheck_points[p] = check_points[p]
+                            vcheck_points[p] = cs
                 vcheck_points["props_use_default"] = check_points["props_use_default"]
                 vcheck_points["at_list"] = check_points["at_list"]
 
@@ -1013,7 +1064,7 @@ init -1598 python in _viewers:
             # preview_box.add(camera_model)
             camera_model = Transform(function=renpy.curry(transform)(
                         check_points=viewer_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, 
-                        scene_num=scene_num, scene_checkpoints=scene_checkpoints))(camera_model)
+                        scene_num=scene_num, scene_checkpoints=scene_checkpoints, camera=True, side_view=True))(camera_model)
 
             r = 0
             if "rotate" in camera_check_points:
@@ -1057,7 +1108,7 @@ init -1598 python in _viewers:
             time = st
         group_cache = {}
         sle = renpy.game.context().scene_lists
-        if in_editor and camera:
+        if in_editor and camera and not side_view:
             tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
 
         for p, cs in check_points.items():
@@ -1243,6 +1294,17 @@ init -1598 python in _viewers:
             f = check_points["function"][0][0][1]
             if f is not None:
                 f(tran, time, at)
+
+        if side_view and camera:
+            xrotate = getattr(tran, "xrotate", None)
+            yrotate = getattr(tran, "yrotate", None)
+            zrotate = getattr(tran, "zrotate", None)
+            if xrotate is not None and yrotate is not None and zrotate is not None:
+                xrotate, yrotate, zrotate = zyx_to_xyz(xrotate, yrotate, zrotate)
+            setattr(tran, "xrotate", xrotate)
+            setattr(tran, "yrotate", yrotate)
+            setattr(tran, "zrotate", zrotate)
+            renpy.store.test = (xrotate, yrotate, zrotate)
         # if not camera:
         #     showing_pool = {
         #         "scene_num":scene_num
