@@ -1565,7 +1565,7 @@ init 1 python in _viewers:
             self.hovered = False
             if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
+                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -1977,7 +1977,7 @@ init 1 python in _viewers:
                 x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
                 y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1") and not out_of_viewport():
+                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -2021,7 +2021,7 @@ init 1 python in _viewers:
 
 
         def __init__(self, time, key, last_v, v, scene, key_time):
-            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame import MOUSEMOTION
             from pygame.key import get_mods
             from pygame.mouse import get_pressed
             self.child = warperkey_child
@@ -2150,7 +2150,7 @@ init 1 python in _viewers:
 
 
         def __init__(self, time, key, knot_num, scene, key_time):
-            from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
+            from pygame import MOUSEMOTION
             from pygame.key import get_mods
             from pygame.mouse import get_pressed
             self.child = knot_child
@@ -2740,7 +2740,7 @@ init 1 python in _viewers:
                 self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
                 self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")):
                     self.clicking = True
                     self.last_x = x
                     self.last_y = y
@@ -2994,7 +2994,7 @@ init 1 python in _viewers:
                 self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
                 self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
                 self.hovered = True
-                if renpy.map_event(ev, "mousedown_1"):
+                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")):
                     self.clicking = True
                     self.last_x = x
                     self.last_y = y
