@@ -121,11 +121,7 @@ init -1600 python in _viewers:
             x, y, z = v
             if isinstance(x, (int, float)) and isinstance(y, (int, float)) and isinstance(z, (int, float)):
                 return True
-        elif isinstance(v, tuple) and len(v) == 2:
-            tag, layer = v
-            if isinstance(tag, (str, bool)) and isinstance(layer, str):
-                return True
-        elif v is True or isinstance(v, str):
+        elif isinstance(v, renpy.display.transform.Camera):
             return True
         elif v is None:
             return True
@@ -284,7 +280,7 @@ init 1600 python in _viewers:
     "function",
     ]
 
-    if check_version(23032500):
+    if check_version(23032300):
         transform_props += [
         "xrotate",
         "yrotate",

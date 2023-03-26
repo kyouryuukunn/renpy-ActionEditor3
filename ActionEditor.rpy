@@ -1302,6 +1302,27 @@ init -1598 python in _viewers:
             if f is not None:
                 f(tran, time, at)
 
+        point_to = getattr(tran, "point_to", None)
+        perspective = getattr(tran, "perspective", None)
+        if isinstance(point_to, renpy.display.transform.Camera) and perspective:
+            if perspective is True:
+                perspective = renpy.config.perspective
+
+            elif isinstance(perspective, (int, float)):
+                perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
+
+            if perspective:
+                z11 = perspective[1]
+
+                width = renpy.config.screen_width
+                height = renpy.config.screen_height
+
+                placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
+                xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
+
+                pont_to = (xplacement + width / 2, yplacement + height / 2, get_value("zpos", default=True, scene_num=scene_num) + z11)
+                setattr(tran, "point_to", point_to)
+
         if side_view and camera:
             xrotate = getattr(tran, "xrotate", None)
             yrotate = getattr(tran, "yrotate", None)
