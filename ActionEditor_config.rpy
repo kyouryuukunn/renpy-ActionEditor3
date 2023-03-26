@@ -284,9 +284,7 @@ init 1600 python in _viewers:
     "function",
     ]
 
-    Major = renpy.version(True)[0]
-    minor = renpy.version(True)[1]
-    if Major >= 8 and minor >= 1 or Major == 7 and minor >= 6:
+    if check_version(23032500):
         transform_props += [
         "xrotate",
         "yrotate",

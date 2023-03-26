@@ -580,7 +580,7 @@ init -1597:
     style draggable_value is new_action_editor_text
     style hover_draggable_value is draggable_value:
         underline True
-    if (renpy.version_tuple[0] == 7 and renpy.version_tuple[1] >= 5) or renpy.version_tuple[0] > 7:
+    if _viewers.check_version(22062600):
         style new_action_editor_text language "unicode"
     style new_action_editor_button_text is new_action_editor_text:
         hover_underline True
@@ -1565,7 +1565,7 @@ init 1 python in _viewers:
             self.hovered = False
             if not self.dragging and x >= 0 and x <= self.width and y >= 0 and y <= self.height:
                 self.hovered = True
-                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
+                if ((check_version(23032500) and renpy.map_event(ev, "ctrl_mousedown_1")) or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -1977,7 +1977,7 @@ init 1 python in _viewers:
                 x >= self.xpos - self.width/2. and x <= self.width/2.+self.xpos and \
                 y >= self.ypos - self.yoffset and y <= self.height - self.yoffset +self.ypos:
                 self.hovered = True
-                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
+                if ((check_version(23032500) and renpy.map_event(ev, "ctrl_mousedown_1")) or renpy.map_event(ev, "mousedown_1")) and not out_of_viewport():
                     if self.get_mods() & self.KMOD_CTRL:
                         self.speed = self.SLOW
                     elif self.get_mods() & self.KMOD_SHIFT:
@@ -2740,7 +2740,7 @@ init 1 python in _viewers:
                 self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
                 self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
                 self.hovered = True
-                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")):
+                if ((check_version(23032500) and renpy.map_event(ev, "ctrl_mousedown_1")) or renpy.map_event(ev, "mousedown_1")):
                     self.clicking = True
                     self.last_x = x
                     self.last_y = y
@@ -2994,7 +2994,7 @@ init 1 python in _viewers:
                 self.xpos + self.width/2. > 0 and self.xpos - self.width/2. < config.screen_width * preview_size and \
                 self.ypos + self.height/2. > 0 and self.ypos - self.height/2. < config.screen_height * preview_size:
                 self.hovered = True
-                if (renpy.map_event(ev, "ctrl_mousedown_1") or renpy.map_event(ev, "mousedown_1")):
+                if ((check_version(23032500) and renpy.map_event(ev, "ctrl_mousedown_1")) or renpy.map_event(ev, "mousedown_1")):
                     self.clicking = True
                     self.last_x = x
                     self.last_y = y

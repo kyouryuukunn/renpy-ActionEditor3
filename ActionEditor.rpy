@@ -30,12 +30,19 @@ init -1098 python:
 init -1600 python in _viewers:
     from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Movie
     from renpy import config
+
+    def check_version(version_date):
+        if renpy.version_tuple[3] > version_date:
+            return True
+        else:
+            return False
+
 init python in _viewers:
     from renpy.store import RotateMatrix, OffsetMatrix, ScaleMatrix, _MultiplyMatrix
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230322_1"
+        return "230319_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -1304,7 +1311,6 @@ init -1598 python in _viewers:
             setattr(tran, "xrotate", xrotate)
             setattr(tran, "yrotate", yrotate)
             setattr(tran, "zrotate", zrotate)
-            renpy.store.test = (xrotate, yrotate, zrotate)
         # if not camera:
         #     showing_pool = {
         #         "scene_num":scene_num
