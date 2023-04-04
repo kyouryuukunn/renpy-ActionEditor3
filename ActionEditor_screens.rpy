@@ -1084,7 +1084,7 @@ screen _warper_graph(warper):
         else:
             add Solid("#000", xsize=length//t, ysize=-ysize, xpos=xpos+i*length//t, ypos=length+ypos-ysize, yanchor=1.) 
 
-screen _move_keyframes:
+screen _move_keyframes():
     modal True
     key "game_menu" action Hide("_move_keyframes")
     frame:
