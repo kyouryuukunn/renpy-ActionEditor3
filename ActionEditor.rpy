@@ -4,9 +4,7 @@
 #cameraではset_childを使用していないのでat節の再現ができない
 
 #課題
-#poiのタグ指定は再現できない(内部でレイヤーから対象の情報をとっている。自前実装するか裏側で実際に表示しておく)
-#複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように)
-#本家ではレイヤー機能を使ってほしそう
+#複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように) - >  利用機会少ない
 #removeボタンを画像タグの右クリックメニューへ追加
 #動画およびat節で指定されたアニメーションtransformと同期できない(要本体の最適化)
 #vpunch等Move transtion, ATLtranstionが動作しない
@@ -42,7 +40,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230319_1"
+        return "230405_1"
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -1304,7 +1302,7 @@ init -1598 python in _viewers:
 
         point_to = getattr(tran, "point_to", None)
         perspective = getattr(tran, "perspective", None)
-        if isinstance(point_to, renpy.display.transform.Camera) and perspective:
+        if point_to is not None and isinstance(point_to, renpy.display.transform.Camera) and perspective:
             if perspective is True:
                 perspective = renpy.config.perspective
 
