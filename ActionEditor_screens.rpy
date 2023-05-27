@@ -131,7 +131,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
 
     frame:
         pos (1., _viewers.preview_size)
-        align (1., 1.)
+        anchor (1., 1.)
         style_group "new_action_editor"
         vbox:
             style_group "new_action_editor_a"

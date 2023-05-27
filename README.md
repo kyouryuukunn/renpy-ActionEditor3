@@ -245,8 +245,10 @@ lemma forum
  Known issue
 ================
 
- ActionEditor can't show the camera in the side view with more than two of x,y,zrotation, orientation or point_to properties correctly.
+ ActionEditor can't show the camera in the side view with more than two of x,y,zrotation, orientation, RotateMatrix or point_to properties correctly.
+ 
  ActionEditor can't show camera and displayable with "at clause" includeing animation correctly.
+
  ActionEditor can't show movie and animation displayable correctly.
 
 
@@ -482,6 +484,7 @@ lemma forum
  それらしい症状が発生した場合は上記の方法でフォントサイズを調整してください。
 
  次のエラーが発生する
+
  NameError: name '_open_image_viewer' is not defined
 
  旧版ActionEditorのファイルがあるゲームに本ActionEditor3のスクリプトファイルをコピーした場合に発生します。旧版とは互換性がないため、以前のActionEditorにあったファイルとスクリプト中で追加関数を使用していればそちらも削除してから、本ActionEditor3のファイルをコピーしてください。
@@ -489,6 +492,8 @@ lemma forum
  既知の問題
 ================
 
- x,y,zrotation, orientation, point_toを2つ以上使用したカメラはサイドビューで再現できない
+ x,y,zrotation, orientation, point_to, RotateMatrixを2つ以上使用したカメラはサイドビューで再現できない
+
  アニメーションするat 節を使用したcamera, displayableは正常に表示できない
+
  Movie Displayable, アニメーションするDisplayableは正常に表示できない
