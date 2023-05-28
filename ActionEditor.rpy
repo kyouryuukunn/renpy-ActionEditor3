@@ -30,7 +30,7 @@ init -1600 python in _viewers:
     from renpy import config
 
     def check_version(version_date):
-        if renpy.version_tuple[3] > version_date:
+        if renpy.version_tuple[3] >= version_date:
             return True
         else:
             return False
@@ -40,7 +40,13 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230405_1"
+        return "230528_2"
+
+
+    if check_version(23032500):
+        euler_slerp = renpy.display.quaternion.euler_slerp
+    else:
+        euler_slerp = renpy.display.accelerator.quaternion
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -237,10 +243,14 @@ init -1598 python in _viewers:
                 image_name_tuple = getattr(d, "name", None)
                 child = d
                 while image_name_tuple is None:
+                    if child is None:
+                        break
                     child = getattr(child, "child", None)
                     image_name_tuple = getattr(child, "name", None)
                 child = d
                 while image_name_tuple is None:
+                    if child is None:
+                        break
                     child = getattr(child, "raw_child", None)
                     image_name_tuple = getattr(child, "name", None)
                 if image_name_tuple is None:
@@ -1159,7 +1169,7 @@ init -1598 python in _viewers:
                                 if old is None:
                                     old = (0.0, 0.0, 0.0)
                                 if new is not None:
-                                    v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                                    v = euler_slerp(complete, old, new)
                                 elif complete >= 1:
                                     v = None
                                 else:
@@ -1861,7 +1871,7 @@ init -1598 python in _viewers:
                             if old is None:
                                 old = (0.0, 0.0, 0.0)
                             if new is not None:
-                                v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                                v = euler_slerp(complete, old, new)
                             elif complete >= 1:
                                 v = None
                             else:
@@ -1875,7 +1885,7 @@ init -1598 python in _viewers:
                             if old is None:
                                 old = (0.0, 0.0, 0.0)
                             if new is not None:
-                                v = renpy.display.accelerator.quaternion_slerp(complete, old, new)
+                                v = euler_slerp(complete, old, new)
                             elif complete >= 1:
                                 v = None
                             else:
