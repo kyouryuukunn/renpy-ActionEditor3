@@ -4,7 +4,6 @@
 #cameraではset_childを使用していないのでat節の再現ができない
 
 #課題
-#複数画像をグループに纏めてプロパティー相対操作変更 (intとfloatが混ざらないように) - >  利用機会少ない
 #removeボタンを画像タグの右クリックメニューへ追加
 #動画およびat節で指定されたアニメーションtransformと同期できない(要本体の最適化)
 #vpunch等Move transtion, ATLtranstionが動作しない
@@ -40,7 +39,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230528_2"
+        return "230728_1"
 
 
     if check_version(23032500):
@@ -826,7 +825,7 @@ init -1598 python in _viewers:
                 for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
                     if p in check_points:
                         cs = check_points[p]
-                        if p in ("zpos", "point_to"):
+                        if p == "zpos":
                             perspective = check_points["perspective"][0][0]
                             if perspective:
                                 if perspective is True:
@@ -837,22 +836,9 @@ init -1598 python in _viewers:
                                 else:
                                     z11 = perspective[1]
 
-                                if p == "zpos":
-                                    vcheck_points[p] = [(v + z11, t, w) for v, t, w in cs]
-                                else:
-                                    side_view_prepared_poi = []
-                                    for c in cs:
-                                        if isinstance(c[0], tuple) and len(c[0]) == 3:
-                                            camera_xpos = get_value("xpos", c[1], True, s) + config.screen_width / 2
-                                            camera_ypos = get_value("ypos", c[1], True, s) + config.screen_height / 2
-                                            camera_zpos = get_value("zpos", c[1], True, s) + z11
-                                            side_view_prepared_poi.append(((2*camera_xpos-c[0][0], 2*camera_ypos-c[0][1], 2*camera_zpos-c[0][2]), c[1], c[2] ))
-                                        else:
-                                            side_view_prepared_poi.append(c)
-                                    vcheck_points[p] = side_view_prepared_poi
-                                    # vcheck_points[p] = cs
+                                vcheck_points[p] = [(v + z11, t, w) for v, t, w in cs]
                         elif p == "orientation":
-                            #cameraのorientation,  xyzrotate, poiは反転が必要
+                            #cameraのorientation,  xyzrotateは反転が必要
                             vcheck_points[p] = [(zyx_to_xyz(c[0][0], c[0][1], c[0][2]), c[1], c[2] ) for c in cs]
                         else:
                             vcheck_points[p] = cs
@@ -1312,7 +1298,7 @@ init -1598 python in _viewers:
 
         point_to = getattr(tran, "point_to", None)
         perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
-        if point_to is not None and isinstance(point_to, renpy.display.transform.Camera) and perspective:
+        if perspective and ((point_to is not None and isinstance(point_to, renpy.display.transform.Camera)) or (side_view and camera)):
             if perspective is True:
                 perspective = renpy.config.perspective
 
@@ -1327,19 +1313,85 @@ init -1598 python in _viewers:
 
                 placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
                 xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
+                zplacement = get_value("zpos", default=True, scene_num=scene_num)
 
-                point_to = (xplacement + width / 2, yplacement + height / 2, get_value("zpos", default=True, scene_num=scene_num) + z11)
-                setattr(tran, "point_to", point_to)
+                # direct displayable toward camera
+                if point_to is not None and isinstance(point_to, renpy.display.transform.Camera):
+                    point_to = (xplacement + width / 2, yplacement + height / 2, zplacement + z11)
+                    setattr(tran, "point_to", point_to)
+                elif side_view and camera:
+                    mrotation = None
+                    xrotate = getattr(tran, "xrotate", None)
+                    yrotate = getattr(tran, "yrotate", None)
+                    zrotate = getattr(tran, "zrotate", None)
+                    if (xrotate is not None) or (yrotate is not None) or (zrotate is not None):
+                        xrotate, yrotate, zrotate = zyx_to_xyz(xrotate, yrotate, zrotate)
+                        mrotation = Matrix.rotate(xrotate, yrotate, zrotate)
+                        setattr(tran, "xrotate", None)
+                        setattr(tran, "yrotate", None)
+                        setattr(tran, "zrotate", None)
 
-        if side_view and camera:
-            xrotate = getattr(tran, "xrotate", None)
-            yrotate = getattr(tran, "yrotate", None)
-            zrotate = getattr(tran, "zrotate", None)
-            if xrotate is not None and yrotate is not None and zrotate is not None:
-                xrotate, yrotate, zrotate = zyx_to_xyz(xrotate, yrotate, zrotate)
-            setattr(tran, "xrotate", xrotate)
-            setattr(tran, "yrotate", yrotate)
-            setattr(tran, "zrotate", zrotate)
+                    morientation = None
+                    orientation = getattr(tran, "orientation", None)
+                    if orientation is not None:
+                        morientation = Matrix.rotate(*orientation)
+                        setattr(tran, "orientation", None)
+
+                    mpoint_to = None
+                    point_to = getattr(tran, "point_to", None)
+                    if point_to is not None:
+                        from math import sin, cos, asin, atan, degrees, pi, sqrt
+                        xpoi, ypoi, zpoi = point_to
+                        a, b, c = (xplacement + width/2) - xpoi, (yplacement + height/2) - ypoi, (zplacement + z11) - zpoi
+                        v_len = sqrt(a**2 + b**2 + c**2) # math.hypot is better in py3.8+
+                        if v_len == 0:
+                            xpoi = ypoi = 0
+                        else:
+                            a /= v_len
+                            b /= v_len
+                            c /= v_len
+
+                            sin_xpoi = min(1., max(-b, -1.))
+                            xpoi = asin(sin_xpoi)
+                            if c == 0:
+                                if abs(b) == 1:
+                                    ypoi = 0
+                                else:
+                                    sin_ypoi = min(1., max(a / cos(xpoi), -1.))
+                                    ypoi = asin(sin_ypoi)
+                            else:
+                                ypoi = atan(a/c)
+
+                            if c < 0:
+                                ypoi += pi
+
+                            xpoi = degrees(xpoi)
+                            ypoi = degrees(ypoi)
+
+                        mpoint_to = Matrix.rotate(xpoi, ypoi, 0)
+                        setattr(tran, "point_to", None)
+
+                    if mrotation is not None or morientation is not None or mpoint_to is not None:
+                        mo1 = Matrix.offset(xplacement, yplacement, zplacement + z11)
+                        mo2 = Matrix.offset(-xplacement, -yplacement, -zplacement - z11)
+
+                        if mrotation is None:
+                            mrotation = Matrix.identity()
+
+                        if morientation is None:
+                            morientation = Matrix.identity()
+
+                        if mpoint_to is None:
+                            mpoint_to = Matrix.identity()
+
+                        mt = getattr(tran, "matrixtransform", None)
+                        if mt is None:
+                            mt = mo1*mpoint_to*morientation*mrotation*mo2
+                        else:
+                            mt = mo1*mpoint_to*morientation*mrotation*mo2*mt
+                        setattr(tran, "matrixtransform", mt)
+
+
         # if not camera:
         #     showing_pool = {
         #         "scene_num":scene_num

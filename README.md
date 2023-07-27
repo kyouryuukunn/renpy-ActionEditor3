@@ -245,8 +245,6 @@ lemma forum
  Known issue
 ================
 
- ActionEditor can't show the camera in the side view with more than two of x,y,zrotation, orientation, RotateMatrix or point_to properties correctly.
- 
  ActionEditor can't show camera and displayable with "at clause" includeing animation correctly.
 
  ActionEditor can't show movie and animation displayable correctly.
@@ -491,8 +489,6 @@ lemma forum
 
  既知の問題
 ================
-
- x,y,zrotation, orientation, point_to, RotateMatrixを2つ以上使用したカメラはサイドビューで再現できない
 
  アニメーションするat 節を使用したcamera, displayableは正常に表示できない
 
