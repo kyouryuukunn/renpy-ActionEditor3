@@ -822,26 +822,9 @@ init -1598 python in _viewers:
             #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
             #These properties are shown in side viewer(function property has danger of including blur)
             if persistent._viewer_sideview:
-                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
+                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "rotate", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
                     if p in check_points:
-                        cs = check_points[p]
-                        if p == "zpos":
-                            perspective = check_points["perspective"][0][0]
-                            if perspective:
-                                if perspective is True:
-                                    perspective = config.perspective
-
-                                if isinstance(perspective, (int, float)):
-                                    z11 = perspective
-                                else:
-                                    z11 = perspective[1]
-
-                                vcheck_points[p] = [(v + z11, t, w) for v, t, w in cs]
-                        elif p == "orientation":
-                            #cameraのorientation,  xyzrotateは反転が必要
-                            vcheck_points[p] = [(zyx_to_xyz(c[0][0], c[0][1], c[0][2]), c[1], c[2] ) for c in cs]
-                        else:
-                            vcheck_points[p] = cs
+                        vcheck_points[p] = check_points[p]
                 vcheck_points["props_use_default"] = check_points["props_use_default"]
                 vcheck_points["at_list"] = check_points["at_list"]
 
@@ -1018,12 +1001,14 @@ init -1598 python in _viewers:
         d1 = degrees(atan2(config.screen_height, config.screen_width))
         d2 = (90 - d1)*2
         d3 = degrees(atan2(z11, sqrt(config.screen_height**2 + config.screen_width**2)/2))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1))(Solid("#F00", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1+d2))(Solid("#0F0", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+d2))(Solid("#0FF", xsize=inf, ysize=bold)))
-        camera_model.add(Transform(xpos=.5, ypos=.5, yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+2*d2))(Solid("#939", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1))(Solid("#F00", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, d1+d2))(Solid("#0F0", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+d2))(Solid("#0FF", xsize=inf, ysize=bold)))
+        camera_model.add(Transform(yanchor=.5, matrixanchor=(0, 0.5), matrixtransform=Matrix.rotate(0, d3, 3*d1+2*d2))(Solid("#939", xsize=inf, ysize=bold)))
 
-        return Transform(align=(.5, .5))(camera_model)
+        width = renpy.config.screen_width
+        height = renpy.config.screen_height
+        return Transform(align=(.5, .5), matrixtransform=Matrix.offset(width/2, height/2, z11))(camera_model)
 
     def camera_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, viewer_check_points, zorder_list, loop, spline=None, subpixel=True, time=None, scene_num=0):
         global third_view_child
@@ -1066,15 +1051,6 @@ init -1598 python in _viewers:
             camera_model = Transform(function=renpy.curry(transform)(
                         check_points=viewer_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, 
                         scene_num=scene_num, scene_checkpoints=scene_checkpoints, camera=True, side_view=True))(camera_model)
-
-            r = 0
-            if "rotate" in camera_check_points:
-                if time is None:
-                    t = st
-                else:
-                    t = time
-                r = get_value("rotate", time=t, scene_num=scene_num)
-                camera_model = Transform(matrixtransform=Matrix.rotate(0, 0, r))(camera_model)
 
             preview_box.add(camera_model)
 
@@ -1313,11 +1289,11 @@ init -1598 python in _viewers:
 
                 placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
                 xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
-                zplacement = get_value("zpos", default=True, scene_num=scene_num)
+                zpos = get_value("zpos", default=True, scene_num=scene_num)
 
                 # direct displayable toward camera
                 if point_to is not None and isinstance(point_to, renpy.display.transform.Camera):
-                    point_to = (xplacement + width / 2, yplacement + height / 2, zplacement + z11)
+                    point_to = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
                     setattr(tran, "point_to", point_to)
                 elif side_view and camera:
                     mrotation = None
@@ -1334,6 +1310,7 @@ init -1598 python in _viewers:
                     morientation = None
                     orientation = getattr(tran, "orientation", None)
                     if orientation is not None:
+                        orientation = zyx_to_xyz(*orientation)
                         morientation = Matrix.rotate(*orientation)
                         setattr(tran, "orientation", None)
 
@@ -1342,7 +1319,7 @@ init -1598 python in _viewers:
                     if point_to is not None:
                         from math import sin, cos, asin, atan, degrees, pi, sqrt
                         xpoi, ypoi, zpoi = point_to
-                        a, b, c = (xplacement + width/2) - xpoi, (yplacement + height/2) - ypoi, (zplacement + z11) - zpoi
+                        a, b, c = (xplacement + width/2) - xpoi, (yplacement + height/2) - ypoi, (zpos + z11) - zpoi
                         v_len = sqrt(a**2 + b**2 + c**2) # math.hypot is better in py3.8+
                         if v_len == 0:
                             xpoi = ypoi = 0
@@ -1371,25 +1348,61 @@ init -1598 python in _viewers:
                         mpoint_to = Matrix.rotate(xpoi, ypoi, 0)
                         setattr(tran, "point_to", None)
 
-                    if mrotation is not None or morientation is not None or mpoint_to is not None:
-                        mo1 = Matrix.offset(xplacement, yplacement, zplacement + z11)
-                        mo2 = Matrix.offset(-xplacement, -yplacement, -zplacement - z11)
+                    m = Matrix.identity()
 
-                        if mrotation is None:
-                            mrotation = Matrix.identity()
-
-                        if morientation is None:
-                            morientation = Matrix.identity()
-
-                        if mpoint_to is None:
-                            mpoint_to = Matrix.identity()
-
-                        mt = getattr(tran, "matrixtransform", None)
-                        if mt is None:
-                            mt = mo1*mpoint_to*morientation*mrotation*mo2
+                    mt = getattr(tran, "matrixtransform", None)
+                    if mt is not None:
+                        matrixanchor = getattr(tran, "matrixanchor", None)
+                        if matrixanchor is None:
+                            manchorx = width / 2.0
+                            manchory = height / 2.0
                         else:
-                            mt = mo1*mpoint_to*morientation*mrotation*mo2*mt
-                        setattr(tran, "matrixtransform", mt)
+                            manchorx, manchory = matrixanchor
+                            if type(manchorx) is float:
+                                manchorx *= width
+                            if type(manchory) is float:
+                                manchory *= height
+
+                        m = Matrix.offset(-manchorx, -manchory, 0.0) * m
+                        m = mt * m
+                        m = Matrix.offset(manchorx, manchory, 0.0) * m
+                    setattr(tran, "matrixanchor", (0, 0))
+
+                    rotate = getattr(tran, "rotate", None)
+                    if rotate is not None:
+                        setattr(tran, "rotate", None)
+                        m = Matrix.offset(-width / 2, -height / 2, 0) * m
+                        m = Matrix.rotate(0, 0, rotate) * m
+                        m = Matrix.offset(width / 2, height / 2, 0) * m
+
+                    if xplacement:
+                        setattr(tran, "xpos", 0)
+                        setattr(tran, "xanchor", 0)
+                        setattr(tran, "xoffset", 0)
+                    if yplacement:
+                        setattr(tran, "ypos", 0)
+                        setattr(tran, "yanchor", 0)
+                        setattr(tran, "yoffset", 0)
+                    if zpos:
+                        setattr(tran, "zpos", 0)
+                    m = Matrix.offset(xplacement, yplacement, zpos) * m
+
+                    if mrotation is not None or morientation is not None or mpoint_to is not None:
+                        #original code width /2
+                        m = Matrix.offset(-width / 2, -height / 2, -z11) * m
+
+                        if mrotation is not None:
+                            m = mrotation * m
+
+                        if morientation is not None:
+                            m = morientation * m
+
+                        if mpoint_to is not None:
+                            m = mpoint_to * m
+
+                        #original code width /2
+                        m = Matrix.offset(width / 2, height / 2, z11) * m
+                    setattr(tran, "matrixtransform", m)
 
 
         # if not camera:
