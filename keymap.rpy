@@ -1,6 +1,6 @@
 init 1100 python:
     config.locked = False
-    if check_version(23060707):
+    if _viewers.check_version(23060707):
         config.keymap["action_editor"] = ['shift_K_p']
         config.keymap["image_viewer"] =  ['shift_K_u']
         config.keymap["sound_viewer"] =  ['shift_K_s']
