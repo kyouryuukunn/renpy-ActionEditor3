@@ -1,9 +1,9 @@
 
 #既知の問題
-#childのみならばparallelなくてよい
 #cameraではset_childを使用していないのでat節の再現ができない
 
 #課題
+#childのみならばparallelなくてよい
 #removeボタンを画像タグの右クリックメニューへ追加
 #動画およびat節で指定されたアニメーションtransformと同期できない(要本体の最適化)
 #vpunch等Move transtion, ATLtranstionが動作しない
@@ -39,7 +39,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230728_1"
+        return "230729_1"
 
 
     if check_version(23032500):
@@ -1315,37 +1315,54 @@ init -1598 python in _viewers:
                         setattr(tran, "orientation", None)
 
                     mpoint_to = None
-                    point_to = getattr(tran, "point_to", None)
-                    if point_to is not None:
+                    poi = getattr(tran, "point_to", None)
+                    if poi is not None:
                         from math import sin, cos, asin, atan, degrees, pi, sqrt
-                        xpoi, ypoi, zpoi = point_to
-                        a, b, c = (xplacement + width/2) - xpoi, (yplacement + height/2) - ypoi, (zpos + z11) - zpoi
+                        start_pos = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
+                        a, b, c = ( float(e - s) for s, e in zip(start_pos, poi) )
+
+                        #cameras is rotated in z, y, x order.
+                        #It is because rotating stage in x, y, z order means rotating a camera in z, y, x order.
+                        #rotating around z axis isn't rotating around the center of the screen when rotating camera in x, y, z order.
                         v_len = sqrt(a**2 + b**2 + c**2) # math.hypot is better in py3.8+
                         if v_len == 0:
-                            xpoi = ypoi = 0
+                            xpoi = ypoi = zpoi = 0
                         else:
                             a /= v_len
                             b /= v_len
                             c /= v_len
 
-                            sin_xpoi = min(1., max(-b, -1.))
-                            xpoi = asin(sin_xpoi)
+                            sin_ypoi = min(1., max(-a, -1.))
+                            ypoi = asin(sin_ypoi)
                             if c == 0:
-                                if abs(b) == 1:
-                                    ypoi = 0
+                                if abs(a) == 1:
+                                    xpoi = 0
                                 else:
-                                    sin_ypoi = min(1., max(a / cos(xpoi), -1.))
-                                    ypoi = asin(sin_ypoi)
+                                    sin_xpoi = min(1., max(b / cos(ypoi), -1.))
+                                    xpoi = asin(sin_xpoi)
                             else:
-                                ypoi = atan(a/c)
+                                xpoi = atan(-b/c)
 
-                            if c < 0:
-                                ypoi += pi
+                            if c > 0:
+                                ypoi = pi - ypoi
+
+                            if xpoi != 0.0 and ypoi != 0.0:
+                                if xpoi == pi / 2 or xpoi == - pi / 2:
+                                    if -sin(xpoi) * sin(ypoi) > 0.0:
+                                        zpoi = pi / 2
+                                    else:
+                                        zpoi = - pi / 2
+                                else:
+                                    zpoi = atan(-(sin(xpoi) * sin(ypoi)) / cos(xpoi))
+                            else:
+                                zpoi = 0
 
                             xpoi = degrees(xpoi)
                             ypoi = degrees(ypoi)
+                            zpoi = degrees(zpoi)
 
-                        mpoint_to = Matrix.rotate(xpoi, ypoi, 0)
+                        xpoi, ypoi, zpoi = zyx_to_xyz(xpoi, ypoi, zpoi)
+                        mpoint_to = Matrix.rotate(xpoi, ypoi, zpoi)
                         setattr(tran, "point_to", None)
 
                     m = Matrix.identity()
@@ -1375,18 +1392,6 @@ init -1598 python in _viewers:
                         m = Matrix.rotate(0, 0, rotate) * m
                         m = Matrix.offset(width / 2, height / 2, 0) * m
 
-                    if xplacement:
-                        setattr(tran, "xpos", 0)
-                        setattr(tran, "xanchor", 0)
-                        setattr(tran, "xoffset", 0)
-                    if yplacement:
-                        setattr(tran, "ypos", 0)
-                        setattr(tran, "yanchor", 0)
-                        setattr(tran, "yoffset", 0)
-                    if zpos:
-                        setattr(tran, "zpos", 0)
-                    m = Matrix.offset(xplacement, yplacement, zpos) * m
-
                     if mrotation is not None or morientation is not None or mpoint_to is not None:
                         #original code width /2
                         m = Matrix.offset(-width / 2, -height / 2, -z11) * m
@@ -1402,6 +1407,19 @@ init -1598 python in _viewers:
 
                         #original code width /2
                         m = Matrix.offset(width / 2, height / 2, z11) * m
+
+                    if xplacement:
+                        setattr(tran, "xpos", 0)
+                        setattr(tran, "xanchor", 0)
+                        setattr(tran, "xoffset", 0)
+                    if yplacement:
+                        setattr(tran, "ypos", 0)
+                        setattr(tran, "yanchor", 0)
+                        setattr(tran, "yoffset", 0)
+                    if zpos:
+                        setattr(tran, "zpos", 0)
+                    m = Matrix.offset(xplacement, yplacement, zpos) * m
+
                     setattr(tran, "matrixtransform", m)
 
 
