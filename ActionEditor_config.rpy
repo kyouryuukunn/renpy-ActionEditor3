@@ -141,8 +141,10 @@ init -1600 python in _viewers:
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
     default_matrixtransform = [
         ("matrixtransform_1_1_scaleX", 1.),  ("matrixtransform_1_2_scaleY", 1.),  ("matrixtransform_1_3_scaleZ", 1.),
-        ("matrixtransform_2_1_rotateX", 0.), ("matrixtransform_2_2_rotateY", 0.), ("matrixtransform_2_3_rotateZ", 0.),
-        ("matrixtransform_3_1_offsetX", 0.), ("matrixtransform_3_2_offsetY", 0.), ("matrixtransform_3_3_offsetZ", 0.),
+        ("matrixtransform_2_1_offsetX", 0.), ("matrixtransform_2_2_offsetY", 0.), ("matrixtransform_2_3_offsetZ", 0.),
+        ("matrixtransform_3_1_rotateX", 0.), ("matrixtransform_3_2_rotateY", 0.), ("matrixtransform_3_3_rotateZ", 0.),
+        ("matrixtransform_4_1_offsetX", 0.), ("matrixtransform_4_2_offsetY", 0.), ("matrixtransform_4_3_offsetZ", 0.),
+        ("matrixtransform_5_1_offsetX", 0.), ("matrixtransform_5_2_offsetY", 0.), ("matrixtransform_5_3_offsetZ", 0.),
     ]
     default_matrixcolor = [
         ("matrixcolor_1_1_invert", 0.), 
