@@ -39,7 +39,7 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230729_1"
+        return "230825_1"
 
 
     if check_version(23032500):
