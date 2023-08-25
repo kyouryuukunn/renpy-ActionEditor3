@@ -1272,155 +1272,156 @@ init -1598 python in _viewers:
             if f is not None:
                 f(tran, time, at)
 
-        point_to = getattr(tran, "point_to", None)
-        perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
-        if perspective and ((point_to is not None and isinstance(point_to, renpy.display.transform.Camera)) or (side_view and camera)):
-            if perspective is True:
-                perspective = renpy.config.perspective
+        if in_editor:
+            point_to = getattr(tran, "point_to", None)
+            perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
+            if perspective and (isinstance(point_to, renpy.display.transform.Camera) or (side_view and camera)):
+                if perspective is True:
+                    perspective = renpy.config.perspective
 
-            elif isinstance(perspective, (int, float)):
-                perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
+                elif isinstance(perspective, (int, float)):
+                    perspective = (renpy.config.perspective[0], perspective, renpy.config.perspective[2])
 
-            if perspective:
-                z11 = perspective[1]
+                if perspective:
+                    z11 = perspective[1]
 
-                width = renpy.config.screen_width
-                height = renpy.config.screen_height
+                    width = renpy.config.screen_width
+                    height = renpy.config.screen_height
 
-                placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
-                xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
-                zpos = get_value("zpos", default=True, scene_num=scene_num)
+                    placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
+                    xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
+                    zpos = get_value("zpos", default=True, scene_num=scene_num)
 
-                # direct displayable toward camera
-                if point_to is not None and isinstance(point_to, renpy.display.transform.Camera):
-                    point_to = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
-                    setattr(tran, "point_to", point_to)
-                elif side_view and camera:
-                    mrotation = None
-                    xrotate = getattr(tran, "xrotate", None)
-                    yrotate = getattr(tran, "yrotate", None)
-                    zrotate = getattr(tran, "zrotate", None)
-                    if (xrotate is not None) or (yrotate is not None) or (zrotate is not None):
-                        xrotate, yrotate, zrotate = zyx_to_xyz(xrotate, yrotate, zrotate)
-                        mrotation = Matrix.rotate(xrotate, yrotate, zrotate)
-                        setattr(tran, "xrotate", None)
-                        setattr(tran, "yrotate", None)
-                        setattr(tran, "zrotate", None)
+                    # direct displayable toward camera
+                    if point_to is not None and isinstance(point_to, renpy.display.transform.Camera):
+                        point_to = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
+                        setattr(tran, "point_to", point_to)
+                    elif side_view and camera:
+                        mrotation = None
+                        xrotate = getattr(tran, "xrotate", None)
+                        yrotate = getattr(tran, "yrotate", None)
+                        zrotate = getattr(tran, "zrotate", None)
+                        if (xrotate is not None) or (yrotate is not None) or (zrotate is not None):
+                            xrotate, yrotate, zrotate = zyx_to_xyz(xrotate, yrotate, zrotate)
+                            mrotation = Matrix.rotate(xrotate, yrotate, zrotate)
+                            setattr(tran, "xrotate", None)
+                            setattr(tran, "yrotate", None)
+                            setattr(tran, "zrotate", None)
 
-                    morientation = None
-                    orientation = getattr(tran, "orientation", None)
-                    if orientation is not None:
-                        orientation = zyx_to_xyz(*orientation)
-                        morientation = Matrix.rotate(*orientation)
-                        setattr(tran, "orientation", None)
+                        morientation = None
+                        orientation = getattr(tran, "orientation", None)
+                        if orientation is not None:
+                            orientation = zyx_to_xyz(*orientation)
+                            morientation = Matrix.rotate(*orientation)
+                            setattr(tran, "orientation", None)
 
-                    mpoint_to = None
-                    poi = getattr(tran, "point_to", None)
-                    if poi is not None:
-                        from math import sin, cos, asin, atan, degrees, pi, sqrt
-                        start_pos = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
-                        a, b, c = ( float(e - s) for s, e in zip(start_pos, poi) )
+                        mpoint_to = None
+                        poi = getattr(tran, "point_to", None)
+                        if poi is not None:
+                            from math import sin, cos, asin, atan, degrees, pi, sqrt
+                            start_pos = (xplacement + width / 2, yplacement + height / 2, zpos + z11)
+                            a, b, c = ( float(e - s) for s, e in zip(start_pos, poi) )
 
-                        #cameras is rotated in z, y, x order.
-                        #It is because rotating stage in x, y, z order means rotating a camera in z, y, x order.
-                        #rotating around z axis isn't rotating around the center of the screen when rotating camera in x, y, z order.
-                        v_len = sqrt(a**2 + b**2 + c**2) # math.hypot is better in py3.8+
-                        if v_len == 0:
-                            xpoi = ypoi = zpoi = 0
-                        else:
-                            a /= v_len
-                            b /= v_len
-                            c /= v_len
-
-                            sin_ypoi = min(1., max(-a, -1.))
-                            ypoi = asin(sin_ypoi)
-                            if c == 0:
-                                if abs(a) == 1:
-                                    xpoi = 0
-                                else:
-                                    sin_xpoi = min(1., max(b / cos(ypoi), -1.))
-                                    xpoi = asin(sin_xpoi)
+                            #cameras is rotated in z, y, x order.
+                            #It is because rotating stage in x, y, z order means rotating a camera in z, y, x order.
+                            #rotating around z axis isn't rotating around the center of the screen when rotating camera in x, y, z order.
+                            v_len = sqrt(a**2 + b**2 + c**2) # math.hypot is better in py3.8+
+                            if v_len == 0:
+                                xpoi = ypoi = zpoi = 0
                             else:
-                                xpoi = atan(-b/c)
+                                a /= v_len
+                                b /= v_len
+                                c /= v_len
 
-                            if c > 0:
-                                ypoi = pi - ypoi
-
-                            if xpoi != 0.0 and ypoi != 0.0:
-                                if xpoi == pi / 2 or xpoi == - pi / 2:
-                                    if -sin(xpoi) * sin(ypoi) > 0.0:
-                                        zpoi = pi / 2
+                                sin_ypoi = min(1., max(-a, -1.))
+                                ypoi = asin(sin_ypoi)
+                                if c == 0:
+                                    if abs(a) == 1:
+                                        xpoi = 0
                                     else:
-                                        zpoi = - pi / 2
+                                        sin_xpoi = min(1., max(b / cos(ypoi), -1.))
+                                        xpoi = asin(sin_xpoi)
                                 else:
-                                    zpoi = atan(-(sin(xpoi) * sin(ypoi)) / cos(xpoi))
+                                    xpoi = atan(-b/c)
+
+                                if c > 0:
+                                    ypoi = pi - ypoi
+
+                                if xpoi != 0.0 and ypoi != 0.0:
+                                    if xpoi == pi / 2 or xpoi == - pi / 2:
+                                        if -sin(xpoi) * sin(ypoi) > 0.0:
+                                            zpoi = pi / 2
+                                        else:
+                                            zpoi = - pi / 2
+                                    else:
+                                        zpoi = atan(-(sin(xpoi) * sin(ypoi)) / cos(xpoi))
+                                else:
+                                    zpoi = 0
+
+                                xpoi = degrees(xpoi)
+                                ypoi = degrees(ypoi)
+                                zpoi = degrees(zpoi)
+
+                            xpoi, ypoi, zpoi = zyx_to_xyz(xpoi, ypoi, zpoi)
+                            mpoint_to = Matrix.rotate(xpoi, ypoi, zpoi)
+                            setattr(tran, "point_to", None)
+
+                        m = Matrix.identity()
+
+                        mt = getattr(tran, "matrixtransform", None)
+                        if mt is not None:
+                            matrixanchor = getattr(tran, "matrixanchor", None)
+                            if matrixanchor is None:
+                                manchorx = width / 2.0
+                                manchory = height / 2.0
                             else:
-                                zpoi = 0
+                                manchorx, manchory = matrixanchor
+                                if type(manchorx) is float:
+                                    manchorx *= width
+                                if type(manchory) is float:
+                                    manchory *= height
 
-                            xpoi = degrees(xpoi)
-                            ypoi = degrees(ypoi)
-                            zpoi = degrees(zpoi)
+                            m = Matrix.offset(-manchorx, -manchory, 0.0) * m
+                            m = mt * m
+                            m = Matrix.offset(manchorx, manchory, 0.0) * m
+                        setattr(tran, "matrixanchor", (0, 0))
 
-                        xpoi, ypoi, zpoi = zyx_to_xyz(xpoi, ypoi, zpoi)
-                        mpoint_to = Matrix.rotate(xpoi, ypoi, zpoi)
-                        setattr(tran, "point_to", None)
+                        rotate = getattr(tran, "rotate", None)
+                        if rotate is not None:
+                            setattr(tran, "rotate", None)
+                            m = Matrix.offset(-width / 2, -height / 2, 0) * m
+                            m = Matrix.rotate(0, 0, rotate) * m
+                            m = Matrix.offset(width / 2, height / 2, 0) * m
 
-                    m = Matrix.identity()
+                        if mrotation is not None or morientation is not None or mpoint_to is not None:
+                            #original code width /2
+                            m = Matrix.offset(-width / 2, -height / 2, -z11) * m
 
-                    mt = getattr(tran, "matrixtransform", None)
-                    if mt is not None:
-                        matrixanchor = getattr(tran, "matrixanchor", None)
-                        if matrixanchor is None:
-                            manchorx = width / 2.0
-                            manchory = height / 2.0
-                        else:
-                            manchorx, manchory = matrixanchor
-                            if type(manchorx) is float:
-                                manchorx *= width
-                            if type(manchory) is float:
-                                manchory *= height
+                            if mrotation is not None:
+                                m = mrotation * m
 
-                        m = Matrix.offset(-manchorx, -manchory, 0.0) * m
-                        m = mt * m
-                        m = Matrix.offset(manchorx, manchory, 0.0) * m
-                    setattr(tran, "matrixanchor", (0, 0))
+                            if morientation is not None:
+                                m = morientation * m
 
-                    rotate = getattr(tran, "rotate", None)
-                    if rotate is not None:
-                        setattr(tran, "rotate", None)
-                        m = Matrix.offset(-width / 2, -height / 2, 0) * m
-                        m = Matrix.rotate(0, 0, rotate) * m
-                        m = Matrix.offset(width / 2, height / 2, 0) * m
+                            if mpoint_to is not None:
+                                m = mpoint_to * m
 
-                    if mrotation is not None or morientation is not None or mpoint_to is not None:
-                        #original code width /2
-                        m = Matrix.offset(-width / 2, -height / 2, -z11) * m
+                            #original code width /2
+                            m = Matrix.offset(width / 2, height / 2, z11) * m
 
-                        if mrotation is not None:
-                            m = mrotation * m
+                        if xplacement:
+                            setattr(tran, "xpos", 0)
+                            setattr(tran, "xanchor", 0)
+                            setattr(tran, "xoffset", 0)
+                        if yplacement:
+                            setattr(tran, "ypos", 0)
+                            setattr(tran, "yanchor", 0)
+                            setattr(tran, "yoffset", 0)
+                        if zpos:
+                            setattr(tran, "zpos", 0)
+                        m = Matrix.offset(xplacement, yplacement, zpos) * m
 
-                        if morientation is not None:
-                            m = morientation * m
-
-                        if mpoint_to is not None:
-                            m = mpoint_to * m
-
-                        #original code width /2
-                        m = Matrix.offset(width / 2, height / 2, z11) * m
-
-                    if xplacement:
-                        setattr(tran, "xpos", 0)
-                        setattr(tran, "xanchor", 0)
-                        setattr(tran, "xoffset", 0)
-                    if yplacement:
-                        setattr(tran, "ypos", 0)
-                        setattr(tran, "yanchor", 0)
-                        setattr(tran, "yoffset", 0)
-                    if zpos:
-                        setattr(tran, "zpos", 0)
-                    m = Matrix.offset(xplacement, yplacement, zpos) * m
-
-                    setattr(tran, "matrixtransform", m)
+                        setattr(tran, "matrixtransform", m)
 
 
         # if not camera:
