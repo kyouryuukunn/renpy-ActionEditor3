@@ -356,21 +356,21 @@ init -1598 python in _viewers:
         return rv
 
 
-    def expand_at_list(at_list):
-        rv = ""
-        for name, kwargs in at_list:
-            if kwargs:
-                para = ""
-                for k, v in kwargs.items():
-                    para += "{}={}, ".format(k, v)
-                else:
-                    para = para[:-2]
-                rv += "{}({}), ".format(name, para)
-            else:
-                rv += "{}, ".format(name)
-        else:
-            rv = rv[:-2]
-        return rv
+    # def expand_at_list(at_list):
+    #     rv = ""
+    #     for name, kwargs in at_list:
+    #         if kwargs:
+    #             para = ""
+    #             for k, v in kwargs.items():
+    #                 para += "{}={}, ".format(k, v)
+    #             else:
+    #                 para = para[:-2]
+    #             rv += "{}({}), ".format(name, para)
+    #         else:
+    #             rv += "{}, ".format(name)
+    #     else:
+    #         rv = rv[:-2]
+    #     return rv
 
 
     def check_props_group(prop, tag=None, scene_num=None):
@@ -3213,14 +3213,17 @@ show {imagename}""".format(imagename=child)
                                     image_name = last_child
                         string += """
     show {}""".format(image_name)
-                        if tag in image_state[s][layer]:
-                            string += " at default"
+                        #at defaultではATLブロックに配置したdisplayableに機能しない
+                        # if tag in image_state[s][layer]:
+                        #     string += " at default"
                         if image_name.split()[0] != tag:
                             string += " as {}".format(tag)
                         if layer != "master":
                             string += " onlayer {}".format(layer)
                         string += """:
         """
+                        if tag in image_state[s][layer]:
+                            string += "default\n        "
                         string += "subpixel True "
                         if "crop" in image_keyframes:
                             string += "crop_relative True "
