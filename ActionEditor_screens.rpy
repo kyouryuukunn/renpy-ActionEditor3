@@ -1584,7 +1584,7 @@ init 1 python in _viewers:
                         if rv is not None:
                             return rv
                         raise renpy.display.core.IgnoreEvent()
-                elif renpy.map_event(ev, "button_alternate"):
+                elif renpy.map_event(ev, "button_alternate") and not out_of_viewport():
                     alternate=Function(reset, self.key),
                     rv = renpy.run(alternate)
                     if rv is not None:
@@ -1997,7 +1997,7 @@ init 1 python in _viewers:
                         if rv is not None:
                             return rv
                         raise renpy.display.core.IgnoreEvent()
-                elif renpy.map_event(ev, "button_alternate"):
+                elif renpy.map_event(ev, "button_alternate") and not out_of_viewport():
                     rv = renpy.run(self.alternate)
                     if rv is not None:
                         return rv
@@ -2347,7 +2347,7 @@ init 1 python in _viewers:
                         time = pos_to_time(x)
                         change_time(time)
                         raise renpy.display.core.IgnoreEvent()
-                elif renpy.map_event(ev, "button_alternate"):
+                elif renpy.map_event(ev, "button_alternate") and not out_of_viewport():
                     if self.key:
                         if self.in_graphic_mode:
                             time = pos_to_time(x)
