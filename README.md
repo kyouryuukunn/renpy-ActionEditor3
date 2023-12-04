@@ -1,9 +1,9 @@
  本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
  日本語マニュアルはドキュメント後半にあります。
 
- This script adds Ren'py the ability to adjust and view transform properties of images
- and camera by in-game Action Editor and Image Viewer and Sound Viewer.
- Many warpers and usefull functions intended to be used in function statement in ATL are
+ This script adds to Ren'py the ability to adjust and view transform properties of images
+ and camera by in-game Action Editor, Image Viewer and Sound Viewer.
+ Many warpers and useful functions intended to be used in function statements in ATL are
  also added.
 
  Ren'Py <http://www.renpy.org/>
@@ -25,33 +25,33 @@ lemma forum
  English Document
 ================
 
- This script adds Ren'py the ability to adjust and view transform properties of images
- and camera by in-game Action Editor and Image Viewer and Sound Viewer.
- Many warpers and usefull functions intended to be used in function statement in ATL are
+ This script adds to Ren'py the ability to adjust and view transform properties of images
+ and camera by in-game Action Editor, Image Viewer and Sound Viewer.
+ Many warpers and useful functions intended to be used in function statements in ATL are
  also added.
 
  About old version
 ================
  This is available in v7.4.5 later.
- To use in older version, use old version ActionEditor.
+ To use an older version, use the old version ActionEditor.
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
-
- In current version ActionEditor, below functions are removed.
+l
+ In the current version of ActionEditor, the below functions are removed.
  * expression
  * loading last action
 
- To instal
+ To install
 ================
  To install, copy all files in the camera directory into your game directory.
- ActionEditor.rpy is required for release version if you use camera blur or warper_generator.
+ ActionEditor.rpy is required for the release version if you use camera blur or warper_generator.
  00warper.rpy is also required if you use added warpers.
  ATL_funcctions.rpy is also required if you use added functions for ATL statement.
- Ohter files arenot required.
+ Other files are not required.
 
  Action Editor
 ================
 
- This allows you to adjusts transform properties of camera and images in
+ This allows you to adjust transform properties of camera and images in
  real-time with a GUI. It can then generate a script based on these changes and
  place it on the clipboard for later pasting into Ren'Py scripts.
 
@@ -60,32 +60,32 @@ lemma forum
  
  The Action Editor has the following features:
  
-  * View and adjust the transform properties of images and camera with adjusting a bar or typing value.
+  * View and adjust the transform properties of images and camera by adjusting a bar or typing a value.
   * View and adjust the x and y coordinates of the camera with a draggable camera icon.
   * Adjust the z coordinate of the camera with the mouse wheel.
   * Adjust the x,y coordinate of the camera with the keyboard(hjkl, HJKL, wasd, WASD).
-  * Reset the value with right-click on the value button.
+  * Reset the value by right-clicking on the value button.
   * Add, delete, and edit keyframes on a timeline like video editing software.
-  * the spline motion and loop is availabe
+  * The spline motion and loop is available
   * After setting up a scene with the desired look and animations, the Action
     Editor will generate a script and place it on your clipboard for pasting
     into your Ren'Py scripts. (v6.99 and later only)
   * Introducing the concept of depth of field and allow to adjust focus position and dof.
-    Blur each image according to dof, focus postion and the distance between the camera and the image.
+    Blur each image according to dof, focus position and the distance between the camera and the image.
   * Show, replace and hide a image with transition(use None for a image name to hide image)
   * Change a scene with scene statement.
   * There is the option for hiding window during the ATL animation in clipboard data.
   * There is the option for allowing to skip ATL animation in clipboard data.
 
- Note
- * blur transform property of each images are used for simulating camera blur in function transform prperty,
-   so blur transform properties of each images aren't availabe when focusing is enabled.
-   Set function property to None when you want to disable camera blur for already shownd images.
- * Unfortunately, The behavior of functions for function property isn't same as ATL.
+ Noted
+ * blur transform property of each images are used for simulating camera blur in function transform property,
+   so blur transform properties of each images aren't available when focusing is enabled.
+   Set function property to None when you want to disable camera blur for already shown images.
+ * Unfortunately, The behavior of functions for function property isn't the same as ATL.
    There are some different points.
    1. inherited_<property> have no value.
-   2. Setting properties have no affect when it is called next time.
-   3. The return value from it have no affect.
+   2. Setting properties have no effect when it is called next time.
+   3. The return value from it has no effect.
    4. It isn't always called in time.
   ActionEditor can't get current function when opened.
 
@@ -102,8 +102,8 @@ lemma forum
 
  Commonly, add the following variables the property name you want to add to be added.:
 
- * `props_set`: control where that is shwon in ActionEditor.
- * `sort_order_list`: control where that is shwon in clipboard.
+ * `props_set`: control where that is shown in ActionEditor.
+ * `sort_order_list`: control where that is shown in the clipboard.
  * `transform_props` or `camera_props`: Add the the property name.
  Adding `transform_props` shows it in each images and Adding `camera_props` shows it in camera.
  * `property_default_value`: Add the default value of the property.
@@ -137,7 +137,7 @@ lemma forum
     any_props = {"blend"}
     menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
 
- Exclusive proparties like tile and pan should be set in `exclusive`. example:
+ Exclusive properties like tile and pan should be set in `exclusive`. example:
 
     exclusive = (
             ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
@@ -148,7 +148,7 @@ lemma forum
  Property Group
 ================
 
- For tuple, You can use `props_groups` where that key is the property name and that value
+ For tuples, You can use `props_groups` where that key is the property name and that value
  is the tuple of each element name, so that they can be edited individually. example:
 
     props_groups = {
@@ -164,18 +164,18 @@ lemma forum
  If `config.developer` is True, pressing Shift+U or +(add image) textbutton on ActionEditor
  to open Image Viewer.
 
- Defined image tag and attribute textbuttons are shown in this viewer.
+ Defined image tags and attribute textbuttons are shown in this viewer.
  You can filter them by the text entered in the top-most text entry field.
- The completion feature is also availabe by tab.
+ The completion feature is also available by tab.
 
- When these textbuttons get focus and the same image name exist as these text, the image is
+ When these textbuttons get focus and the same image name exists as these text, the image is
  shown.
  Pressing the textbutton add that text to the filter if the same image name doesn't exist
  as that text. the image is added to ActionEditor if that exist and viewer is opened by
  ActionEditor.  the image name is outputted to the clipboard if that exist and viewer isn't
  opened by ActionEditor. 
 
- Pressing clipboard buton at the bottom also outputs the filter string to clipboard 
+ Pressing clipboard button at the bottom also outputs the filter string to clipboard 
  
 
  Sound Viewer
@@ -186,17 +186,17 @@ lemma forum
  Variable names in audio store are shown in this viewer.
  The music files should be automatically defined as these name.
  You can filter them by the text entered in the top-most text entry field.
- The completion feature is also availabe by tab.
+ The completion feature is also available by tab.
 
  When these textbuttons get focus and the music file is played.
- Pressing the textbutton add that to ActionEditor if the viewer is opened by ActionEditor.
+ Pressing the textbutton adds that to ActionEditor if the viewer is opened by ActionEditor.
  Otherwise, that name is outputted to the clipboard.
 
- Pressing clipboard buton at the bottom also outputs the filter string to clipboard 
+ Pressing clipboard button at the bottom also outputs the filter string to clipboard 
 
  ATL functions
 ================
- ATL_funcctions.rpy adds usefull functions which are intended to be used for
+ ATL_funcctions.rpy adds useful functions which are intended to be used for
  function statement in ATL block. For more information, see that file.
 
 
@@ -235,19 +235,19 @@ lemma forum
         style new_action_editor_text:
             size 10
 
- Trouble shooting
+ Troubleshooting
 ================
 
  Layout is corrupted
 
- Too long tag names and big size of fonts corrupt the layout of ActionEditor.
+ Too long tag names and big font sizes corrupt the layout of ActionEditor.
  In that case, try to adjust the size of font by the above manner.
 
 
  Known issue
 ================
 
- ActionEditor can't show camera and displayable with "at clause" includeing animation correctly.
+ ActionEditor can't show camera and displayable with "at clause" including animation correctly.
 
  ActionEditor can't show movie and animation displayable correctly.
 
