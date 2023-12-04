@@ -1,7 +1,7 @@
  本ライブラリでは、GUI上で設定できる3Dステージ対応の演出エディター、および画像ビューワーとサウンドビューワーさらに多数のワーパー関数とATLのfunctionステートメントでの使用を意図した便利な関数群を追加します。
  日本語マニュアルはドキュメント後半にあります。
 
- This script adds to Ren'py the ability to adjust and view transform properties of images
+ This script adds Ren'py the ability to adjust and view transform properties of images
  and camera by in-game Action Editor, Image Viewer and Sound Viewer.
  Many warpers and useful functions intended to be used in function statements in ATL are
  also added.
@@ -25,7 +25,7 @@ lemma forum
  English Document
 ================
 
- This script adds to Ren'py the ability to adjust and view transform properties of images
+ This script adds Ren'py the ability to adjust and view transform properties of images
  and camera by in-game Action Editor, Image Viewer and Sound Viewer.
  Many warpers and useful functions intended to be used in function statements in ATL are
  also added.
@@ -33,9 +33,9 @@ lemma forum
  About old version
 ================
  This is available in v7.4.5 later.
- To use an older version, use the old version ActionEditor.
+ To use an older version, use the old version of ActionEditor.
  <https://github.com/kyouryuukunn/renpy-ActionEditor>
-l
+ 
  In the current version of ActionEditor, the below functions are removed.
  * expression
  * loading last action
@@ -43,7 +43,7 @@ l
  To install
 ================
  To install, copy all files in the camera directory into your game directory.
- ActionEditor.rpy is required for the release version if you use camera blur or warper_generator.
+ ActionEditor.rpy is required for release version if you use camera blur or warper_generator.
  00warper.rpy is also required if you use added warpers.
  ATL_funcctions.rpy is also required if you use added functions for ATL statement.
  Other files are not required.
@@ -77,7 +77,7 @@ l
   * There is the option for hiding window during the ATL animation in clipboard data.
   * There is the option for allowing to skip ATL animation in clipboard data.
 
- Noted
+ Note
  * blur transform property of each images are used for simulating camera blur in function transform property,
    so blur transform properties of each images aren't available when focusing is enabled.
    Set function property to None when you want to disable camera blur for already shown images.
@@ -148,7 +148,7 @@ l
  Property Group
 ================
 
- For tuples, You can use `props_groups` where that key is the property name and that value
+ For tuples, you can use `props_groups` where that key is the property name and that value
  is the tuple of each element name, so that they can be edited individually. example:
 
     props_groups = {
