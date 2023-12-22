@@ -39,13 +39,15 @@ init python in _viewers:
     from renpy.store import InvertMatrix, ContrastMatrix, SaturationMatrix, BrightnessMatrix, HueMatrix 
 
     def action_editor_version():
-        return "230825_1"
+        return "231223_1"
 
 
     if check_version(23032500):
         euler_slerp = renpy.display.quaternion.euler_slerp
-    else:
+    elif check_version(23030700):
         euler_slerp = renpy.display.accelerator.quaternion
+    else:
+        euler_slerp = None
 
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
@@ -1275,7 +1277,7 @@ init -1598 python in _viewers:
         if in_editor:
             point_to = getattr(tran, "point_to", None)
             perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
-            if perspective and (isinstance(point_to, renpy.display.transform.Camera) or (side_view and camera)):
+            if perspective and (check_version(23032300) and isinstance(point_to, renpy.display.transform.Camera) or (side_view and camera)):
                 if perspective is True:
                     perspective = renpy.config.perspective
 
