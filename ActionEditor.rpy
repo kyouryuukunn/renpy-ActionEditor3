@@ -1461,9 +1461,9 @@ init -1598 python in _viewers:
                     mask_prefix_org = file_name[:mask_file_name.find(">")+1]
                     mask_file_name = file_name[mask_file_name.find(">")+1:]
 
-            prefix = "<from {} to {}>".format(time, time)
+            prefix = "<from {} to {}>".format(time, time+0.1)
             if mask_file_name:
-                mask_prefix = "<from {} to {}>".format(time, time)
+                mask_prefix = "<from {} to {}>".format(time, time+0.1)
 
             play = prefix + file_name
             if mask_file_name:
@@ -1471,16 +1471,25 @@ init -1598 python in _viewers:
             else:
                 mask = None
 
-            if name_tuple in movie_cache:
-                d = movie_cache[name_tuple]
-            else:
-                d = deepcopy(d_org)
-                movie_cache[name_tuple] = d
+            # if True:
+                #movie isn't updated with this cache.
+                # if name_tuple in movie_cache:
+                #     d = movie_cache[name_tuple]
+                # else:
+                #     d = deepcopy(d_org)
+                #     movie_cache[name_tuple] = d
+            #this isn't shown correctly if movie is longer than 2 or 3 sec.
+            d = deepcopy(d_org)
 
             d._play = play
-            d.mask = None
-            d.loop = False
-            # d = FixedTimeDisplayable(Movie(play=prefix+file_name, mask=None, loop=False), time, at)
+            d.mask = mask
+            d.loop = True
+            # else:
+            #     pass
+                #heavy and both isn't shown
+                # d = Movie(play=play, mask=mask, loop=True)
+                # d = FixedTimeDisplayable(Movie(play=play, mask=mask, loop=True), time, at)
+
             widget = d
             # raise Exception((d._play, d.mask))
         # elif name_tuple in images:
