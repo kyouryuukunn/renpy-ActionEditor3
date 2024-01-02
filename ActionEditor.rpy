@@ -41,6 +41,24 @@ init python in _viewers:
     def action_editor_version():
         return "231223_1"
 
+    def get_absolute_pos(pos, scale):
+        if isinstance(pos, int):
+            return pos
+        elif isinstance(pos, float):
+            return int(pos * scale)
+        elif isinstance(pos, renpy.atl.position):
+            return int(pos.absolute + pos.relative * scale)
+
+
+    if check_version(24010100):
+        def position_compatible(pos):
+            if isinstance(pos, renpy.atl.position):
+                return pos.absolute
+            else:
+                return pos
+    else:
+        def position_compatible(pos):
+            return pos
 
     if check_version(23032500):
         euler_slerp = renpy.display.quaternion.euler_slerp
@@ -206,7 +224,17 @@ init -1598 python in _viewers:
         #     pos = renpy.get_placement(d)
         pos = d
         state = getattr(d, "state", None)
-        for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
+        for p in {"xpos", "ypos", "xanchor", "yanchor"}:
+            v = getattr(pos, p, None)
+            if isinstance(v, (int, float)):
+                image_state_org[current_scene][layer][tag][p] = v
+            elif isinstance(v, renpy.atl.position):
+                if v.absolute == 0:
+                    v = float(v.relative)
+                elif v.relative == 0:
+                    v = int(v.absolute)
+                camera_state_org[current_scene][p] = v
+        for p in {"xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
         for p in camera_props:
             if p not in camera_state_org[current_scene]:
@@ -279,6 +307,16 @@ init -1598 python in _viewers:
                 pos = renpy.get_placement(d)
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
+                    v = getattr(pos, p, None)
+                    if isinstance(v, (int, float)):
+                        image_state_org[current_scene][layer][tag][p] = v
+                    elif isinstance(v, renpy.atl.position):
+                        if v.absolute == 0:
+                            v = float(v.relative)
+                        elif v.relative == 0:
+                            v = int(v.absolute)
+                        image_state_org[current_scene][layer][tag][p] = v
+                for p in {"xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
                 for p in transform_props:
                     if p not in image_state_org[current_scene][layer][tag]:
@@ -573,12 +611,17 @@ init -1598 python in _viewers:
                     elif v < 0:
                         v = 0
                     v = round(float(v), 2)
-                else:
+                elif isinstance(get_value(key, default=True), int):
                     if not is_force_plus(prop):
                         v -= persistent._wide_range
                     elif v < 0:
                         v = 0
                     v = int(v)
+                elif isinstance(get_value(key, default=True), renpy.atl.position):
+                    if not is_force_plus(prop):
+                        v = renpy.atl.position.from_any(v) - renpy.atl.position.from_any(persistent._wide_range)
+                    # elif v < 0:
+                    #     v = 0
             else:
                 if isinstance(get_value(key, default=True), float):
                     if not is_force_plus(prop):
@@ -586,12 +629,17 @@ init -1598 python in _viewers:
                     elif v < 0:
                         v = 0
                     v = round(float(v), 2)
-                else:
+                elif isinstance(get_value(key, default=True), int):
                     if not is_force_plus(prop):
                         v -= persistent._narrow_range
                     elif v < 0:
                         v = 0
                     v = int(v)
+                elif isinstance(get_value(key, default=True), renpy.atl.position):
+                    if not is_force_plus(prop):
+                        v = renpy.atl.position.from_any(v) - renpy.atl.position.from_any(persistent._narrow_range)
+                    # elif v < 0:
+                    #     v = 0
 
             if knot_number is None:
                 default_warper_org = persistent._viewer_warper
@@ -616,7 +664,10 @@ init -1598 python in _viewers:
         if force_plus:
             return value
         else:
-            return value + range
+            if isinstance(value, (int, float)):
+                return value + range
+            elif isinstance(value, renpy.atl.position):
+                return value + renpy.atl.position(range)
 
 
     def set_keyframe(key, value, recursion=False, time=None):
@@ -1993,7 +2044,15 @@ init -1598 python in _viewers:
                         v = v[index]
 
                     if isinstance(new, int):
-                        v = int(v)
+                        if isinstance(v, float):
+                            v = int(v)
+                        elif isinstance(v, renpy.atl.position):
+                            v = int(v.absolute)
+                    elif isinstance(new, float):
+                        if isinstance(v, int):
+                            v = float(v)
+                        elif isinstance(v, renpy.atl.position):
+                            v = float(v.relative)
                     return v
                 break
         else:
