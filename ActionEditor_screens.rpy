@@ -32,6 +32,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
         DraggableValue = _viewers.DraggableValue
         TimeLine = _viewers.TimeLine
         perspective_enabled = _viewers.perspective_enabled
+        check_new_position_type = _viewers.check_new_position_type
 
         if opened is None:
             opened = {}
@@ -52,7 +53,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             xvalue_range = persistent._wide_range
         elif isinstance(xpos, float):
             xvalue_range = persistent._narrow_range
-        elif isinstance(xpos, renpy.atl.position):
+        elif check_new_position_type(xpos):
             xmove_amount1 = renpy.atl.position.from_any(int(xmove_amount1*config.screen_width))
             xmove_amount2 = renpy.atl.position.from_any(int(xmove_amount2*config.screen_width))
             xvalue_range  = renpy.atl.position.from_any(persistent._wide_range)
@@ -63,7 +64,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
             yvalue_range = persistent._wide_range
         elif isinstance(ypos, float):
             yvalue_range = persistent._narrow_range
-        elif isinstance(ypos, renpy.atl.position):
+        elif check_new_position_type(ypos):
             ymove_amount1 = renpy.atl.position.from_any(int(ymove_amount1*config.screen_height))
             ymove_amount2 = renpy.atl.position.from_any(int(ymove_amount2*config.screen_height))
             yvalue_range  = renpy.atl.position.from_any(persistent._wide_range)
@@ -197,7 +198,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                     $value_format = float_format
                 elif isinstance(value, int):
                     $value_format = int_format
-                elif isinstance(value, renpy.atl.position):
+                elif check_new_position_type(value):
                     $value_format = pos_format
                 hbox:
                     #他と同時にグラフィックモードで表示するとタイムバーが反応しないことがある
@@ -279,7 +280,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                 $value_format = float_format
                                             elif isinstance(value, int):
                                                 $value_format = int_format
-                                            elif isinstance(value, renpy.atl.position):
+                                            elif check_new_position_type(value):
                                                 $value_format = pos_format
                                             $shown_p = p
                                             if p.count("_") == 3:
@@ -415,7 +416,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $value_format = float_format
                                                 elif isinstance(value, int):
                                                     $value_format = int_format
-                                                elif isinstance(value, renpy.atl.position):
+                                                elif check_new_position_type(value):
                                                     $value_format = pos_format
                                                 $shown_p = p
                                                 if p.count("_") == 3:
@@ -674,6 +675,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         props_groups = _viewers.props_groups
         keyframes_exist = _viewers.keyframes_exist
         perspective_enabled =  _viewers.perspective_enabled
+        check_new_position_type = _viewers.check_new_position_type
 
         play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
             SelectedIf(False), Function(_viewers.play, play=True), \
@@ -831,7 +833,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     $value_format = float_format
                                 elif isinstance(value, int):
                                     $value_format = int_format
-                                elif isinstance(value, renpy.atl.position):
+                                elif check_new_position_type(value):
                                     $value_format = pos_format
                                 $shown_p = p
                                 if p.count("_") == 3:
@@ -874,7 +876,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                                 alternate Function(reset, p) style_group "action_editor_b"
                                             bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                                 xalign 1. yalign .5 style "action_editor_bar"
-                                        elif isinstance(value, renpy.atl.position):
+                                        elif check_new_position_type(value):
                                             textbutton value_format.format(value.absolute, value.relative):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, p) style_group "action_editor_b"
@@ -901,7 +903,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                     $value_format = float_format
                                 elif isinstance(value, int):
                                     $value_format = int_format
-                                elif isinstance(value, renpy.atl.position):
+                                elif check_new_position_type(value):
                                     $value_format = pos_format
                                 $shown_p = p
                                 if p.count("_") == 3:
@@ -952,7 +954,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                                 alternate Function(reset, key) style_group "action_editor_b"
                                             bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                                 xalign 1. yalign .5 style "action_editor_bar"
-                                        elif isinstance(value, renpy.atl.position):
+                                        elif check_new_position_type(value):
                                             textbutton value_format.format(value.absolute, value.relative):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, key) style_group "action_editor_b"
@@ -1433,7 +1435,7 @@ init 1 python in _viewers:
                 value = float(value)
             elif isinstance(get_value(key, default=True), int):
                 value = int(value)
-            elif isinstance(get_value(key, default=True), renpy.atl.position):
+            elif check_new_position_type(get_value(key, default=True)):
                 value = int(value)
         return value
 
@@ -1445,7 +1447,7 @@ init 1 python in _viewers:
         else:
             if isinstance(value, (int, float)):
                 pass
-            elif isinstance(value, renpy.atl.position):
+            elif check_new_position_type(value):
                 if isinstance(key, tuple):
                     n, l, p = key
                 else:
@@ -1510,7 +1512,7 @@ init 1 python in _viewers:
             return pos
         elif isinstance(pos, float):
             return int(pos * scale)
-        elif isinstance(pos, renpy.atl.position):
+        elif check_new_position_type(pos):
             return int(pos.absolute + pos.relative * scale)
 
 
@@ -1606,7 +1608,7 @@ init 1 python in _viewers:
                 style = self.text_style
             if isinstance(value, (int, float)):
                 d = Text(self.format.format(value), align=(.5, .5), style=style)
-            elif isinstance(value, renpy.atl.position):
+            elif check_new_position_type(value):
                 d = Text(self.format.format(value.absolute, value.relative), align=(.5, .5), style=style)
             box = Fixed()
             box.add(d)
@@ -1626,7 +1628,7 @@ init 1 python in _viewers:
                 self.dragging = True
                 if isinstance(self.value, (int, float)):
                     v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
-                elif isinstance(self.value, renpy.atl.position):
+                elif check_new_position_type(self.value):
                     v = renpy.atl.position.from_any(int(((x - self.last_x)*self.change_per_pix)*self.speed))+self.value
                 self.changed(to_changed_value(v, self.force_plus, self.use_wide_range))
 
@@ -2759,7 +2761,7 @@ init 1 python in _viewers:
                 x = int(x)
             elif isinstance(xpos_org, float):
                 x /= config.screen_width
-            elif isinstance(xpos_org, renpy.atl.position):
+            elif check_new_position_type(xpos_org):
                 x = renpy.atl.position.from_any(int(x))
                 # x = int(x)
 
@@ -2771,7 +2773,7 @@ init 1 python in _viewers:
                 y = int(y)
             elif isinstance(ypos_org, float):
                 y /= config.screen_height
-            elif isinstance(ypos_org, renpy.atl.position):
+            elif check_new_position_type(ypos_org):
                 y = renpy.atl.position.from_any(int(y))
                 # y = int(y)
 

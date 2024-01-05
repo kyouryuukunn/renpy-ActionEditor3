@@ -41,15 +41,13 @@ init python in _viewers:
     def action_editor_version():
         return "231223_1"
 
-    if check_version(24010100):
-        def position_compatible(pos):
-            if isinstance(pos, renpy.atl.position):
-                return pos.absolute
-            else:
-                return pos
-    else:
-        def position_compatible(pos):
-            return pos
+    def check_new_position_type(v):
+        if not check_version(24010100):
+            return False
+        elif isinstance(v, renpy.atl.position):
+            return True
+        else:
+            return False
 
     if check_version(23032500):
         euler_slerp = renpy.display.quaternion.euler_slerp
@@ -217,13 +215,13 @@ init -1598 python in _viewers:
         state = getattr(d, "state", None)
         for p in {"xpos", "ypos", "xanchor", "yanchor"}:
             v = getattr(pos, p, None)
-            if isinstance(v, (int, float)):
-                image_state_org[current_scene][layer][tag][p] = v
-            elif isinstance(v, renpy.atl.position):
+            if check_new_position_type(v):
                 if v.absolute == 0:
                     v = float(v.relative)
                 elif v.relative == 0:
                     v = int(v.absolute)
+                camera_state_org[current_scene][p] = v
+            else:
                 camera_state_org[current_scene][p] = v
         for p in {"xoffset", "yoffset"}:
             camera_state_org[current_scene][p] = getattr(pos, p, None)
@@ -299,13 +297,13 @@ init -1598 python in _viewers:
                 state = getattr(d, "state", None)
                 for p in {"xpos", "ypos", "xanchor", "yanchor", "xoffset", "yoffset"}:
                     v = getattr(pos, p, None)
-                    if isinstance(v, (int, float)):
-                        image_state_org[current_scene][layer][tag][p] = v
-                    elif isinstance(v, renpy.atl.position):
+                    if check_new_position_type(v):
                         if v.absolute == 0:
                             v = float(v.relative)
                         elif v.relative == 0:
                             v = int(v.absolute)
+                        image_state_org[current_scene][layer][tag][p] = v
+                    else:
                         image_state_org[current_scene][layer][tag][p] = v
                 for p in {"xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
@@ -545,12 +543,10 @@ init -1598 python in _viewers:
                 v = state[prop]
             else:
                 v = get_default(prop)
-        if isinstance(v, int):
+        if isinstance(v, int) or check_new_position_type(v):
             return True
-        elif isinstance(v, float):
+        else:
             return False
-        elif isinstance(v, renpy.atl.position):
-            return True
 
 
     def reset(key_list, time=None):
@@ -613,7 +609,7 @@ init -1598 python in _viewers:
                     elif v < 0:
                         v = 0
                     v = int(v)
-                elif isinstance(get_value(key, default=True), renpy.atl.position):
+                elif check_new_position_type(get_value(key, default=True)):
                     if not is_force_plus(prop):
                         v = renpy.atl.position.from_any(v) - renpy.atl.position.from_any(persistent._wide_range)
                     # elif v < 0:
@@ -631,7 +627,7 @@ init -1598 python in _viewers:
                     elif v < 0:
                         v = 0
                     v = int(v)
-                elif isinstance(get_value(key, default=True), renpy.atl.position):
+                elif check_new_position_type(get_value(key, default=True)):
                     if not is_force_plus(prop):
                         v = renpy.atl.position.from_any(v) - renpy.atl.position.from_any(persistent._narrow_range)
                     # elif v < 0:
@@ -660,10 +656,10 @@ init -1598 python in _viewers:
         if force_plus:
             return value
         else:
-            if isinstance(value, (int, float)):
-                return value + range
-            elif isinstance(value, renpy.atl.position):
+            if check_new_position_type(value):
                 return value + renpy.atl.position(range)
+            else:
+                return value + range
 
 
     def set_keyframe(key, value, recursion=False, time=None):
@@ -2040,15 +2036,15 @@ init -1598 python in _viewers:
                         v = v[index]
 
                     if isinstance(new, int):
-                        if isinstance(v, float):
-                            v = int(v)
-                        elif isinstance(v, renpy.atl.position):
+                        if check_new_position_type(v):
                             v = int(v.absolute)
+                        elif isinstance(new, float):
+                            v = int(v)
                     elif isinstance(new, float):
-                        if isinstance(v, int):
-                            v = float(v)
-                        elif isinstance(v, renpy.atl.position):
+                        if check_new_position_type(v):
                             v = float(v.relative)
+                        elif isinstance(new, int):
+                            v = float(v)
                     return v
                 break
         else:
