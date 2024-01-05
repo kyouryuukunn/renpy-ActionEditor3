@@ -863,21 +863,21 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                             action [SelectedIf(get_value(p, scene_keyframes[current_scene][1], True)), 
                                             Function(_viewers.toggle_boolean_property, p)]
                                     else:
-                                        if is_force_plus(p):
-                                            $bar_value = value
-                                        else:
-                                            $bar_value = value + value_range
-                                            $value_range = value_range*2
                                         if isinstance(value, (int, float)):
+                                            if is_force_plus(p):
+                                                $bar_value = value
+                                            else:
+                                                $bar_value = value + value_range
+                                                $value_range = value_range*2
                                             textbutton value_format.format(value):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, p) style_group "action_editor_b"
+                                            bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                                xalign 1. yalign .5 style "action_editor_bar"
                                         elif isinstance(value, renpy.atl.position):
                                             textbutton value_format.format(value.absolute, value.relative):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, p) style_group "action_editor_b"
-                                        bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                            xalign 1. yalign .5 style "action_editor_bar"
                         else:
                             hbox:
                                 textbutton "+ "+props_set_name:
@@ -941,21 +941,21 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                             action [SelectedIf(get_value(key, scene_keyframes[current_scene][1], True)), 
                                             Function(_viewers.toggle_boolean_property, key)]
                                     else:
-                                        if is_force_plus(p):
-                                            $bar_value = value
-                                        else:
-                                            $bar_value = value + value_range
-                                            $value_range = value_range*2
                                         if isinstance(value, (int, float)):
+                                            if is_force_plus(p):
+                                                $bar_value = value
+                                            else:
+                                                $bar_value = value + value_range
+                                                $value_range = value_range*2
                                             textbutton value_format.format(value):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, key) style_group "action_editor_b"
+                                            bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
+                                                xalign 1. yalign .5 style "action_editor_bar"
                                         elif isinstance(value, renpy.atl.position):
                                             textbutton value_format.format(value.absolute, value.relative):
                                                 action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
                                                 alternate Function(reset, key) style_group "action_editor_b"
-                                        bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
-                                            xalign 1. yalign .5 style "action_editor_bar"
                         else:
                             hbox:
                                 textbutton "+ "+props_set_name:
@@ -1407,7 +1407,7 @@ init 1 python in _viewers:
         return pos
 
 
-    def pos_to_value(y, use_wide_range, force_plus):
+    def pos_to_value(y, use_wide_range, force_plus, key=None):
         if use_wide_range:
             range = persistent._graphic_editor_wide_range
         else:
@@ -1426,14 +1426,33 @@ init 1 python in _viewers:
                 value = -range
         if value > range:
             value = range
+        if key is not None:
+            if isinstance(get_value(key, default=True), float):
+                value = float(value)
+            elif isinstance(get_value(key, default=True), int):
+                value = int(value)
+            elif isinstance(get_value(key, default=True), renpy.atl.position):
+                value = int(value)
         return value
 
 
-    def value_to_pos(value, range, force_plus):
+    def value_to_pos(value, range, force_plus, key=None):
         barheight = config.screen_height*(1-preview_size)-time_column_height
         if force_plus:
             frac = value/float(range)
         else:
+            if isinstance(value, (int, float)):
+                pass
+            elif isinstance(value, renpy.atl.position):
+                if isinstance(key, tuple):
+                    n, l, p = key
+                else:
+                    p = key
+                if p in ("xpos", "xanchor"):
+                    scale = config.screen_width
+                elif p in ("ypos", "yanchor"):
+                    scale = config.screen_height
+                value = get_absolute_from_pos(value, scale)
             frac = value/float(range)*0.5 + 0.5
         pos = barheight - key_ysize - frac*(barheight - 3*key_half_ysize)
         if pos > barheight - key_ysize:
@@ -1449,7 +1468,7 @@ init 1 python in _viewers:
             range = persistent._graphic_editor_wide_range
         else:
             range = persistent._graphic_editor_narrow_range
-        return value_to_pos(value, range, force_plus)
+        return value_to_pos(value, range, force_plus, key)
 
 
     def key_drag_changed(pos, key, time, is_sound=False, in_graphic_mode=None):
@@ -1478,10 +1497,19 @@ init 1 python in _viewers:
             time = goal
         if in_graphic_mode:
             use_wide_range = is_wide_range(key)
-            value = pos_to_value(y, use_wide_range, is_force_plus(p))
+            value = pos_to_value(y, use_wide_range, is_force_plus(p), key)
             vchanged = generate_changed(key)
             vchanged(to_changed_value(value, is_force_plus(p), use_wide_range), time)
         return time
+
+
+    def get_absolute_from_pos(pos, scale):
+        if isinstance(pos, int):
+            return pos
+        elif isinstance(pos, float):
+            return int(pos * scale)
+        elif isinstance(pos, renpy.atl.position):
+            return int(pos.absolute + pos.relative * scale)
 
 
     def absolute_pos(st, at):
@@ -2161,8 +2189,8 @@ init 1 python in _viewers:
 
 
         def warperkey_drag_changed(self, y):
-            bottom_pos = value_to_pos(self.last_v, self.range, self.force_plus)
-            top_pos = value_to_pos(self.v, self.range, self.force_plus)
+            bottom_pos = value_to_pos(self.last_v, self.range, self.force_plus, self.key)
+            top_pos = value_to_pos(self.v, self.range, self.force_plus, self.key)
             if top_pos < bottom_pos:
                 top_pos, bottom_pos = bottom_pos, top_pos
             if y >= top_pos:
@@ -2256,11 +2284,11 @@ init 1 python in _viewers:
         def knot_num_to_pos(self):
             knots = splines[self.scene][self.key][self.key_time]
             knot = knots[self.knot_num]
-            return value_to_pos(knot, self.range, self.force_plus)
+            return value_to_pos(knot, self.range, self.force_plus, self.key)
 
 
         def knot_drag_changed(self, y):
-            v = pos_to_value(y, is_wide_range(self.key), self.force_plus)
+            v = pos_to_value(y, is_wide_range(self.key), self.force_plus, self.key)
             if self.int_type:
                 v = int(v)
             else:
@@ -2390,7 +2418,7 @@ init 1 python in _viewers:
                         if self.in_graphic_mode:
                             time = pos_to_time(x)
                             use_wide_range = is_wide_range(self.key)
-                            value = pos_to_value(y, use_wide_range, self.force_plus)
+                            value = pos_to_value(y, use_wide_range, self.force_plus, self.key)
                             generate_changed(self.key)(to_changed_value(value, self.force_plus, use_wide_range), time)
                         else:
                             time = pos_to_time(x)
@@ -2559,11 +2587,11 @@ init 1 python in _viewers:
 
         def value_to_pos(self):
             xpos = get_value((self.tag, self.layer, "xpos"), self.time, True, self.scene_num)
-            xpos = get_absolute_pos(xpos, config.screen_width)
+            xpos = get_absolute_from_pos(xpos, config.screen_width)
             xpos *= preview_size
 
             ypos = get_value((self.tag, self.layer, "ypos"), self.time, True, self.scene_num)
-            ypos = get_absolute_pos(ypos, config.screen_height)
+            ypos = get_absolute_from_pos(ypos, config.screen_height)
             ypos *= preview_size
 
             return (xpos, ypos)
@@ -2837,12 +2865,12 @@ init 1 python in _viewers:
 
         def value_to_pos(self):
             xpos = get_value("xpos", self.time, True, self.scene_num)
-            xpos = get_absolute_pos(xpos, config.screen_width)
+            xpos = get_absolute_from_pos(xpos, config.screen_width)
             xpos *= preview_size
             xpos += self.xoffset
 
             ypos = get_value("ypos", self.time, True, self.scene_num)
-            ypos = get_absolute_pos(ypos, config.screen_height)
+            ypos = get_absolute_from_pos(ypos, config.screen_height)
             ypos *= preview_size
             ypos += self.yoffset
 

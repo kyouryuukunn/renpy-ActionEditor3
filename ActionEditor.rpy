@@ -41,15 +41,6 @@ init python in _viewers:
     def action_editor_version():
         return "231223_1"
 
-    def get_absolute_pos(pos, scale):
-        if isinstance(pos, int):
-            return pos
-        elif isinstance(pos, float):
-            return int(pos * scale)
-        elif isinstance(pos, renpy.atl.position):
-            return int(pos.absolute + pos.relative * scale)
-
-
     if check_version(24010100):
         def position_compatible(pos):
             if isinstance(pos, renpy.atl.position):
@@ -554,7 +545,12 @@ init -1598 python in _viewers:
                 v = state[prop]
             else:
                 v = get_default(prop)
-        return isinstance(v, int)
+        if isinstance(v, int):
+            return True
+        elif isinstance(v, float):
+            return False
+        elif isinstance(v, renpy.atl.position):
+            return True
 
 
     def reset(key_list, time=None):
