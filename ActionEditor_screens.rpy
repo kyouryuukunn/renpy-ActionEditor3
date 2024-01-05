@@ -1005,6 +1005,8 @@ screen _input_screen(message=_("type value"), default=""):
     key "game_menu" action Return("")
     if isinstance(default, float):
         $default = round(default, 2)
+    elif default is None:
+        $default = "None"
 
     frame:
         style_group "action_editor_input"
