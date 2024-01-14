@@ -56,6 +56,13 @@ init python in _viewers:
     else:
         euler_slerp = None
 
+    def get_layers():
+        r = []
+        for l in config.layers:
+            if l not in not_included_layer:
+                r.append(l)
+        return r
+
     #z -> y -> x order roate
     def rotate_matrix2(_, x, y, z):
         from math import sin, cos, pi
@@ -180,7 +187,7 @@ init -1598 python in _viewers:
 
 
     def action_editor_init():
-        global image_state, image_state_org, camera_state_org, movie_cache
+        global image_state, image_state_org, camera_state_org, movie_cache, third_view_child
 
         sle = renpy.game.context().scene_lists
         # layer->tag->property->value
@@ -191,64 +198,69 @@ init -1598 python in _viewers:
         image_state.append({})
         camera_state_org.append({})
         movie_cache = {}
-        d = sle.camera_transform["master"]
+        third_view_child = {}
 
-        # child = getattr(d, "child", None)
-        # child = getattr(child, "child", None)
-        # if child is not None:
-        #     renpy.store._viewers.at_clauses_flag = True
 
-        child = getattr(d, "child", None)
-        at_list = []
-        while child is not None and type(child) is not renpy.display.layout.MultiBox:
-            trans = get_transform_name(child)
-            if trans is not None:
-                at_list.append(trans)
-            child = getattr(child, "child", None)
-        at_list.reverse()
-        camera_state_org[current_scene]["at_list"] = at_list
+        for layer in get_layers():
+            d = sle.camera_transform[layer]
 
-        #cameraはget_placementを使用すると座標が所得できない
-        # if d is not None:
-        #     pos = renpy.get_placement(d)
-        pos = d
-        state = getattr(d, "state", None)
-        for p in {"xpos", "ypos", "xanchor", "yanchor"}:
-            v = getattr(pos, p, None)
-            if check_new_position_type(v):
-                if v.absolute == 0:
-                    v = float(v.relative)
-                elif v.relative == 0:
-                    v = int(v.absolute)
-                camera_state_org[current_scene][p] = v
-            else:
-                camera_state_org[current_scene][p] = v
-        for p in {"xoffset", "yoffset"}:
-            camera_state_org[current_scene][p] = getattr(pos, p, None)
-        for p in camera_props:
-            if p not in camera_state_org[current_scene]:
-                if p in ("matrixtransform", "matrixcolor"):
-                    for prop, v in load_matrix(p, getattr(state, p, None)):
+            # child = getattr(d, "child", None)
+            # child = getattr(child, "child", None)
+            # if child is not None:
+            #     renpy.store._viewers.at_clauses_flag = True
+
+            child = getattr(d, "child", None)
+            at_list = []
+            while child is not None and type(child) is not renpy.display.layout.MultiBox:
+                trans = get_transform_name(child)
+                if trans is not None:
+                    at_list.append(trans)
+                child = getattr(child, "child", None)
+            at_list.reverse()
+            camera_state_org[current_scene][layer] = {}
+            camera_state_org[current_scene][layer]["at_list"] = at_list
+
+            #cameraはget_placementを使用すると座標が所得できない
+            # if d is not None:
+            #     pos = renpy.get_placement(d)
+            pos = d
+            state = getattr(d, "state", None)
+            for p in {"xpos", "ypos", "xanchor", "yanchor"}:
+                v = getattr(pos, p, None)
+                if check_new_position_type(v):
+                    if v.absolute == 0:
+                        v = float(v.relative)
+                    elif v.relative == 0:
+                        v = int(v.absolute)
+                    camera_state_org[current_scene][layer][p] = v
+                else:
+                    camera_state_org[current_scene][layer][p] = v
+            for p in {"xoffset", "yoffset"}:
+                camera_state_org[current_scene][layer][p] = getattr(pos, p, None)
+            for p in camera_props:
+                if p not in camera_state_org[current_scene][layer]:
+                    if p in ("matrixtransform", "matrixcolor"):
+                        for prop, v in load_matrix(p, getattr(state, p, None)):
+                            if is_force_float(p) and isinstance(v, int):
+                                v = float(v)
+                            camera_state_org[current_scene][layer][prop] = v
+                    else:
+                        v = getattr(state, p, None)
                         if is_force_float(p) and isinstance(v, int):
                             v = float(v)
-                        camera_state_org[current_scene][prop] = v
-                else:
-                    v = getattr(state, p, None)
-                    if is_force_float(p) and isinstance(v, int):
-                        v = float(v)
-                    camera_state_org[current_scene][p] = v
-        for gn, ps in props_groups.items():
-            for p in camera_props:
-                if p in ps:
-                    pvs = getattr(state, gn, None)
-                    if pvs is not None:
-                        for gp, v in zip(ps, pvs):
-                            if is_force_float(gp) and isinstance(v, int):
-                                v = float(v)
-                            camera_state_org[current_scene][gp] = v
-                    break
+                        camera_state_org[current_scene][layer][p] = v
+            for gn, ps in props_groups.items():
+                for p in camera_props:
+                    if p in ps:
+                        pvs = getattr(state, gn, None)
+                        if pvs is not None:
+                            for gp, v in zip(ps, pvs):
+                                if is_force_float(gp) and isinstance(v, int):
+                                    v = float(v)
+                                camera_state_org[current_scene][layer][gp] = v
+                        break
 
-        for layer in config.layers:
+        for layer in get_layers():
             image_state_org[current_scene][layer] = {}
             image_state[current_scene][layer] = {}
             for image in sle.layers[layer]:
@@ -333,7 +345,7 @@ init -1598 python in _viewers:
                             break
 
         # init camera, layer and images
-        for layer in config.layers:
+        for layer in get_layers():
             renpy.scene(layer)
             sle.set_layer_at_list(layer, [], camera=True)
             sle.set_layer_at_list(layer, [])
@@ -402,14 +414,15 @@ init -1598 python in _viewers:
     #     return rv
 
 
-    def check_props_group(prop, tag=None, scene_num=None):
+    def check_props_group(key, scene_num=None):
+        tag, layer, prop = key
+        #tag = (None, "layer") express camera
         if prop.count("_") == 3 and prop.split("_")[0] in ("matrixtransform", "matrixcolor"):
             if scene_num is None:
                 scene_num = current_scene
-            if tag == "camera":
-                state = camera_state_org[scene_num]
+            if tag is None:
+                state = camera_state_org[scene_num][layer]
             else:
-                tag, layer = tag
                 state = get_image_state(layer, scene_num)[tag]
             gn = prop.split("_")[0]
 
@@ -517,10 +530,7 @@ init -1598 python in _viewers:
     def is_wide_range(key, scene_num=None):
         if scene_num is None:
             scene_num = current_scene
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-        else:
-            prop = key
+        tag, layer, prop = key
         if prop.count("_") == 3:
             sign, _, _, prop2 = prop.split("_")
             if sign in ("matrixtransform", "matrixcolor"):
@@ -535,10 +545,10 @@ init -1598 python in _viewers:
         if key in all_keyframes[current_scene]:
             v = all_keyframes[current_scene][key][-1][0]
         else:
-            if isinstance(key, tuple):
-                state = get_image_state(layer)[tag]
+            if tag is None:
+                state = camera_state_org[current_scene][layer]
             else:
-                state = camera_state_org[current_scene]
+                state = get_image_state(layer)[tag]
             if state[prop] is not None:
                 v = state[prop]
             else:
@@ -558,12 +568,11 @@ init -1598 python in _viewers:
         if not isinstance(key_list, list):
             key_list = [key_list]
         for key in key_list:
-            if isinstance(key, tuple):
-                tag, layer, prop = key
-                state = get_image_state(layer)[tag]
+            tag, layer, prop = key
+            if tag is None:
+                state = camera_state_org[current_scene][layer]
             else:
-                prop = key
-                state = camera_state_org[current_scene]
+                state = get_image_state(layer)[tag]
             v = state[prop]
             if v is None:
                 v = get_default(prop)
@@ -573,21 +582,21 @@ init -1598 python in _viewers:
 
 
     def image_reset():
-        key_list = [(tag, layer, prop) for layer in config.layers for tag, props in get_image_state(layer).items() for prop in props]
+        key_list = [(tag, layer, prop) for layer in get_layers() for tag, props in get_image_state(layer).items() for prop in props]
         reset(key_list)
 
 
     def camera_reset():
-        reset([p for p in camera_state_org[current_scene]])
+        key_list = [(None, layer, prop) for layer in get_layers() for prop in camera_state_org[current_scene][layer].keys()]
+        reset(key_list)
 
 
     def generate_changed(key):
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            state = get_image_state(layer)[tag]
+        tag, layer, prop = key
+        if tag is None:
+            state = camera_state_org[current_scene][layer]
         else:
-            prop = key
-            state = camera_state_org[current_scene]
+            state = get_image_state(layer)[tag]
         def changed(v, time=None, knot_number=None):
             if time is None:
                 time = current_time
@@ -663,14 +672,11 @@ init -1598 python in _viewers:
 
 
     def set_keyframe(key, value, recursion=False, time=None):
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            mkey = (tag, layer)
-            state = get_image_state(layer)[tag]
+        tag, layer, prop = key
+        if tag is None:
+            state = camera_state_org[current_scene][layer]
         else:
-            prop = key
-            mkey = "camera"
-            state = camera_state_org[current_scene]
+            state = get_image_state(layer)[tag]
         if time is None:
             time = current_time
         keyframes = all_keyframes[current_scene].get(key, [])
@@ -699,30 +705,28 @@ init -1598 python in _viewers:
                     (value, time, persistent._viewer_warper)]
         
         if not recursion:
-            check_result = check_props_group(prop, mkey)
+            check_result = check_props_group(key)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
                     ps_set = set(ps)
                     ps_set.remove(prop)
                     for p in ps_set:
-                        if isinstance(key, tuple):
-                            key2 = (tag, layer, p)
-                        else:
-                            key2 = p
+                        key2 = (tag, layer, p)
                         set_keyframe(key2, get_value(key2, default=True), True, time=time)
         if not recursion:
             for s in range(current_scene+1, len(scene_keyframes)):
-                for i in range(s, -1, -1):
-                    if camera_keyframes_exist(i):
-                        break
-                for p in camera_state_org[i]:
-                    if p in camera_state_org[s]:
-                        middle_value = get_value(p, scene_keyframes[s][1], False, i)
-                        if isinstance(middle_value, float):
-                            camera_state_org[s][p] = round(middle_value, 2)
-                        else:
-                            camera_state_org[s][p] = middle_value
+                for layer in get_layers():
+                    for i in range(s, -1, -1):
+                        if camera_keyframes_exist(i, layer):
+                            break
+                    for p in camera_state_org[i][layer]:
+                        if p in camera_state_org[s][layer]:
+                            middle_value = get_value((None, layer, p), scene_keyframes[s][1], False, i)
+                            if isinstance(middle_value, float):
+                                camera_state_org[s][layer][p] = round(middle_value, 2)
+                            else:
+                                camera_state_org[s][layer][p] = middle_value
 
 
     def generate_matrix_strings(args, matrix, ps, side_view=False):
@@ -780,146 +784,147 @@ init -1598 python in _viewers:
                     files = renpy.python.py_eval(times[current_time], locals=renpy.python.store_dicts["store.audio"])
                     renpy.music.play(files, channel, loop=False)
 
-        camera_check_points = []
-        viewer_check_points = []
-        loop = []
-        spline = []
-        for s, (_, t, _) in enumerate(scene_keyframes):
-            check_points = {}
-            vcheck_points = {}
-            camera_is_used = False
-            props_use_default = []
-            at_list = camera_state_org[0].get("at_list")
-            check_points["at_list"] = [(at_list, 0, None)]
+        for layer in get_layers():
+            camera_check_points = []
+            viewer_check_points = []
+            loop = []
+            spline = []
+            for s, (_, t, _) in enumerate(scene_keyframes):
+                check_points = {}
+                vcheck_points = {}
+                camera_is_used = False
+                props_use_default = []
+                check_points = {}
+                vcheck_points = {}
+                at_list = camera_state_org[0][layer].get("at_list")
+                check_points["at_list"] = [(at_list, 0, None)]
 
-            for prop in camera_state_org[s]:
-                if not exclusive_check(prop, s):
-                    continue
-                if prop in all_keyframes[s]:
-                    check_points[prop] = all_keyframes[s][prop]
-                    camera_is_used = True
-                else:
-                    if camera_state_org[s][prop] is not None:
-                        check_points[prop] = [(get_value(prop, default=False, scene_num=s), t, None)]
-                    elif prop not in not_used_by_default:
-                        check_points[prop] = [(get_value(prop, default=True, scene_num=s), t, None)]
-                        props_use_default.append(prop)
+                for prop in camera_state_org[s][layer]:
+                    if not exclusive_check((None, layer, prop), s):
+                        continue
+                    if (None, layer, prop) in all_keyframes[s]:
+                        check_points[prop] = all_keyframes[s][(None, layer, prop)]
+                        camera_is_used = True
+                    else:
+                        if camera_state_org[s][layer][prop] is not None:
+                            check_points[prop] = [(get_value((None, layer, prop), default=False, scene_num=s), t, None)]
+                        elif prop not in not_used_by_default:
+                            check_points[prop] = [(get_value((None, layer, prop), default=True, scene_num=s), t, None)]
+                            props_use_default.append(prop)
 
-            check_points["props_use_default"] = [(props_use_default, t, None)]
-            #focusing以外のグループプロパティーはここで纏める
-            included_gp = {}
-            for p in check_points:
-                check_result = check_props_group(p, "camera", s)
-                if check_result is not None:
-                    gn, ps = check_result
-                    if gn != "focusing" and gn not in included_gp:
-                        args = []
-                        for prop in ps:
-                            args.append(check_points[prop])
-                        group_cs = []
-                        for cs in zip(*args):
-                            v = tuple(c[0] for c in cs)
-                            if gn in ("matrixtransform", "matrixcolor"):
-                                v = generate_matrix_strings(v, gn, ps)
-                                v = renpy.python.py_eval(v)
-                            group_cs.append((v, cs[0][1], cs[0][2]))
-                        included_gp[gn] = (ps, group_cs)
-
-                        #viewer上ではmatrixtransformは符号と順番が反転する。回転順も反転するためz-y-x順の回転行列がないと対応不可
-                        if gn == "matrixtransform" and persistent._viewer_sideview:
-                            viewer_group_cs = []
-                            #ScaleMatrixのみ逆数をとる
-                            scale_ps = []
-                            for i, prop in enumerate(ps):
-                                _, _, _, p_name = prop.split("_")
-                                if p_name.startswith("scale"):
-                                    scale_ps.append(i)
+                check_points["props_use_default"] = [(props_use_default, t, None)]
+                #focusing以外のグループプロパティーはここで纏める
+                included_gp = {}
+                for p in check_points:
+                    check_result = check_props_group((None, layer, p), s)
+                    if check_result is not None:
+                        gn, ps = check_result
+                        if gn != "focusing" and gn not in included_gp:
+                            args = []
+                            for prop in ps:
+                                args.append(check_points[prop])
+                            group_cs = []
                             for cs in zip(*args):
-                                org_v = tuple(c[0] for c in cs)
-                                viewer_v = []
-                                for i, e in enumerate(org_v):
-                                    if i in scale_ps:
-                                        if e == 0:
-                                            viewer_v.append(1000.) #inf
+                                v = tuple(c[0] for c in cs)
+                                if gn in ("matrixtransform", "matrixcolor"):
+                                    v = generate_matrix_strings(v, gn, ps)
+                                    v = renpy.python.py_eval(v)
+                                group_cs.append((v, cs[0][1], cs[0][2]))
+                            included_gp[gn] = (ps, group_cs)
+
+                            #viewer上ではmatrixtransformは符号と順番が反転する。回転順も反転するためz-y-x順の回転行列がないと対応不可
+                            if gn == "matrixtransform" and persistent._viewer_sideview:
+                                viewer_group_cs = []
+                                #ScaleMatrixのみ逆数をとる
+                                scale_ps = []
+                                for i, prop in enumerate(ps):
+                                    _, _, _, p_name = prop.split("_")
+                                    if p_name.startswith("scale"):
+                                        scale_ps.append(i)
+                                for cs in zip(*args):
+                                    org_v = tuple(c[0] for c in cs)
+                                    viewer_v = []
+                                    for i, e in enumerate(org_v):
+                                        if i in scale_ps:
+                                            if e == 0:
+                                                viewer_v.append(1000.) #inf
+                                            else:
+                                                viewer_v.append(1.0/e)
                                         else:
-                                            viewer_v.append(1.0/e)
-                                    else:
-                                        viewer_v.append(-e)
-                                #matrixの順番を反転 marixの引数が3個単位と前提
-                                viewer_ps = []
-                                rviewer_v = []
-                                start_index = range(0, len(ps), 3)
-                                start_index.reverse()
-                                for i in start_index:
-                                    viewer_ps.extend((ps[i], ps[i+1], ps[i+2]))
-                                    rviewer_v.extend((viewer_v[i], viewer_v[i+1], viewer_v[i+2]))
+                                            viewer_v.append(-e)
+                                    #matrixの順番を反転 marixの引数が3個単位と前提
+                                    viewer_ps = []
+                                    rviewer_v = []
+                                    start_index = range(0, len(ps), 3)
+                                    start_index.reverse()
+                                    for i in start_index:
+                                        viewer_ps.extend((ps[i], ps[i+1], ps[i+2]))
+                                        rviewer_v.extend((viewer_v[i], viewer_v[i+1], viewer_v[i+2]))
 
-                                viewer_v = generate_matrix_strings(tuple(rviewer_v), gn, viewer_ps, True)
-                                viewer_v = renpy.python.py_eval(viewer_v)
-                                viewer_group_cs.append((viewer_v, cs[0][1], cs[0][2]))
-                            vcheck_points[gn] = viewer_group_cs
+                                    viewer_v = generate_matrix_strings(tuple(rviewer_v), gn, viewer_ps, True)
+                                    viewer_v = renpy.python.py_eval(viewer_v)
+                                    viewer_group_cs.append((viewer_v, cs[0][1], cs[0][2]))
+                                vcheck_points[gn] = viewer_group_cs
 
-            for gn, (ps, group_cs) in included_gp.items():
-                for prop in ps:
-                    del check_points[prop]
-                check_points[gn] = group_cs
+                for gn, (ps, group_cs) in included_gp.items():
+                    for prop in ps:
+                        del check_points[prop]
+                    check_points[gn] = group_cs
 
-            #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
-            #These properties are shown in side viewer(function property has danger of including blur)
-            if persistent._viewer_sideview:
-                for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "rotate", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
-                    if p in check_points:
-                        vcheck_points[p] = check_points[p]
-                vcheck_points["props_use_default"] = check_points["props_use_default"]
-                vcheck_points["at_list"] = check_points["at_list"]
+                #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
+                #These properties are shown in side viewer(function property has danger of including blur)
+                if persistent._viewer_sideview:
+                    for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "rotate", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
+                        if p in check_points:
+                            vcheck_points[p] = check_points[p]
+                    vcheck_points["props_use_default"] = check_points["props_use_default"]
+                    vcheck_points["at_list"] = check_points["at_list"]
 
-            if not camera_is_used and s > 0:
-                loop.append(loop[s-1])
-                spline.append(spline[s-1])
-                camera_check_points.append(camera_check_points[s-1])
-                viewer_check_points.append(viewer_check_points[s-1])
-            else:
-                loop.append({key+"_loop": loops[s][key] for key in loops[s] if not isinstance(key, tuple)})
-                spline.append({key+"_spline": splines[s][key] for key in splines[s] if not isinstance(key, tuple)})
-                camera_check_points.append(check_points)
-                viewer_check_points.append(vcheck_points)
+                if not camera_is_used and s > 0:
+                    loop.append(loop[s-1])
+                    spline.append(spline[s-1])
+                    camera_check_points.append(camera_check_points[s-1])
+                    viewer_check_points.append(viewer_check_points[s-1])
+                else:
+                    loop.append({key: loops[s][key] for key in loops[s] if key[0] is None and key[1] == layer})
+                    spline.append({key: splines[s][key] for key in splines[s] if key[0] is None and key[1] == layer})
+                    camera_check_points.append(check_points)
+                    viewer_check_points.append(vcheck_points)
 
-        image_check_points = []
-        for s, (_, t, _) in enumerate(scene_keyframes):
-            check_points = {}
-            for layer in config.layers:
+            image_check_points = []
+            for s, (_, t, _) in enumerate(scene_keyframes):
+                check_points = {}
                 state = get_image_state(layer, s)
-                check_points[layer] = {}
                 for tag in state:
-                    check_points[layer][tag] = {}
+                    check_points[tag] = {}
                     props_use_default = []
                     at_list = state[tag].get("at_list")
-                    check_points[layer][tag]["at_list"] = [(at_list, t, None)]
+                    check_points[tag]["at_list"] = [(at_list, t, None)]
                     for prop in state[tag]:
                         if not exclusive_check((tag, layer, prop), s):
                             continue
                         if (tag, layer, prop) in all_keyframes[s]:
-                            check_points[layer][tag][prop] = all_keyframes[s][(tag, layer, prop)]
+                            check_points[tag][prop] = all_keyframes[s][(tag, layer, prop)]
                         elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
-                            check_points[layer][tag][prop] = camera_check_points[s][prop]
+                            check_points[tag][prop] = camera_check_points[s][prop]
                         else:
                             if state[tag][prop] is not None:
-                                check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=False, scene_num=s), t, None)]
+                                check_points[tag][prop] = [(get_value((tag, layer, prop), default=False, scene_num=s), t, None)]
                             elif prop not in not_used_by_default:
-                                check_points[layer][tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
+                                check_points[tag][prop] = [(get_value((tag, layer, prop), default=True, scene_num=s), t, None)]
                                 props_use_default.append(prop)
 
-                    check_points[layer][tag]["props_use_default"] = [(props_use_default, t, None)]
+                    check_points[tag]["props_use_default"] = [(props_use_default, t, None)]
                     #focusing以外のグループプロパティーはここで纏める
                     included_gp = {}
-                    for p in check_points[layer][tag]:
-                        check_result = check_props_group(p, (tag, layer), s)
+                    for p in check_points[tag]:
+                        check_result = check_props_group((tag, layer, p), s)
                         if check_result is not None:
                             gn, ps = check_result
                             if gn != "focusing":
                                 args = []
                                 for prop in ps:
-                                    args.append(check_points[layer][tag][prop])
+                                    args.append(check_points[tag][prop])
                                 group_cs = []
                                 for cs in zip(*args):
                                     v = tuple(c[0] for c in cs)
@@ -930,33 +935,33 @@ init -1598 python in _viewers:
                                 included_gp[gn] = (ps, group_cs)
                     for gn, (ps, group_cs) in included_gp.items():
                         for prop in ps:
-                            del check_points[layer][tag][prop]
-                        check_points[layer][tag][gn] = group_cs
-                    if persistent._viewer_focusing and perspective_enabled(s, time=t):
-                        if "blur" in check_points[layer][tag]:
-                            del check_points[layer][tag]["blur"]
+                            del check_points[tag][prop]
+                        check_points[tag][gn] = group_cs
+                    if persistent._viewer_focusing and perspective_enabled(layer, s, time=t):
+                        if "blur" in check_points[tag]:
+                            del check_points[tag]["blur"]
                     else:
                         for p in ("focusing", "dof"):
-                            if p in check_points[layer][tag]:
-                                del check_points[layer][tag][p]
-            image_check_points.append(check_points)
+                            if p in check_points[tag]:
+                                del check_points[tag][p]
+                image_check_points.append(check_points)
 
-            for css in camera_check_points:
-                for p in props_groups["focusing"]:
-                    if p in css:
-                        del css[p]
-        if play:
-            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
-             camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes),
-             viewer_check_points=viewer_check_points, zorder_list=zorder_list, loop=loop, spline=spline, start_time=0., end_time=get_animation_delay())))
-        else:
-            renpy.show("action_preview", what=Transform(function=renpy.curry(viewer_transform)(
-             camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes),
-             viewer_check_points=viewer_check_points, zorder_list=zorder_list, loop=loop, spline=spline, time=current_time)))
+                for css in camera_check_points:
+                    for p in props_groups["focusing"]:
+                        if p in css:
+                            del css[p]
+            if play:
+                renpy.show("action_preview_"+layer, what=Transform(function=renpy.curry(viewer_transform)(
+                 camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes),
+                 viewer_check_points=viewer_check_points, zorder_list=zorder_list, loop=loop, spline=spline, start_time=0., end_time=get_animation_delay(), layer=layer)))
+            else:
+                renpy.show("action_preview_"+layer, what=Transform(function=renpy.curry(viewer_transform)(
+                 camera_check_points=camera_check_points, image_check_points=image_check_points, scene_checkpoints=deepcopy(scene_keyframes),
+                 viewer_check_points=viewer_check_points, zorder_list=zorder_list, loop=loop, spline=spline, time=current_time, layer=layer)))
 
 
     def viewer_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, viewer_check_points,
-                         zorder_list, loop, spline=None, subpixel=True, time=None, start_time=None, end_time=None):
+                         zorder_list, loop, spline=None, subpixel=True, time=None, start_time=None, end_time=None, layer=None):
         global current_time, playing
         if time is None:
             time = st
@@ -977,16 +982,16 @@ init -1598 python in _viewers:
                     child = FixedTimeDisplayable(Transform(function=renpy.curry(
                      camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i],
                      scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[i],
-                     zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i)), time, at)
+                     zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i, layer=layer)), time, at)
                 else:
                     old_widget = FixedTimeDisplayable(Transform(function=renpy.curry(
                      camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1],
                      scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[i-1],
-                     zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], subpixel=subpixel, time=time, scene_num=i-1)), time, at)
+                     zorder_list=zorder_list, loop=loop[i-1], spline=spline[i-1], subpixel=subpixel, time=time, scene_num=i-1, layer=layer)), time, at)
                     new_widget = FixedTimeDisplayable(Transform(function=renpy.curry(
                      camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i],
                      scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[i],
-                     zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i)), time, at)
+                     zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i, layer=layer)), time, at)
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
                     during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, time - checkpoint, 0)
                     child = during_transition_displayable
@@ -995,7 +1000,7 @@ init -1598 python in _viewers:
             child = Transform(function=renpy.curry(camera_transform)(
              camera_check_points=camera_check_points[0], image_check_points=image_check_points[0],
              scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[0], 
-             zorder_list=zorder_list, loop=loop[0], spline=spline[0], subpixel=subpixel, time=time, scene_num=0))
+             zorder_list=zorder_list, loop=loop[0], spline=spline[0], subpixel=subpixel, time=time, scene_num=0, layer=layer))
         if not persistent._viewer_legacy_gui:
             if aspect_16_9:
                 box.add(Transform(zoom=preview_size, xpos=(1 - preview_size)/2)(child))
@@ -1055,31 +1060,34 @@ init -1598 python in _viewers:
         height = renpy.config.screen_height
         return Transform(align=(.5, .5), matrixtransform=Matrix.offset(width/2, height/2, z11))(camera_model)
 
-    def camera_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, viewer_check_points, zorder_list, loop, spline=None, subpixel=True, time=None, scene_num=0):
+    def camera_transform(tran, st, at, camera_check_points, image_check_points, scene_checkpoints, viewer_check_points, zorder_list, loop, spline=None, subpixel=True, time=None, scene_num=0, layer=None):
         global third_view_child
+
         image_box = renpy.display.layout.MultiBox(layout='fixed')
         sideview_image_box = renpy.display.layout.MultiBox(layout='fixed')
-        for layer in image_check_points:
-            for tag, zorder in zorder_list[scene_num][layer]:
-                if tag in image_check_points[layer]:
-                    image_loop = {key[2]+"_loop": loops[scene_num][key] for key in loops[scene_num] if isinstance(key, tuple) and key[0] == tag and key[1] == layer}
-                    image_spline = {key[2]+"_spline": splines[scene_num][key] for key in splines[scene_num] if isinstance(key, tuple) and key[0] == tag and key[1] == layer}
-                    for p in props_groups["focusing"]:
-                        image_loop[p+"_loop"] = loops[scene_num][p]
-                        image_spline[p+"_spline"] = splines[scene_num][p]
-                    image_box.add(Transform(function=renpy.curry(transform)(
-                     check_points=image_check_points[layer][tag],
-                     loop=image_loop, spline=image_spline,
-                     subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints)))
+        for tag, zorder in zorder_list[scene_num][layer]:
+            if tag in image_check_points:
+                image_loop = {key[2]+"_loop": loops[scene_num][key] for key in loops[scene_num] if key[0] == tag and key[1] == layer}
+                image_spline = {key[2]+"_spline": splines[scene_num][key] for key in splines[scene_num] if key[0] == tag and key[1] == layer}
+                for p in props_groups["focusing"]:
+                    image_loop[p+"_loop"] = loops[scene_num][(None, layer, p)]
+                    image_spline[p+"_spline"] = splines[scene_num][(None, layer, p)]
+                image_box.add(Transform(function=renpy.curry(transform)(
+                 check_points=image_check_points[tag],
+                 loop=image_loop, spline=image_spline,
+                 subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints, layer=layer)))
 
-                    if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(scene_num) and not persistent._viewer_legacy_gui:
-                        sideview_image_box.add(Transform(function=renpy.curry(transform)(
-                         check_points=image_check_points[layer][tag], loop=image_loop, spline=image_spline, subpixel=subpixel,
-                         time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints, side_view=True)))
+                if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
+                    sideview_image_box.add(Transform(function=renpy.curry(transform)(
+                     check_points=image_check_points[tag], loop=image_loop, spline=image_spline, subpixel=subpixel,
+                     time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints, side_view=True, layer=layer)))
 
-        if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(scene_num) and not persistent._viewer_legacy_gui:
-            preview_box = renpy.display.layout.MultiBox(layout='fixed')
-            preview_box.add(sideview_image_box)
+        camera_loop = {key[2]+"_loop": loop[key] for key in loop if key[1] == layer}
+        camera_spline = {key[2]+"_spline": spline[key] for key in spline if key[1] == layer}
+        if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
+            third_view_child[layer] = []
+            sideview_box = renpy.display.layout.MultiBox(layout='fixed')
+            sideview_box.add(sideview_image_box)
 
             perspective = camera_check_points["perspective"][0][0]
             if perspective is True:
@@ -1092,35 +1100,33 @@ init -1598 python in _viewers:
 
             camera_model = define_camera_model(z11)
 
-            # preview_box.add(camera_model)
             camera_model = Transform(function=renpy.curry(transform)(
-                        check_points=viewer_check_points, loop=loop, spline=spline, subpixel=subpixel, time=time, 
-                        scene_num=scene_num, scene_checkpoints=scene_checkpoints, camera=True, side_view=True))(camera_model)
+                        check_points=viewer_check_points, loop=camera_loop, spline=camera_spline, subpixel=subpixel, time=time, 
+                        scene_num=scene_num, scene_checkpoints=scene_checkpoints, camera=True, side_view=True, layer=layer))(camera_model)
 
-            preview_box.add(camera_model)
+            sideview_box.add(camera_model)
 
             inf = 1000000
-            third_view_child = []
             for i, r in enumerate(((-90, 0, 0), (0, -90, 0), (0, 0, 0))):
-                sd = Transform(perspective=(0, inf, inf*10), matrixtransform=Matrix.scale(0.2, 0.2, 1.0)*Matrix.rotate(*r))(preview_box)
+                sd = Transform(perspective=(0, inf, inf*10), matrixtransform=Matrix.scale(0.2, 0.2, 1.0)*Matrix.rotate(*r))(sideview_box)
                 sd = renpy.store.AlphaMask(sd, Solid("#000"))
 
                 if aspect_16_9:
                     sd = Transform(zoom=(1 - preview_size)/2, ypos=i*preview_size/3)(sd)
                 else:
                     sd = Transform(zoom=(1 - preview_size)/2, xpos=preview_size, ypos=i*preview_size/3)(sd)
-                third_view_child.append(sd)
+                third_view_child[layer].append(sd)
 
         camera_box = renpy.display.layout.MultiBox(layout='fixed')
         #camera position doesn't have effect whithout box
         camera_box.add(Transform(function=renpy.curry(transform)(
-         check_points=camera_check_points, loop=loop, spline=spline,
-         subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints))(image_box))
+         check_points=camera_check_points, loop=camera_loop, spline=camera_spline,
+         subpixel=subpixel, time=time, camera=True, scene_num=scene_num, scene_checkpoints=scene_checkpoints, layer=layer))(image_box))
         tran.set_child(camera_box)
         return 0
 
 
-    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, scene_num=None, scene_checkpoints=None, side_view=False):
+    def transform(tran, st, at, check_points, loop, spline=None, subpixel=True, crop_relative=True, time=None, camera=False, scene_num=None, scene_checkpoints=None, side_view=False, layer=None):
         # check_points = { prop: [ (value, time, warper).. ] }
         if subpixel is not None:
             tran.subpixel = subpixel
@@ -1131,7 +1137,7 @@ init -1598 python in _viewers:
         group_cache = {}
         sle = renpy.game.context().scene_lists
         if in_editor and camera and not side_view:
-            tran.perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
+            tran.perspective = get_value((None, layer, "perspective"), scene_keyframes[scene_num][1], True)
 
         for p, cs in check_points.items():
 
@@ -1199,10 +1205,10 @@ init -1598 python in _viewers:
                                         image_zpos += tran.matrixtransform.zdw
                                     camera_zpos = 0
                                     if in_editor:
-                                        camera_zpos = get_value("zpos", default=True, scene_num=scene_num)
+                                        camera_zpos = get_value((None, layer, "zpos"), default=True, scene_num=scene_num)
                                     else:
-                                        if "master" in sle.camera_transform:
-                                            props = sle.camera_transform["master"]
+                                        if layer in sle.camera_transform:
+                                            props = sle.camera_transform[layer]
                                             if props.zpos:
                                                 camera_zpos = props.zpos
                                     result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
@@ -1228,10 +1234,10 @@ init -1598 python in _viewers:
                                 image_zpos += tran.matrixtransform.zdw
                             camera_zpos = 0
                             if in_editor:
-                                camera_zpos = get_value("zpos", default=True, scene_num=scene_num)
+                                camera_zpos = get_value((None, layer, "zpos"), default=True, scene_num=scene_num)
                             else:
-                                if "master" in sle.camera_transform:
-                                    props = sle.camera_transform["master"]
+                                if layer in sle.camera_transform:
+                                    props = sle.camera_transform[layer]
                                     if props.zpos:
                                         camera_zpos = props.zpos
                             result = camera_blur_amount(image_zpos, camera_zpos, dof, focusing)
@@ -1319,7 +1325,7 @@ init -1598 python in _viewers:
 
         if in_editor:
             point_to = getattr(tran, "point_to", None)
-            perspective = get_value("perspective", scene_keyframes[scene_num][1], True)
+            perspective = get_value((None, layer, "perspective"), scene_keyframes[scene_num][1], True)
             if perspective and (check_version(23032300) and isinstance(point_to, renpy.display.transform.Camera) or (side_view and camera)):
                 if perspective is True:
                     perspective = renpy.config.perspective
@@ -1333,9 +1339,9 @@ init -1598 python in _viewers:
                     width = renpy.config.screen_width
                     height = renpy.config.screen_height
 
-                    placement = (get_value("xpos", default=True, scene_num=scene_num), get_value("ypos", default=True, scene_num=scene_num), get_value("xanchor", default=True, scene_num=scene_num), get_value("yanchor", default=True, scene_num=scene_num), get_value("xoffset", default=True, scene_num=scene_num), get_value("yoffset", default=True, scene_num=scene_num), True)
+                    placement = (get_value((None, layer, "xpos"), default=True, scene_num=scene_num), get_value((None, layer, "ypos"), default=True, scene_num=scene_num), get_value((None, layer, "xanchor"), default=True, scene_num=scene_num), get_value((None, layer, "yanchor"), default=True, scene_num=scene_num), get_value((None, layer, "xoffset"), default=True, scene_num=scene_num), get_value((None, layer, "yoffset"), default=True, scene_num=scene_num), True)
                     xplacement, yplacement = renpy.display.core.place(width, height, width, height, placement)
-                    zpos = get_value("zpos", default=True, scene_num=scene_num)
+                    zpos = get_value((None, layer, "zpos"), default=True, scene_num=scene_num)
 
                     # direct displayable toward camera
                     if point_to is not None and isinstance(point_to, renpy.display.transform.Camera):
@@ -1551,14 +1557,11 @@ init -1598 python in _viewers:
         #check exclusive properties
         if scene_num is None:
             scene_num = current_scene
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            state = get_image_state(layer, scene_num)
-            camera = False
+        tag, layer, prop = key
+        if tag is None:
+            state = camera_state_org[scene_num][layer]
         else:
-            prop = key
-            state = camera_state_org[scene_num]
-            camera = True
+            state = get_image_state(layer, scene_num)
 
         for set1, set2 in exclusive:
             if prop in set1 or prop in set2:
@@ -1569,19 +1572,13 @@ init -1598 python in _viewers:
                     one_set = set2
                     other_set = set1
                 for p in one_set:
-                    if camera:
-                        key2 = p
-                    else:
-                        key2 = (tag, layer, p)
+                    key2 = (tag, layer, p)
                     if key2 in all_keyframes[scene_num]:
                         return True
                     if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
                         return True
                 for p in other_set:
-                    if camera:
-                        key2 = p
-                    else:
-                        key2 = (tag, layer, p)
+                    key2 = (tag, layer, p)
                     if key2 in all_keyframes[scene_num]:
                         return False
                     if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
@@ -1826,10 +1823,7 @@ init -1598 python in _viewers:
     def edit_any(key, time=None):
         if time is None:
             time = current_time
-        if isinstance(key, tuple):
-            prop = key[2]
-        else:
-            prop = key
+        prop = key[2]
         value = get_value(key, time)
         if prop in menu_props:
             global _return
@@ -1858,11 +1852,11 @@ init -1598 python in _viewers:
 
 
     def toggle_boolean_property(key):
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            value_org = get_image_state(layer)[tag][prop]
+        tag, layer, prop = key
+        if tag is None:
+            value_org = camera_state_org[current_scene][layer][key]
         else:
-            value_org = camera_state_org[current_scene][key]
+            value_org = get_image_state(layer)[tag][prop]
         value = get_value(key, scene_keyframes[current_scene][1], True)
         #assume default is False
         if value == value_org or (not value and not value_org):
@@ -1872,18 +1866,18 @@ init -1598 python in _viewers:
         change_time(current_time)
 
 
-    def perspective_enabled(scene_num=None, time=None):
+    def perspective_enabled(layer, scene_num=None, time=None):
         if scene_num is None:
             scene_num = current_scene
         if time is None:
             time = scene_keyframes[scene_num][1]
-        v = get_value("perspective", scene_keyframes[scene_num][1], True, scene_num)
+        v = get_value((None, layer, "perspective"), scene_keyframes[scene_num][1], True, scene_num)
         return v or (v is not False and v == 0)
 
 
     def remove_image(layer, tag):
         def remove_keyframes(layer, tag):
-            for k in (k for k in all_keyframes[current_scene] if isinstance(k, tuple) and k[0] == tag and k[1] == layer):
+            for k in (k for k in all_keyframes[current_scene] if k[0] is not None and k[0] == tag and k[1] == layer):
                 del all_keyframes[current_scene][k]
 
         renpy.hide(tag, layer)
@@ -1902,18 +1896,13 @@ init -1598 python in _viewers:
         if scene_num is None:
             scene_num = current_scene
 
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            if prop in props_groups["focusing"]:
-                key = prop
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            mkey = (tag, layer)
-            state = get_image_state(layer, scene_num)[tag]
+        tag, layer, prop = key
+        if tag is not None and prop in props_groups["focusing"]:
+            key = (None, layer, prop)
+        if tag is None:
+            state = camera_state_org[scene_num][layer]
         else:
-            prop = key
-            mkey = "camera"
-            state = camera_state_org[scene_num]
+            state = get_image_state(layer, scene_num)[tag]
         if key not in all_keyframes[scene_num]:
             v = state[prop]
             if v is not None or prop in boolean_props | any_props:
@@ -1959,7 +1948,7 @@ init -1598 python in _viewers:
                     complete = 1.
 
                 if goal[0] is not None or prop in boolean_props | any_props:
-                    check_result = check_props_group(prop, mkey, scene_num)
+                    check_result = check_props_group(key, scene_num)
                     if check_result:
                         gn, ps = check_result
 
@@ -1968,10 +1957,7 @@ init -1598 python in _viewers:
                         new = []
                         default_value = get_default(prop)
                         for p in ps:
-                            if isinstance(key, tuple):
-                                key2 = (key[0], key[1], p)
-                            else:
-                                key2 = p
+                            key2 = (key[0], key[1], p)
                             old.append(all_keyframes[scene_num][key2][i-1][0])
                             new.append(all_keyframes[scene_num][key2][i][0])
 
@@ -2054,20 +2040,21 @@ init -1598 python in _viewers:
                 return cs[0][0]
 
 
-    def put_camera_clipboard():
+    def put_camera_clipboard(layer):
         camera_keyframes = {}
-        for k in all_keyframes[current_scene]:
-            if not isinstance(k, tuple) and k != "function":
-                value = get_value(k, current_time)
+        for key in all_keyframes[current_scene]:
+            tag, _, prop = key
+            if tag is None and prop != "function":
+                value = get_value(key, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
-                elif k in any_props and isinstance(value, str):
+                elif prop in any_props and isinstance(value, str):
                     value = "'" + value + "'"
-                camera_keyframes[k] = [(value, 0, None)]
-        camera_keyframes = set_group_keyframes(camera_keyframes, "camera")
+                camera_keyframes[prop] = [(value, 0, None)]
+        camera_keyframes = set_group_keyframes(camera_keyframes, (None, layer, None))
         camera_properties = []
-        for p in camera_state_org[current_scene]:
-            check_result = check_props_group(p, "camera")
+        for p in camera_state_org[current_scene][layer]:
+            check_result = check_props_group((None, layer, p))
             if check_result is not None:
                 gn, ps = check_result
                 if gn not in camera_properties:
@@ -2078,7 +2065,9 @@ init -1598 python in _viewers:
 
         string = """
 camera"""
-        for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes]):
+        if layer != "master":
+            string += " {layer}".format(layer=layer)
+        for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes], layer):
             if string.find(":") < 0:
                 string += ":\n        "
             string += "{property} {value}".format(property=p, value=cs[0][0])
@@ -2104,19 +2093,19 @@ camera"""
     def put_image_clipboard(tag, layer):
         image_keyframes = {}
         for k in all_keyframes[current_scene]:
-            if isinstance(k, tuple) and k[0] == tag and k[1] == layer and k[2] != "function":
+            if k[0] is not None and k[0] == tag and k[1] == layer and k[2] != "function":
                 value = get_value(k, current_time)
                 if isinstance(value, float):
                     value = round(value, 3)
                 elif k[2] in any_props and isinstance(value, str):
                     value = "'" + value + "'"
                 image_keyframes[k[2]] = [(value, 0, None)]
-        image_keyframes = set_group_keyframes(image_keyframes, (tag, layer))
-        if check_focusing_used() and "blur" in image_keyframes:
+        image_keyframes = set_group_keyframes(image_keyframes, (tag, layer, None))
+        if check_focusing_used(layer) and "blur" in image_keyframes:
             del image_keyframes["blur"]
         image_properties = []
         for p in get_image_state(layer)[tag]:
-            check_result = check_props_group(p, (tag, layer))
+            check_result = check_props_group((tag, layer, p))
             if check_result is not None:
                 gn, ps = check_result
                 if gn not in image_properties:
@@ -2133,7 +2122,7 @@ show {imagename}""".format(imagename=child)
                 string += " as {tagname}".format(tagname=tag)
         if layer != "master":
                 string += " onlayer {layer}".format(layer=layer)
-        for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes]):
+        for p, cs in x_and_y_to_xy([(p, image_keyframes[p]) for p in image_properties if p in image_keyframes], layer):
             if string.find(":") < 0:
                 string += ":\n        "
             string += "{property} {value}".format(property=p, value=cs[0][0])
@@ -2141,9 +2130,9 @@ show {imagename}""".format(imagename=child)
                 string += "\n        "
             else:
                 string += " "
-        if check_focusing_used():
-            focus = get_value("focusing", current_time, True)
-            dof = get_value("dof", current_time, True)
+        if check_focusing_used(layer):
+            focus = get_value((None, layer, "focusing"), current_time, True)
+            dof = get_value((None, layer, "dof"), current_time, True)
             result = "function camera_blur({'focusing':[({}, 0, None)], 'dof':[({}, 0, None)]})".format(focus, dof)
             string += "\n        "
             string += result
@@ -2324,22 +2313,24 @@ show {imagename}""".format(imagename=child)
         camera_state_org.insert(current_scene, {})
         zorder_list.insert(current_scene, {})
         all_keyframes.insert(current_scene, {})
-        for l in config.layers:
+        for l in get_layers():
             image_state[current_scene][l] = {}
             image_state_org[current_scene][l] = {}
+            camera_state_org[current_scene][l] = {}
             zorder_list[current_scene][l] = []
 
         loops.insert(current_scene, defaultdict(_False))
         splines.insert(current_scene, defaultdict(dict))
-        for i in range(current_scene-1, -1, -1):
-            if camera_keyframes_exist(i):
-                break
-        for p in camera_state_org[i]:
-            middle_value = get_value(p, scene_keyframes[current_scene][1], False, i)
-            if isinstance(middle_value, float):
-                camera_state_org[current_scene][p] = round(middle_value, 2)
-            else:
-                camera_state_org[current_scene][p] = middle_value
+        for layer in get_layers():
+            for i in range(current_scene-1, -1, -1):
+                if camera_keyframes_exist(i, layer):
+                    break
+            for p in camera_state_org[i][layer]:
+                middle_value = get_value((None, layer, p), scene_keyframes[current_scene][1], False, i)
+                if isinstance(middle_value, float):
+                    camera_state_org[current_scene][layer][p] = round(middle_value, 2)
+                else:
+                    camera_state_org[current_scene][layer][p] = middle_value
         # if persistent._viewer_legacy_gui:
         #     renpy.show_screen("_action_editor")
         # elif persistent._open_only_one_page:
@@ -2347,9 +2338,9 @@ show {imagename}""".format(imagename=child)
         renpy.restart_interaction()
 
 
-    def camera_keyframes_exist(scene_num):
-        for p in camera_state_org[scene_num]:
-            if p in all_keyframes[scene_num]:
+    def camera_keyframes_exist(scene_num, layer):
+        for p in camera_state_org[scene_num][layer]:
+            if (None, layer, p) in all_keyframes[scene_num]:
                 break
         else:
             return False
@@ -2371,15 +2362,16 @@ show {imagename}""".format(imagename=child)
         del loops[scene_num]
         del splines[scene_num]
         for s in range(scene_num, len(scene_keyframes)):
-            for i in range(s, -1, -1):
-                if camera_keyframes_exist(i):
-                    break
-            for p in camera_state_org[i]:
-                middle_value = get_value(p, scene_keyframes[s][1], False, i)
-                if isinstance(middle_value, float):
-                    camera_state_org[s][p] = round(middle_value, 2)
-                else:
-                    camera_state_org[s][p] = middle_value
+            for layer in get_layers():
+                for i in range(s, -1, -1):
+                    if camera_keyframes_exist(i, layer):
+                        break
+                for p in camera_state_org[i][layer]:
+                    middle_value = get_value((None, layer, p), scene_keyframes[s][1], False, i)
+                    if isinstance(middle_value, float):
+                        camera_state_org[s][layer][p] = round(middle_value, 2)
+                    else:
+                        camera_state_org[s][layer][p] = middle_value
         # if persistent._viewer_legacy_gui:
         #     renpy.show_screen("_action_editor")
         # elif persistent._open_only_one_page:
@@ -2433,15 +2425,16 @@ show {imagename}""".format(imagename=child)
         scene_keyframes[new_scene_num] = (tran, new, w)
 
         for s in range(new_scene_num, len(scene_keyframes)):
-            for i in range(s, -1, -1):
-                if camera_keyframes_exist(i):
-                    break
-            for p in camera_state_org[i]:
-                middle_value = get_value(p, scene_keyframes[s][1], False, i)
-                if isinstance(middle_value, float):
-                    camera_state_org[s][p] = round(middle_value, 2)
-                else:
-                    camera_state_org[s][p] = middle_value
+            for layer in get_layers():
+                for i in range(s, -1, -1):
+                    if camera_keyframes_exist(i, layer):
+                        break
+                for p in camera_state_org[i][layer]:
+                    middle_value = get_value((None, layer, p), scene_keyframes[s][1], False, i)
+                    if isinstance(middle_value, float):
+                        camera_state_org[s][layer][p] = round(middle_value, 2)
+                    else:
+                        camera_state_org[s][layer][p] = middle_value
         for k, cs in all_keyframes[new_scene_num].items():
             for i, (v, t, w) in enumerate(cs):
                 cs[i] = (v, t - (old - new), w)
@@ -2673,25 +2666,16 @@ show {imagename}""".format(imagename=child)
     def update_gn_spline(key, time, scene_num=None):
         if scene_num is None:
             scene_num = current_scene
-        if isinstance(key, tuple):
-            tag, layer, prop = key
-            mkey = (tag, layer)
-        else:
-            prop = key
-            mkey = "camera"
+        tag, layer, prop = key
 
-        check_result = check_props_group(prop, mkey, scene_num)
+        check_result = check_props_group(key, scene_num)
         if check_result:
             gn, ps = check_result
 
             pre_knots = []
             for p in ps:
-                if mkey == "camera":
-                    key2 = p
-                    gn_key = gn
-                else:
-                    key2 = (tag, layer, p)
-                    gn_key = (tag, layer, gn)
+                key2 = (tag, layer, p)
+                gn_key = (tag, layer, gn)
                 pre_knots.append(splines[scene_num][key2][time])
             knots = []
             for knot in zip(*pre_knots):
@@ -2702,22 +2686,14 @@ show {imagename}""".format(imagename=child)
     def add_knot(key, time, default, knot_number=None, recursion=False):
 
         if not recursion:
-            if isinstance(key, tuple):
-                tag, layer, prop = key
-                mkey = (tag, layer)
-            else:
-                prop = key
-                mkey = "camera"
+            tag, layer, prop = key
 
-            check_result = check_props_group(prop, mkey, current_scene)
+            check_result = check_props_group(key, current_scene)
             if check_result:
                 gn, ps = check_result
                 for p in ps:
                     if p != prop:
-                        if mkey == "camera":
-                            key2 = p
-                        else:
-                            key2 = (tag, layer, p)
+                        key2 = (tag, layer, p)
                         cs = all_keyframes[current_scene][key2]
                         for i, (v, t, w) in enumerate(cs):
                             if t == time:
@@ -2739,22 +2715,14 @@ show {imagename}""".format(imagename=child)
     def remove_knot(key, time, i, recursion=False):
 
         if not recursion:
-            if isinstance(key, tuple):
-                tag, layer, prop = key
-                mkey = (tag, layer)
-            else:
-                prop = key
-                mkey = "camera"
+            tag, layer, prop = key
 
-            check_result = check_props_group(prop, mkey, current_scene)
+            check_result = check_props_group(key, current_scene)
             if check_result:
                 gn, ps = check_result
                 for p in ps + [gn]:
                     if p != prop:
-                        if mkey == "camera":
-                            key2 = p
-                        else:
-                            key2 = (tag, layer, p)
+                        key2 = (tag, layer, p)
                         remove_knot(key2, time, i, recursion=True)
 
         if time in splines[current_scene][key]:
@@ -2837,7 +2805,7 @@ show {imagename}""".format(imagename=child)
         sound_keyframes = {}
         all_keyframes = [{}]
         zorder_list = [{}]
-        for l in config.layers:
+        for l in get_layers():
             zorder_list[current_scene][l] = renpy.get_zorder_list(l)
         scene_keyframes = [(None, 0, None)]
         if persistent._viewer_legacy_gui is None:
@@ -2919,10 +2887,7 @@ show {imagename}""".format(imagename=child)
             if delay + scene_start  > animation_time:
                 animation_time = delay + scene_start
             for key, cs in all_keyframes[s].items():
-                if isinstance(key, tuple):
-                    prop = key[2]
-                else:
-                    prop = key
+                prop = key[2]
                 for (v, t, w) in cs:
                     if prop == "child":
                         delay = get_transition_delay(v[1])
@@ -2951,10 +2916,7 @@ show {imagename}""".format(imagename=child)
         delay = get_transition_delay(tran)
         animation_time = delay + scene_start
         for key, cs in all_keyframes[scene_num].items():
-            if isinstance(key, tuple):
-                prop = key[2]
-            else:
-                prop = key
+            prop = key[2]
             for (v, t, w) in cs:
                 if prop == "child":
                     delay = get_transition_delay(v[1])
@@ -2964,13 +2926,14 @@ show {imagename}""".format(imagename=child)
         return animation_time - scene_start
 
 
-    def set_group_keyframes(keyframes, mkey, scene_num=None):
+    def set_group_keyframes(keyframes, key, scene_num=None):
+        tag, layer, _ = key
         result = keyframes.copy()
 
         #focusing以外のグループプロパティーはここで纏める
         included_gp = {}
         for p in result:
-            check_result = check_props_group(p, mkey, scene_num)
+            check_result = check_props_group((tag, layer, p), scene_num)
             if check_result is not None:
                 gn, ps = check_result
                 if gn != "focusing":
@@ -3038,16 +3001,10 @@ show {imagename}""".format(imagename=child)
             else:
                 same_time_set = [(p, cs)]
                 already_added.append(p)
-                if layer is not None and tag is not None:
-                    key = (tag, layer, p)
-                else:
-                    key = p
+                key = (tag, layer, p)
             for (p2, cs2) in sorted_list[i+1:]:
                 if p2 not in already_added and len(cs) == len(cs2):
-                    if layer is not None and tag is not None:
-                        key2 = (tag, layer, p2)
-                    else:
-                        key2 = p2
+                    key2 = (tag, layer, p2)
                     if loops[current_scene][key] != loops[current_scene][key2]:
                         continue
                     for c1, c2 in zip(cs, cs2):
@@ -3068,15 +3025,11 @@ show {imagename}""".format(imagename=child)
         return result
 
 
-    def x_and_y_to_xy(keyframe_list, layer=None, tag=None, check_spline=False, check_loop=False):
+    def x_and_y_to_xy(keyframe_list, layer, tag=None, check_spline=False, check_loop=False):
         for xy, (x, y) in xygroup.items():
             if x in [p for p, cs in keyframe_list] and y in [p for p, cs in keyframe_list]:
-                if layer is not None and tag is not None:
-                    xkey = (tag, layer, x)
-                    ykey = (tag, layer, y)
-                else:
-                    xkey = x
-                    ykey = y
+                xkey = (tag, layer, x)
+                ykey = (tag, layer, y)
                 if check_spline and (splines[current_scene][xkey] or splines[current_scene][ykey]):
                 # don't put together when propaerty has spline
                     continue
@@ -3115,10 +3068,10 @@ show {imagename}""".format(imagename=child)
         return [(tag, state[tag]) for tag, _ in zorder]
 
 
-    def check_focusing_used(scene_num = None):
+    def check_focusing_used(layer, scene_num = None):
         if scene_num is None:
             scene_num = current_scene
-        return (persistent._viewer_focusing and perspective_enabled(scene_num))
+        return (persistent._viewer_focusing and perspective_enabled(layer, scene_num))
 
 
     def put_clipboard():
@@ -3150,91 +3103,98 @@ show {imagename}""".format(imagename=child)
                 files = files[:-4] + "]\n"
                 string += "\n    play {} {}".format(channel, files)
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
-            camera_keyframes = {k:v for k, v in all_keyframes[s].items() if not isinstance(k, tuple)}
-            camera_keyframes = set_group_keyframes(camera_keyframes, "camera", s)
-            for k, v in camera_keyframes.items():
-                if k in any_props:
-                    formated_v = []
-                    for c in v:
-                        if isinstance(c[0], str):
-                            formated_v.append(("'" + c[0] + "'", c[1], c[2]))
-                        else:
-                            formated_v.append(c)
-                    camera_keyframes[k] = formated_v
-            camera_properties = []
-            for p in camera_state_org[s]:
-                check_result = check_props_group(p, "camera", s)
-                if check_result is not None:
-                    gn, ps = check_result
-                    if gn not in camera_properties:
-                        camera_properties.append(gn)
-                else:
-                    if p not in special_props:
-                        camera_properties.append(p)
-            if s > 0:
-                string += """
+            for layer in get_layers():
+                camera_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if k[0] is None and k[1] == layer}
+                camera_keyframes = set_group_keyframes(camera_keyframes, (None, "master", None), s)
+                for p, v in camera_keyframes.items():
+                    if p in any_props:
+                        formated_v = []
+                        for c in v:
+                            if isinstance(c[0], str):
+                                formated_v.append(("'" + c[0] + "'", c[1], c[2]))
+                            else:
+                                formated_v.append(c)
+                        camera_keyframes[p] = formated_v
+                camera_properties = []
+                for p in camera_state_org[s][layer]:
+                    check_result = check_props_group((None, layer, p), s)
+                    if check_result is not None:
+                        gn, ps = check_result
+                        if gn not in camera_properties:
+                            camera_properties.append(gn)
+                    else:
+                        if p not in special_props:
+                            camera_properties.append(p)
+                if s > 0:
+                    string += """
     scene"""
-                
-            if camera_keyframes:
-                string += """
-    camera:
+                    if layer != "master":
+                        string += " onlayer {}".format(layer)
+                if camera_keyframes:
+                    string += """
+    camera"""
+                    if layer == "master":
+                        string += ":"
+                    else:
+                        string += " {layer}:".format(layer=layer)
+                    string += """
         subpixel True"""
-                if "crop" in camera_keyframes:
-                    string += " crop_relative True"
-                if persistent._one_line_one_prop:
-                    string += "\n        "
-                else:
-                    string += " "
-                #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
-                #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
-                #rotateは設定されればキーフレームに入り、されてなければ問題ない
-                #アニメーションしないなら出力しなくてよいのでここでは不要
-                for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1]):
-                    string += "{property} {value}".format(property=p, value=cs[0][0])
+                    if "crop" in camera_keyframes:
+                        string += " crop_relative True"
                     if persistent._one_line_one_prop:
                         string += "\n        "
                     else:
                         string += " "
-                sorted_list = put_prop_togetter(camera_keyframes)
-                if len(sorted_list):
-                    for same_time_set in sorted_list:
-                        if len(sorted_list) > 1 or loops[s][xy_to_x(sorted_list[0][0][0])] or "function" in camera_keyframes:
-                            add_tab = "    "
-                            string += """
-        parallel:
-            """
+                    #デフォルトと違っても出力しない方が以前の状態の変化に柔軟だが、
+                    #xposのような元がNoneやmatrixtransformのような元のマトリックスの順番が違うとアニメーションしない
+                    #rotateは設定されればキーフレームに入り、されてなければ問題ない
+                    #アニメーションしないなら出力しなくてよいのでここでは不要
+                    for p, cs in x_and_y_to_xy([(p, camera_keyframes[p]) for p in camera_properties if p in camera_keyframes and len(camera_keyframes[p]) == 1], layer):
+                        string += "{property} {value}".format(property=p, value=cs[0][0])
+                        if persistent._one_line_one_prop:
+                            string += "\n        "
                         else:
-                            add_tab = ""
-                            string += """
-        """
-                        for p, cs in same_time_set:
-                            string += "{property} {value} ".format(property=p, value=cs[0][0])
-                        cs = same_time_set[0][1]
-                        for i, c in enumerate(cs[1:]):
-                            if c[2].startswith("warper_generator"):
-                                warper = "warp "+ c[2]
-                            else:
-                                warper = c[2]
-                            string += """
-        {tab}{warper} {duration:.2f} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
-                            for p2, cs2 in same_time_set:
-                                string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
-                                if cs2[i+1][1] in splines[s][xy_to_x(p2)] and splines[s][xy_to_x(p2)][cs2[i+1][1]]:
-                                    for knot in splines[s][xy_to_x(p2)][cs2[i+1][1]]:
-                                        string += " knot {} ".format(knot)
-                        if loops[s][xy_to_x(p)]:
-                            string += """
-            repeat"""
-                if "function" in camera_keyframes:
-                    for p, cs in camera_keyframes.items():
-                        if len(cs) > 1:
-                            string += """
+                            string += " "
+                    sorted_list = put_prop_togetter(camera_keyframes, layer=layer)
+                    if len(sorted_list):
+                        for same_time_set in sorted_list:
+                            if len(sorted_list) > 1 or loops[s][(None, layer, xy_to_x(sorted_list[0][0][0]))] or "function" in camera_keyframes:
+                                add_tab = "    "
+                                string += """
         parallel:
             """
-                            break
-                    else:
-                        string += "\n        "
-                    string += "function {} ".format(camera_keyframes["function"][0][0][0])
+                            else:
+                                add_tab = ""
+                                string += """
+        """
+                            for p, cs in same_time_set:
+                                string += "{property} {value} ".format(property=p, value=cs[0][0])
+                            cs = same_time_set[0][1]
+                            for i, c in enumerate(cs[1:]):
+                                if c[2].startswith("warper_generator"):
+                                    warper = "warp "+ c[2]
+                                else:
+                                    warper = c[2]
+                                string += """
+        {tab}{warper} {duration:.2f} """.format(tab=add_tab, warper=warper, duration=cs[i+1][1]-cs[i][1])
+                                for p2, cs2 in same_time_set:
+                                    string += "{property} {value} ".format(property=p2, value=cs2[i+1][0])
+                                    if cs2[i+1][1] in splines[s][(None, layer, xy_to_x(p2))] and splines[s][(None, layer, xy_to_x(p2))][cs2[i+1][1]]:
+                                        for knot in splines[s][(None, layer, xy_to_x(p2))][cs2[i+1][1]]:
+                                            string += " knot {} ".format(knot)
+                            if loops[s][(None, layer, xy_to_x(p))]:
+                                string += """
+            repeat"""
+                    if "function" in camera_keyframes:
+                        for p, cs in camera_keyframes.items():
+                            if len(cs) > 1:
+                                string += """
+        parallel:
+            """
+                                break
+                        else:
+                            string += "\n        "
+                        string += "function {} ".format(camera_keyframes["function"][0][0][0])
 
 
             for layer in image_state_org[s]:
@@ -3242,8 +3202,8 @@ show {imagename}""".format(imagename=child)
                 for tag, _ in zorder_list[s][layer]:
                     if tag not in state:
                         continue
-                    image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), s)
+                    image_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if k[0] is not None and k[0] == tag and k[1] == layer}
+                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer, None), s)
                     for k, v in image_keyframes.items():
                         if k in any_props:
                             formated_v = []
@@ -3253,11 +3213,11 @@ show {imagename}""".format(imagename=child)
                                 else:
                                     formated_v.append(c)
                             image_keyframes[k] = formated_v
-                    if check_focusing_used(s) and "blur" in image_keyframes:
+                    if check_focusing_used(layer, s) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
                     image_properties = []
                     for p in state[tag]:
-                        check_result = check_props_group(p, (tag, layer), s)
+                        check_result = check_props_group((tag, layer, p), s)
                         if check_result is not None:
                             gn, ps = check_result
                             if gn not in image_properties:
@@ -3265,7 +3225,7 @@ show {imagename}""".format(imagename=child)
                         else:
                             if p not in special_props:
                                 image_properties.append(p)
-                    if image_keyframes or check_focusing_used(s) or tag in image_state[s][layer]:
+                    if image_keyframes or check_focusing_used(layer, s) or tag in image_state[s][layer]:
                         image_name = state[tag]["child"][0]
                         if "child" in image_keyframes:
                             last_child = image_keyframes["child"][-1][0][0]
@@ -3299,7 +3259,7 @@ show {imagename}""".format(imagename=child)
                                     string += " "
                         sorted_list = put_prop_togetter(image_keyframes, layer, tag)
                         if "child" in image_keyframes:
-                            if len(sorted_list) >= 1 or loops[s][(tag, layer, "child")] or check_focusing_used(s) or "function" in image_keyframes:
+                            if len(sorted_list) >= 1 or loops[s][(tag, layer, "child")] or check_focusing_used(layer, s) or "function" in image_keyframes:
                                 add_tab = "    "
                                 string += """
         parallel:"""
@@ -3347,7 +3307,7 @@ show {imagename}""".format(imagename=child)
                         if len(sorted_list):
                             for same_time_set in sorted_list:
                                 if len(sorted_list) > 1 or loops[s][(tag, layer, xy_to_x(sorted_list[0][0][0]))] \
-                                    or "child" in image_keyframes  or check_focusing_used(s) or "function" in image_keyframes:
+                                    or "child" in image_keyframes  or check_focusing_used(layer, s) or "function" in image_keyframes:
                                     add_tab = "    "
                                     string += """
         parallel:
@@ -3374,7 +3334,7 @@ show {imagename}""".format(imagename=child)
                                 if loops[s][(tag,layer,xy_to_x(p))]:
                                     string += """
             repeat"""
-                        if check_focusing_used(s) or "function" in image_keyframes:
+                        if check_focusing_used(layer, s) or "function" in image_keyframes:
                             for p, cs in image_keyframes.items():
                                 if len(cs) > 1 or "child" in image_keyframes:
                                     string += """
@@ -3383,15 +3343,15 @@ show {imagename}""".format(imagename=child)
                                     break
                             else:
                                 string += "\n        "
-                            if check_focusing_used(s):
+                            if check_focusing_used(layer, s):
                                 focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
                                 for p in props_groups["focusing"]:
-                                    if p in all_keyframes[s]:
-                                        focusing_cs[p] = [(v, t-scene_start, w) for (v, t, w) in all_keyframes[s][p]]
-                                if loops[s]["focusing"] or loops[s]["dof"]:
+                                    if (None, layer, p) in all_keyframes[s]:
+                                        focusing_cs[p] = [(v, t-scene_start, w) for (v, t, w) in all_keyframes[s][(None, layer, p)]]
+                                if loops[s][(None, layer, "focusing")] or loops[s][(None, layer, "dof")]:
                                     focusing_loop = {}
-                                    focusing_loop["focusing_loop"] = loops[s]["focusing"]
-                                    focusing_loop["dof_loop"] = loops[s]["dof"]
+                                    focusing_loop["focusing_loop"] = loops[s][(None, layer, "focusing")]
+                                    focusing_loop["dof_loop"] = loops[s][(None, layer, "dof")]
                                     focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
                                 else:
                                     focusing_func_string = "camera_blur({})".format(focusing_cs)
@@ -3427,64 +3387,69 @@ show {imagename}""".format(imagename=child)
                 if times:
                     string += "\n    stop {}".format(channel)
 
-            for i in range(-1, -len(scene_keyframes)-1, -1):
-                if camera_keyframes_exist(i):
-                    break
-            last_camera_scene = i
-            camera_keyframes = {k:v for k, v in all_keyframes[last_camera_scene].items() if not isinstance(k, tuple)}
-            for p in camera_state_org[last_camera_scene]:
-                if p not in camera_keyframes:
-                    if camera_state_org[last_camera_scene][p] is not None and camera_state_org[last_camera_scene][p] != camera_state_org[0][p]:
-                        camera_keyframes[p] = [(camera_state_org[last_camera_scene][p], scene_keyframes[last_camera_scene][1], None)]
-            camera_keyframes = set_group_keyframes(camera_keyframes, "camera", last_camera_scene)
-            for k, v in camera_keyframes.items():
-                if k in any_props:
-                    formated_v = []
-                    for c in v:
-                        if isinstance(c[0], str):
-                            formated_v.append(("'" + c[0] + "'", c[1], c[2]))
-                        else:
-                            formated_v.append(c)
-                    camera_keyframes[k] = formated_v
-            if [cs for cs in camera_keyframes.values() if len(cs) > 1]:
-                string += """
-    camera:"""
-                for p, cs in camera_keyframes.items():
-                    if len(cs) > 1 and loops[last_camera_scene][p]:
-                        string += """
-        animation"""
+            for layer in get_layers():
+                for i in range(-1, -len(scene_keyframes)-1, -1):
+                    if camera_keyframes_exist(i, layer):
                         break
-                first = True
-                for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), check_loop=True):
-                    if p not in special_props:
-                        if len(cs) > 1 and not loops[last_camera_scene][xy_to_x(p)]:
-                            if first:
-                                first = False
-                                string += """
-        """
-                            string += "{property} {value}".format(property=p, value=cs[-1][0])
-                            if persistent._one_line_one_prop:
-                                string += "\n        "
+                last_camera_scene = i
+                camera_keyframes = {k[2]:v for k, v in all_keyframes[last_camera_scene].items() if k[0] is None and k[1] == layer}
+                for p in camera_state_org[last_camera_scene][layer]:
+                    if p not in camera_keyframes:
+                        if camera_state_org[last_camera_scene][layer][p] is not None and camera_state_org[last_camera_scene][layer][p] != camera_state_org[0][layer][p]:
+                            camera_keyframes[p] = [(camera_state_org[last_camera_scene][layer][p], scene_keyframes[last_camera_scene][1], None)]
+                camera_keyframes = set_group_keyframes(camera_keyframes, (None, layer, None), last_camera_scene)
+                for p, v in camera_keyframes.items():
+                    if p in any_props:
+                        formated_v = []
+                        for c in v:
+                            if isinstance(c[0], str):
+                                formated_v.append(("'" + c[0] + "'", c[1], c[2]))
                             else:
-                                string += " "
-
-                for p, cs in sort_props(camera_keyframes):
-                    if p not in special_props:
-                        if len(cs) > 1 and loops[last_camera_scene][p]:
+                                formated_v.append(c)
+                        camera_keyframes[p] = formated_v
+                if [cs for cs in camera_keyframes.values() if len(cs) > 1]:
+                    string += """
+    camera"""
+                    if layer == "master":
+                        string += ":"
+                    else:
+                        string += " {}:".format(layer)
+                    for p, cs in camera_keyframes.items():
+                        if len(cs) > 1 and loops[last_camera_scene][(None, layer, p)]:
                             string += """
+        animation"""
+                            break
+                    first = True
+                    for p, cs in x_and_y_to_xy(sort_props(camera_keyframes), layer, check_loop=True):
+                        if p not in special_props:
+                            if len(cs) > 1 and not loops[last_camera_scene][(None, layer, xy_to_x(p))]:
+                                if first:
+                                    first = False
+                                    string += """
+        """
+                                string += "{property} {value}".format(property=p, value=cs[-1][0])
+                                if persistent._one_line_one_prop:
+                                    string += "\n        "
+                                else:
+                                    string += " "
+
+                    for p, cs in sort_props(camera_keyframes):
+                        if p not in special_props:
+                            if len(cs) > 1 and loops[last_camera_scene][(None, layer, p)]:
+                                string += """
         parallel:
             {property} {value}""".format(property=p, value=cs[0][0])
-                            for i, c in enumerate(cs[1:]):
-                                if c[2].startswith("warper_generator"):
-                                    warper = "warp "+ c[2]
-                                else:
-                                    warper = c[2]
-                                string += """
+                                for i, c in enumerate(cs[1:]):
+                                    if c[2].startswith("warper_generator"):
+                                        warper = "warp "+ c[2]
+                                    else:
+                                        warper = c[2]
+                                    string += """
             {warper} {duration:.2f} {property} {value}""".format(warper=warper, duration=cs[i+1][1]-cs[i][1], property=p, value=c[0])
-                                if c[1] in splines[last_camera_scene][p] and splines[last_camera_scene][p][c[1]]:
-                                    for knot in splines[last_camera_scene][p][c[1]]:
-                                        string += " knot {}".format(knot)
-                            string += """
+                                    if c[1] in splines[last_camera_scene][(None, layer, p)] and splines[last_camera_scene][(None, layer, p)][c[1]]:
+                                        for knot in splines[last_camera_scene][(None, layer, p)][c[1]]:
+                                            string += " knot {}".format(knot)
+                                string += """
             repeat"""
 
         #         if "function" in camera_keyframes:
@@ -3506,8 +3471,8 @@ show {imagename}""".format(imagename=child)
                 for tag, _ in zorder_list[last_scene][layer]:
                     if tag not in state:
                         continue
-                    image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if isinstance(k, tuple) and k[0] == tag and k[1] == layer}
-                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer), last_scene)
+                    image_keyframes = {k[2]:v for k, v in all_keyframes[last_scene].items() if k[0] is not None and k[0] == tag and k[1] == layer}
+                    image_keyframes = set_group_keyframes(image_keyframes, (tag, layer, None), last_scene)
                     for k, v in image_keyframes.items():
                         if k in any_props:
                             formated_v = []
@@ -3517,7 +3482,7 @@ show {imagename}""".format(imagename=child)
                                 else:
                                     formated_v.append(c)
                             image_keyframes[k] = formated_v
-                    if check_focusing_used(last_scene) and "blur" in image_keyframes:
+                    if check_focusing_used(layer, last_scene) and "blur" in image_keyframes:
                         del image_keyframes["blur"]
 
                     if not image_keyframes:
@@ -3630,13 +3595,13 @@ show {imagename}""".format(imagename=child)
                         string += """
             repeat"""
 
-                    if check_focusing_used(last_scene):# or "function" in image_keyframes:
+                    if check_focusing_used(layer, last_scene):# or "function" in image_keyframes:
                         # if check_focusing_used(last_scene):
                         focusing_cs = {"focusing":[(get_default("focusing"), 0, None)], "dof":[(get_default("dof"), 0, None)]}
-                        if "focusing" in all_keyframes[last_scene]:
-                            focusing_cs["focusing"] = all_keyframes[last_scene]["focusing"]
-                        if "dof" in all_keyframes[last_scene]:
-                            focusing_cs["dof"] = all_keyframes[last_scene]["dof"]
+                        if (None, layer, "focusing") in all_keyframes[last_scene]:
+                            focusing_cs["focusing"] = all_keyframes[last_scene][(None, layer, "focusing")]
+                        if (None, layer, "dof") in all_keyframes[last_scene]:
+                            focusing_cs["dof"] = all_keyframes[last_scene][(None, layer, "dof")]
                         if len(focusing_cs["focusing"]) > 1 or len(focusing_cs["dof"]) > 1:
                             for p, cs in sort_props(image_keyframes):
                                 if p not in special_props:
@@ -3653,14 +3618,14 @@ show {imagename}""".format(imagename=child)
                                 else:
                                     string += """
         """
-                            if not loops[last_scene]["focusing"]:
+                            if not loops[last_scene][(None, layer, "focusing")]:
                                 focusing_cs["focusing"] = [focusing_cs["focusing"][-1]]
                             if not loops[last_scene]["dof"]:
                                 focusing_cs["dof"] = [focusing_cs["dof"][-1]]
-                            if loops[last_scene]["focusing"] or loops[last_scene]["dof"]:
+                            if loops[last_scene][(None, layer, "focusing")] or loops[last_scene][(None, layer, "dof")]:
                                 focusing_loop = {}
-                                focusing_loop["focusing_loop"] = loops[last_scene]["focusing"]
-                                focusing_loop["dof_loop"] = loops[last_scene]["dof"]
+                                focusing_loop["focusing_loop"] = loops[last_scene][(None, layer, "focusing")]
+                                focusing_loop["dof_loop"] = loops[last_scene][(None, layer, "dof")]
                                 focusing_func_string = "camera_blur({}, {})".format(focusing_cs, focusing_loop)
                             else:
                                 focusing_func_string = "camera_blur({})".format(focusing_cs)

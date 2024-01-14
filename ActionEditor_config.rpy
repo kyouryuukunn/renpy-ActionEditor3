@@ -64,6 +64,8 @@ init -1600 python in _viewers:
     default_channel_list = ["sound"]
     #default side view.
     default_sideview = True
+    #Not included layers
+    not_included_layer = ("transient", "screens", "overlay")
 
     default_graphic_editor_narrow_range = 2.
     default_graphic_editor_wide_range = 2000
