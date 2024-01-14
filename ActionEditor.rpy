@@ -979,11 +979,13 @@ init -1598 python in _viewers:
             if time >= checkpoint:
                 goal = scene_checkpoints[i]
                 if time - checkpoint >= get_transition_delay(goal[0]):
+                    #シーン変移後
                     child = FixedTimeDisplayable(Transform(function=renpy.curry(
                      camera_transform)(camera_check_points=camera_check_points[i], image_check_points=image_check_points[i],
                      scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[i],
                      zorder_list=zorder_list, loop=loop[i], spline=spline[i], subpixel=subpixel, time=time, scene_num=i, layer=layer)), time, at)
                 else:
+                    #シーン変移中
                     old_widget = FixedTimeDisplayable(Transform(function=renpy.curry(
                      camera_transform)(camera_check_points=camera_check_points[i-1], image_check_points=image_check_points[i-1],
                      scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[i-1],
@@ -997,10 +999,11 @@ init -1598 python in _viewers:
                     child = during_transition_displayable
                 break
         else:
+            #スタートシーン
             child = Transform(function=renpy.curry(camera_transform)(
-             camera_check_points=camera_check_points[0], image_check_points=image_check_points[0],
-             scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[0], 
-             zorder_list=zorder_list, loop=loop[0], spline=spline[0], subpixel=subpixel, time=time, scene_num=0, layer=layer))
+             camera_check_points=camera_check_points[-len(scene_checkpoints)], image_check_points=image_check_points[-len(scene_checkpoints)],
+             scene_checkpoints=scene_checkpoints, viewer_check_points=viewer_check_points[-len(scene_checkpoints)], 
+             zorder_list=zorder_list, loop=loop[-len(scene_checkpoints)], spline=spline[-len(scene_checkpoints)], subpixel=subpixel, time=time, scene_num=-len(scene_checkpoints), layer=layer))
         if not persistent._viewer_legacy_gui:
             if aspect_16_9:
                 box.add(Transform(zoom=preview_size, xpos=(1 - preview_size)/2)(child))
@@ -1077,14 +1080,14 @@ init -1598 python in _viewers:
                  loop=image_loop, spline=image_spline,
                  subpixel=subpixel, time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints, layer=layer)))
 
-                if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
+                if persistent._viewer_sideview and len(scene_keyframes)+scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
                     sideview_image_box.add(Transform(function=renpy.curry(transform)(
                      check_points=image_check_points[tag], loop=image_loop, spline=image_spline, subpixel=subpixel,
                      time=time, scene_num=scene_num, scene_checkpoints=scene_checkpoints, side_view=True, layer=layer)))
 
         camera_loop = {key[2]+"_loop": loop[key] for key in loop if key[1] == layer}
         camera_spline = {key[2]+"_spline": spline[key] for key in spline if key[1] == layer}
-        if persistent._viewer_sideview and scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
+        if persistent._viewer_sideview and len(scene_keyframes)+scene_num == current_scene and perspective_enabled(layer, scene_num) and not persistent._viewer_legacy_gui:
             third_view_child[layer] = []
             sideview_box = renpy.display.layout.MultiBox(layout='fixed')
             sideview_box.add(sideview_image_box)
@@ -3104,6 +3107,12 @@ show {imagename}""".format(imagename=child)
                 string += "\n    play {} {}".format(channel, files)
         for s, (scene_tran, scene_start, _) in enumerate(scene_keyframes):
             for layer in get_layers():
+                if s > 0:
+                    string += """
+    scene"""
+                    if layer != "master":
+                        string += " onlayer {}".format(layer)
+            for layer in get_layers():
                 camera_keyframes = {k[2]:v for k, v in all_keyframes[s].items() if k[0] is None and k[1] == layer}
                 camera_keyframes = set_group_keyframes(camera_keyframes, (None, "master", None), s)
                 for p, v in camera_keyframes.items():
@@ -3125,11 +3134,6 @@ show {imagename}""".format(imagename=child)
                     else:
                         if p not in special_props:
                             camera_properties.append(p)
-                if s > 0:
-                    string += """
-    scene"""
-                    if layer != "master":
-                        string += " onlayer {}".format(layer)
                 if camera_keyframes:
                     string += """
     camera"""
