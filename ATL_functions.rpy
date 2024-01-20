@@ -195,7 +195,7 @@ init python:
             if self.damped and self.end is not None:
                 damp = renpy.atl.warpers[self.damped_warper]((self.end - st / self.fast_forward) / self.end)
 
-            if renpy.version_tuple[3] >= 24010100:
+            if renpy.version_tuple[3] >= 24011600:
                 interpolate_spline = renpy.atl.interpolate_spline(g, self.random_knot, renpy.atl.PROPERTIES[self.property])
             else:
                 interpolate_spline = renpy.atl.interpolate_spline(g, self.random_knot)
