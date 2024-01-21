@@ -504,8 +504,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                             $new_opened[s] = opened[s].copy()
                                             $new_opened[s] = [o for o in opened if not isinstance(o, tuple) or o[0] != tag]
                                             textbutton _(indent*4+"  remove"):
-                                                action [SensitiveIf(tag in _viewers.image_state[s][layer]),
-                                                    Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode, layer=layer),
+                                                action [ Show("_new_action_editor", opened=new_opened, in_graphic_mode=in_graphic_mode, layer=layer),
                                                     Function(_viewers.remove_image, layer, tag)]
                                                 size_group None
                                     textbutton _(indent*2+"+(add image)"):
@@ -2592,7 +2591,7 @@ init 1 python in _viewers:
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT, KMOD_ALT
             from pygame.key import get_mods
             from pygame.mouse import get_pressed
-            from renpy.store import Show, QueueEvent, Function, NullAction
+            from renpy.store import Show, SensitiveIf, QueueEvent, Function, NullAction
             self.tag = tag
             self.layer = layer
             self.scene_num = scene_num
@@ -2619,7 +2618,7 @@ init 1 python in _viewers:
                 self.z_changed = generate_changed((self.tag, self.layer, "zpos"))
                 self.r_changed = generate_changed((self.tag, self.layer, "rotate"))
                 self.alternate = ShowAlternateMenu(
-                        [("{}".format(tag), NullAction()),
+                        [("{}".format(tag), Show("_new_action_editor", opened={scene_num:[(tag, layer, None), (tag, layer, "Child/Pos    ")]})),
                         ("edit: xpos {}".format(xpos), 
                          [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time)]),
                         ("edit: ypos {}".format(ypos),             
@@ -2627,7 +2626,9 @@ init 1 python in _viewers:
                         ("edit: zpos {}".format(zpos),             
                          [Function(edit_value, self.z_changed, zpos, is_wide_range((tag, layer, "zpos")), is_force_plus("zpos"), time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
-                         [Function(edit_value, self.r_changed, rotate, is_wide_range((tag, layer, "rotate")), is_force_plus("rotate"), time), Function(change_time, time)])],
+                         [Function(edit_value, self.r_changed, rotate, is_wide_range((tag, layer, "rotate")), is_force_plus("rotate"), time), Function(change_time, time)]),
+                        ("remove",
+                         [SensitiveIf(tag in image_state[self.scene_num][layer]), Show("_new_action_editor", layer=layer), Function(remove_image, layer, tag)])],
                         style_prefix="_viewers_alternate_menu")
 
             self.dragging = False
