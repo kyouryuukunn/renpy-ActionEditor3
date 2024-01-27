@@ -252,6 +252,11 @@ lemma forum
  ActionEditor can't show movie and animation displayable correctly.
 
 
+ Note
+================
+
+ The clipboard from ActionEditor includes the difference from the state when ActionEditor is opened on. Therefore that is intended to be pasted on next that line. Images aren't shown correctly if the existing lines are overwritten.
+
 
  日本語ドキュメント
 ================
@@ -497,3 +502,8 @@ lemma forum
  アニメーションするat 節を使用したcamera, displayableは正常に表示できない
 
  Movie Displayable, アニメーションするDisplayableは正常に表示できない
+
+ 注意
+================
+
+ ActionEditorから出力されるクリップボードデータはActionEditorが開かれた状態からの差分として出力され、その次の行への貼り付けを意図しています。このため既存のshowステートメントを上書きするように貼り付けると正常に表示されない場合があります。
