@@ -11,6 +11,7 @@ screen _image_selecter(default=""):
         style_group "image_selecter"
         vbox:
             label _("Type a image name") style "image_selecter_input"
+            label _("Tab: completion") style "image_selecter_input"
             input value ScreenVariableInputValue("filter_string", default=True, returnable=True) copypaste True style "image_selecter_input" id "input_filter_strings"
             $filtered_list = _viewers.filter_image_name(filter_string)
             viewport:
