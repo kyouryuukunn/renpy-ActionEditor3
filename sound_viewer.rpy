@@ -96,8 +96,17 @@ init -2000 python in _viewers:
                         if isinstance(file, str) and renpy.loadable(file):
                             candidate.append(name)
             if candidate:
+                if len(candidate) > 1:
+                    completed_candidate = candidate[0]
+                    for c in candidate[1:]:
+                        for i in range(len(completed_candidate)):
+                            if i < len(c) and completed_candidate[i] != c[i]:
+                                completed_candidate = completed_candidate[0:i]
+                                break
+                else:
+                    completed_candidate = candidate[0]
                 cs = renpy.current_screen()
-                cs.scope["filter_string"] += candidate[0][len(last_element):]
+                cs.scope["filter_string"] += completed_candidate[len(last_element):]
                 input = renpy.get_displayable("_sound_selector", "input_filter_strings")
                 input.caret_pos = len(cs.scope["filter_string"])
 
