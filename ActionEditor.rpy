@@ -4,7 +4,6 @@
 
 #課題
 #childのみならばparallelなくてよい
-#removeボタンを画像タグの右クリックメニューへ追加
 #動画およびat節で指定されたアニメーションtransformと同期できない(要本体の最適化)
 #vpunch等Move transtion, ATLtranstionが動作しない
 #ATLtransitionのdelayを所得できない
@@ -168,7 +167,14 @@ init -1598 python in _viewers:
         
 
         #単純にst, atを上書きしただけでは動作しない accelerator.pyx等とatl.pyを確認する
+        #https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=66013&p=557882#p557882
+        #renpy.display.render.redraw, kill_cache効果なし
+        #st, atの値を固定にしても0sからの状態からスタートするので最初からst, atを見ていない
+        #cacheの問題ではない
+        #renderは内部的に増す分で作業しているようで、0から始めないと動作しない
         def render(self, width, height, st, at):
+
+            self.d.render(width, height, 0, 0)
             return self.d.render(width, height, self.fixed_st, self.fixed_at)
 
 
@@ -264,12 +270,14 @@ init -1598 python in _viewers:
             image_state_org[current_scene][layer] = {}
             image_state[current_scene][layer] = {}
             for image in sle.layers[layer]:
+
                 if not image[0]:
                     continue
-                tag = image[0]
-                d = sle.get_displayable_by_tag(layer, tag)
                 if isinstance(d, renpy.display.screen.ScreenDisplayable):
                     continue
+
+                tag = image[0]
+                d = sle.get_displayable_by_tag(layer, tag)
                 image_name_tuple = getattr(d, "name", None)
                 child = d
                 while image_name_tuple is None:
@@ -997,6 +1005,7 @@ init -1598 python in _viewers:
                     transition = renpy.python.py_eval("renpy.store."+goal[0])
                     during_transition_displayable = DuringTransitionDisplayble(transition, old_widget, new_widget, time - checkpoint, 0)
                     child = during_transition_displayable
+
                 break
         else:
             #スタートシーン
@@ -1553,6 +1562,7 @@ init -1598 python in _viewers:
             child = renpy.easy.displayable(name)
             child = apply_at_list(child, at_list)
             widget = FixedTimeDisplayable(child, time, at)
+
         return widget
 
 
@@ -1879,8 +1889,11 @@ init -1598 python in _viewers:
 
 
     def remove_image(layer, tag):
-        def remove_keyframes(layer, tag):
+        def remove_keyframes(tag, layer):
+            k_list = []
             for k in (k for k in all_keyframes[current_scene] if k[0] is not None and k[0] == tag and k[1] == layer):
+                k_list.append(k)
+            for k in k_list:
                 del all_keyframes[current_scene][k]
 
         renpy.hide(tag, layer)

@@ -249,7 +249,7 @@ lemma forum
 
  ActionEditor can't show camera and displayable with "at clause" including animation correctly.
 
- ActionEditor can't show movie and animation displayable correctly.
+ ActionEditor can't show movie displayable correctly.
 
 
  Note
@@ -503,7 +503,7 @@ lemma forum
 
  アニメーションするat 節を使用したcamera, displayableは正常に表示できない
 
- Movie Displayable, アニメーションするDisplayableは正常に表示できない
+ Movie DisplayableするDisplayableは正常に表示できない
 
  注意
 ================
