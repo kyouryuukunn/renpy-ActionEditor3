@@ -9,10 +9,9 @@
 #ATLtransitionのdelayを所得できない
 
 #極座標表示対応
-#ATLではalignaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
-#posも同時に動かせるが基準が不明(未定義?) Editorではalignaroundを動かしている間radiusかangleを動かし続けるか
-#functionプロパティーでalignaroundを動かしても反映されない。最小構成では動く、最初の一回は反映されている
-#グループにせず直接編集しても効果なし boxの影響?
+#ATLではaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
+#aroundの動作をEditorで再現するには、同時刻にradiusかangleが明示的に操作されているかチェックしなければいけない
+#時間ベースで考えるとループが面倒
 
 init -1098 python:
     # Added keymap
@@ -808,8 +807,8 @@ init -1598 python in _viewers:
                 check_points["at_list"] = [(at_list, 0, None)]
 
                 for prop in camera_state_org[s][layer]:
-                    if not exclusive_check((None, layer, prop), s):
-                        continue
+                    # if not exclusive_check((None, layer, prop), s):
+                    #     continue
                     if (None, layer, prop) in all_keyframes[s]:
                         check_points[prop] = all_keyframes[s][(None, layer, prop)]
                         camera_is_used = True
@@ -879,6 +878,11 @@ init -1598 python in _viewers:
                         del check_points[prop]
                     check_points[gn] = group_cs
 
+                #around has effect only when radius or angle exis at sametime
+                # if "around" in check_points:
+                #     if "radius" not in check_points and "angle" not in check_points:
+                #         del check_points["around"]
+
                 #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
                 #These properties are shown in side viewer(function property has danger of including blur)
                 if persistent._viewer_sideview:
@@ -909,8 +913,8 @@ init -1598 python in _viewers:
                     at_list = state[tag].get("at_list")
                     check_points[tag]["at_list"] = [(at_list, t, None)]
                     for prop in state[tag]:
-                        if not exclusive_check((tag, layer, prop), s):
-                            continue
+                        # if not exclusive_check((tag, layer, prop), s):
+                        #     continue
                         if (tag, layer, prop) in all_keyframes[s]:
                             check_points[tag][prop] = all_keyframes[s][(tag, layer, prop)]
                         elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
@@ -945,6 +949,12 @@ init -1598 python in _viewers:
                         for prop in ps:
                             del check_points[tag][prop]
                         check_points[tag][gn] = group_cs
+
+                    #around has effect only when radius or angle exis at sametime
+                    # if "around" in check_points:
+                    #     if "radius" not in check_points and "angle" not in check_points:
+                    #         del check_points["around"]
+
                     if persistent._viewer_focusing and perspective_enabled(layer, s, time=t):
                         if "blur" in check_points[tag]:
                             del check_points[tag]["blur"]
@@ -952,6 +962,7 @@ init -1598 python in _viewers:
                         for p in ("focusing", "dof"):
                             if p in check_points[tag]:
                                 del check_points[tag][p]
+
                 image_check_points.append(check_points)
 
                 for css in camera_check_points:
@@ -1151,7 +1162,14 @@ init -1598 python in _viewers:
         if in_editor and camera and not side_view:
             tran.perspective = get_value((None, layer, "perspective"), scene_keyframes[scene_num][1], True)
 
-        for p, cs in check_points.items():
+        #around should be before radius and angle
+        items = list(check_points.items())
+        for i, (p, cs) in enumerate(items):
+            if p == "around":
+                break
+        items = [items[i]] + items[:i] + items[i+1:]
+
+        for p, cs in items:
 
             if not cs: #恐らく不要
                 break
@@ -1494,9 +1512,9 @@ init -1598 python in _viewers:
         #         "pos": getattr(tran, "pos")
         #     }
         # if not camera:
-        #     tran.alignaround = (0.5+time*0.1, 0.5)
+        #     tran.around = (0.5+time*0.1, 0.5)
         #     tran.angle = 0
-        #     tran.alignaround = (0.5, 0.5)
+        #     tran.around = (0.5, 0.5)
         #     tran.angle = 315
         #     tran.radius=0.71
         #     renpy.store.test = tran.alignaround
@@ -1584,23 +1602,24 @@ init -1598 python in _viewers:
                 else:
                     one_set = set2
                     other_set = set1
-                for p in one_set:
-                    key2 = (tag, layer, p)
-                    if key2 in all_keyframes[scene_num]:
-                        return True
-                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
-                        return True
+                # for p in one_set:
+                #     key2 = (tag, layer, p)
+                #     if key2 in all_keyframes[scene_num]:
+                #         return True
+                #     # if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
+                #     #     return True
                 for p in other_set:
                     key2 = (tag, layer, p)
                     if key2 in all_keyframes[scene_num]:
                         return False
-                    if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
-                        return False
+                    # if key2 in state and (state[key2] is not None and state[key2] != get_default(p)):
+                    #     return False
                 else:
-                    if prop in set1:
-                        return True
-                    else:
-                        return False
+                    # if prop in set1:
+                    #     return True
+                    # else:
+                    #     return False
+                    return True
         else:
             return True
 

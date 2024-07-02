@@ -342,13 +342,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.toggle_boolean_property, key)]
                                                                     size_group None
-                                                        else:
+                                                        elif _viewers.exclusive_check(key):
                                                             hbox:
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*4+"  [shown_p]" action None text_color "#FFF"
                                                                 add DraggableValue(value_format, key, f, is_force_plus(p))
                                                         # if key not in in_graphic_mode:
-                                                        if p not in _viewers.boolean_props | {"function", "perspective"}:
+                                                        if p not in _viewers.boolean_props | {"function", "perspective"} and _viewers.exclusive_check(key):
                                                             fixed:
                                                                 add TimeLine(s, "camera", key=key, changed=f, opened=opened)
                                                         # else:
@@ -487,13 +487,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         action [SelectedIf(keyframes_exist(key)),
                                                                         Function(_viewers.toggle_boolean_property, key)]
                                                                         size_group None
-                                                            else:
+                                                            elif _viewers.exclusive_check(key):
                                                                 hbox:
                                                                     style_group "new_action_editor_c"
                                                                     textbutton indent*4+"  [shown_p]":
                                                                         action None text_color "#FFF"
                                                                     add DraggableValue(value_format, key, f, is_force_plus(p))
-                                                            if p not in _viewers.boolean_props | {"function", "perspective"}:
+                                                            if p not in _viewers.boolean_props | {"function", "perspective"} and _viewers.exclusive_check(key):
                                                                 fixed:
                                                                     # if key not in in_graphic_mode:
                                                                     add TimeLine(s, "image", key=key, changed=f, opened=opened)

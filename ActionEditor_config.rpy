@@ -74,7 +74,7 @@ init -1600 python in _viewers:
     preview_background_color="#111"
 
     props_sets = (
-            ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xalignaround", "yalignaround", "radius", "angle", "rotate",
+            ("Child/Pos    ", ("child", "xpos", "ypos", "zpos", "xaround", "yaround", "radius", "angle", "rotate",
                                "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation", "point_to",)), 
             ("3D Matrix    ", ("matrixtransform",)),
             ("Anchor/Offset", ("xanchor", "yanchor", "matrixanchorX", "matrixanchorY", "xoffset", "yoffset")), 
@@ -84,7 +84,7 @@ init -1600 python in _viewers:
             )
 
     props_groups = {
-        "alignaround":["xalignaround", "yalignaround"], 
+        "around":["xaround", "yaround"], 
         "matrixanchor":["matrixanchorX", "matrixanchorY"], 
         "crop":["cropX", "cropY", "cropW", "cropH"], 
         "focusing":["focusing", "dof"], 
@@ -104,7 +104,7 @@ init -1600 python in _viewers:
     not_used_by_default = {"rotate", "cropX", "cropY", "cropW", "cropH", "xpan", "ypan", "function"}
     #These variables are always float type.
     #常に浮動小数になる変数です。
-    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xalignaround", "yalignaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation")
+    force_float = ("zoom", "xzoom", "yzoom", "alpha", "additive", "blur", "invert", "contrast", "saturate", "bright", "xaround", "yaround", "scaleX", "scaleY", "scaleZ", "xrotate", "yrotate", "zrotate", "xorientation", "yorientation", "zorientation")
 
     boolean_props = {"zzoom"}
     any_props = {"blend", "point_to"}
@@ -133,11 +133,11 @@ init -1600 python in _viewers:
     #properties which is included in any_props and is choiced by menu.
     menu_props = {"blend":[None] + [key for key in config.gl_blend_func]}
 
-    #Exclusive variables
-    #排他的な変数です。
+    #disallow properties to edit at sametime.
+    #Editorの都合で同時に編集されたくないプロパティー
     exclusive = (
-            ({"xpos", "ypos"}, {"xalignaround", "yalignaround", "radius", "angle"}), 
-            ({"xtile", "ytile"}, {"xpan", "ypan"}), 
+             ({"xpos", "ypos"}, {"xaround", "yaround", "radius", "angle"}), 
+            # ({"xpan", "ypan"}, {"xtile", "ytile"}), 
         )
     disallow_spline = ("focusing", "matrixtransform", "matrixcolor", "orientation")
     xygroup = {"pos": ("xpos", "ypos"), "anchor": ("xanchor", "yanchor"), "offset": ("xoffset", "yoffset")}
@@ -169,7 +169,7 @@ init -1600 python in _viewers:
     "ypos", 
     "yanchor", 
     "yoffset", 
-    "alignaround",
+    "around",
     "radius",
     "angle",
     "zpos", 
@@ -210,8 +210,8 @@ init 1600 python in _viewers:
     "xpos",
     "ypos",
     "zpos",
-    # "xalignaround",
-    # "yalignaround",
+    # "xaround",
+    # "yaround",
     # "radius",
     # "angle",
     "xanchor",
@@ -251,8 +251,8 @@ init 1600 python in _viewers:
     "xpos",
     "ypos",
     "zpos",
-    # "xalignaround",
-    # "yalignaround",
+    # "xaround",
+    # "yaround",
     # "radius",
     # "angle",
     "xanchor",
@@ -308,9 +308,9 @@ init 1600 python in _viewers:
     "xpos": 0, 
     "ypos": 0, 
     "zpos": 0., 
-    "xalignaround": 0.,
-    "yalignaround": 0.,
-    "alignaround": (0., 0.),
+    "xaround": 0.,
+    "yaround": 0.,
+    "around": (0., 0.),
     "radius": 0,
     "angle": 0,
     "xanchor": 0, 
