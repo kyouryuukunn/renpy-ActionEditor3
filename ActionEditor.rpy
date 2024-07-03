@@ -193,6 +193,7 @@ init -1598 python in _viewers:
 
     def action_editor_init():
         global image_state, image_state_org, camera_state_org, movie_cache, third_view_child
+        from renpy.display.core import absolute
 
         sle = renpy.game.context().scene_lists
         # layer->tag->property->value
@@ -239,6 +240,8 @@ init -1598 python in _viewers:
                         v = int(v.absolute)
                     camera_state_org[current_scene][layer][p] = v
                 else:
+                    if isinstance(v, absolute):
+                        v = round(v)
                     camera_state_org[current_scene][layer][p] = v
             for p in {"xoffset", "yoffset"}:
                 camera_state_org[current_scene][layer][p] = getattr(pos, p, None)
@@ -251,6 +254,8 @@ init -1598 python in _viewers:
                             camera_state_org[current_scene][layer][prop] = v
                     else:
                         v = getattr(state, p, None)
+                        if isinstance(v, absolute):
+                            v = round(v)
                         if is_force_float(p) and isinstance(v, int):
                             v = float(v)
                         camera_state_org[current_scene][layer][p] = v
@@ -323,6 +328,8 @@ init -1598 python in _viewers:
                             v = int(v.absolute)
                         image_state_org[current_scene][layer][tag][p] = v
                     else:
+                        if isinstance(v, absolute):
+                            v = round(v)
                         image_state_org[current_scene][layer][tag][p] = v
                 for p in {"xoffset", "yoffset"}:
                     image_state_org[current_scene][layer][tag][p] = getattr(pos, p, None)
@@ -337,6 +344,8 @@ init -1598 python in _viewers:
                                 image_state_org[current_scene][layer][tag][prop] = v
                         else:
                             v = getattr(state, p, None)
+                            if isinstance(v, absolute):
+                                v = round(v)
                             if is_force_float(p) and isinstance(v, int):
                                 v = float(v)
                             image_state_org[current_scene][layer][tag][p] = v
@@ -560,8 +569,10 @@ init -1598 python in _viewers:
                 v = state[prop]
             else:
                 v = get_default(prop)
-        if isinstance(v, int) or check_new_position_type(v):
+        if isinstance(v, int) or (check_new_position_type(v) and v.relative == 0):
             return True
+        elif isinstance(v, float) or (check_new_position_type(v) and v.absolute == 0):
+            return False
         else:
             return False
 
@@ -904,13 +915,13 @@ init -1598 python in _viewers:
 
                 #around has effect only when radius or angle exis at sametime
                 if "around" in check_points:
-                    if (tag, layer, "radius") not in all_keyframes[s] and (tag, layer, "angle") not in all_keyframes[s]:
+                    if (None, layer, "radius") not in all_keyframes[s] and (None, layer, "angle") not in all_keyframes[s]:
                         check_points["around"] = [((camera_state_org[s][layer]["xaround"], camera_state_org[s][layer]["yaround"]), 0, None)]
 
                 #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
                 #These properties are shown in side viewer(function property has danger of including blur)
                 if persistent._viewer_sideview:
-                    for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "zpos", "rotate", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
+                    for p in ("xpos", "xanchor", "xoffset", "ypos", "yanchor", "yoffset", "around", "radius", "angle", "zpos", "rotate", "xrotate", "yrotate", "zrotate", "orientation", "point_to"):
                         if p in check_points:
                             vcheck_points[p] = check_points[p]
                     vcheck_points["props_use_default"] = check_points["props_use_default"]

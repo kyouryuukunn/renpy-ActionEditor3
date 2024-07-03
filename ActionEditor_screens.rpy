@@ -191,9 +191,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                 $value = get_value(key, default=True)
                 $f = generate_changed(key)
                 $use_wide_range = is_wide_range(key)
-                if isinstance(value, float):
+                if isinstance(value, float) or (check_new_position_type(value) and value.absolute == 0):
                     $value_format = float_format
-                elif isinstance(value, int):
+                elif isinstance(value, int) or (check_new_position_type(value) and value.relative == 0):
                     $value_format = int_format
                 elif check_new_position_type(value):
                     $value_format = pos_format
@@ -290,9 +290,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                     $value = get_value(key, default=True)
                                                     $f = generate_changed(key)
                                                     $use_wide_range = is_wide_range(key, s)
-                                                    if isinstance(value, float):
+                                                    if isinstance(value, float) or (check_new_position_type(value) and value.absolute == 0):
                                                         $value_format = float_format
-                                                    elif isinstance(value, int):
+                                                    elif isinstance(value, int) or (check_new_position_type(value) and value.relative == 0):
                                                         $value_format = int_format
                                                     elif check_new_position_type(value):
                                                         $value_format = pos_format
@@ -426,9 +426,9 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                         $value = get_value(key, default=True)
                                                         $f = generate_changed(key)
                                                         $use_wide_range = is_wide_range(key, s)
-                                                        if isinstance(value, float):
+                                                        if isinstance(value, float) or (check_new_position_type(value) and value.absolute == 0):
                                                             $value_format = float_format
-                                                        elif isinstance(value, int):
+                                                        elif isinstance(value, int) or (check_new_position_type(value) and value.relative == 0):
                                                             $value_format = int_format
                                                         elif check_new_position_type(value):
                                                             $value_format = pos_format
@@ -853,9 +853,9 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 else:
                                     $value_range = persistent._narrow_range
                                     $bar_page = .05
-                                if isinstance(value, float):
+                                if isinstance(value, float) or (check_new_position_type(value) and value.absolute == 0):
                                     $value_format = float_format
-                                elif isinstance(value, int):
+                                elif isinstance(value, int) or (check_new_position_type(value) and value.relative == 0):
                                     $value_format = int_format
                                 elif check_new_position_type(value):
                                     $value_format = pos_format
@@ -923,9 +923,9 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                 else:
                                     $value_range = persistent._narrow_range
                                     $bar_page = .05
-                                if isinstance(value, float):
+                                if isinstance(value, float) or (check_new_position_type(value) and value.absolute == 0):
                                     $value_format = float_format
-                                elif isinstance(value, int):
+                                elif isinstance(value, int) or (check_new_position_type(value) and value.relative == 0):
                                     $value_format = int_format
                                 elif check_new_position_type(value):
                                     $value_format = pos_format
@@ -1446,8 +1446,10 @@ init 1 python in _viewers:
                 value = float(value)
             elif isinstance(get_value(key, default=True), int):
                 value = int(value)
-            elif check_new_position_type(get_value(key, default=True)):
+            elif check_new_position_type(get_value(key, default=True)) and check_new_position_type(get_value(key, default=True)).relative == 0:
                 value = int(value)
+            elif check_new_position_type(get_value(key, default=True)) and check_new_position_type(get_value(key, default=True)).absolute == 0:
+                value = float(value)
         return value
 
 
@@ -1616,10 +1618,7 @@ init 1 python in _viewers:
                 elif value.absolute != 0:
                     value = self.format.format(value.absolute)
                 else:
-                    try:
-                        value = self.format.format(value.relative)
-                    except:
-                        raise Exception(value.relative)
+                    value = self.format.format(value.relative)
             else:
                     value = self.format.format(value)
             d = Text(value, align=(.5, .5), style=style)
@@ -2761,9 +2760,10 @@ init 1 python in _viewers:
                 x = int(x)
             elif isinstance(xpos_org, float):
                 x /= config.screen_width
-            elif check_new_position_type(xpos_org):
+            elif check_new_position_type(xpos_org) and xpos_org.relative == 0:
                 x = renpy.atl.position.from_any(int(x))
-                # x = int(x)
+            elif check_new_position_type(xpos_org) and xpos_org.absolute == 0:
+                x = renpy.atl.position.from_any(float(x))
 
             ypos_org = state["ypos"]
             if ypos_org is None:
@@ -2773,9 +2773,10 @@ init 1 python in _viewers:
                 y = int(y)
             elif isinstance(ypos_org, float):
                 y /= config.screen_height
-            elif check_new_position_type(ypos_org):
-                y = renpy.atl.position.from_any(int(y))
-                # y = int(y)
+            elif check_new_position_type(ypos_org) and ypos_org.relative == 0:
+                x = renpy.atl.position.from_any(int(x))
+            elif check_new_position_type(ypos_org) and ypos_org.absolute == 0:
+                x = renpy.atl.position.from_any(float(x))
 
 
             mods = self.get_mods()
