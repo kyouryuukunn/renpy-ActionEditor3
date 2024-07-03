@@ -605,6 +605,8 @@ init -1598 python in _viewers:
         else:
             state = get_image_state(layer)[tag]
         def changed(v, time=None, knot_number=None):
+            if not exclusive_check(key):
+                return
             if time is None:
                 time = current_time
             time = round(float(time), 2)

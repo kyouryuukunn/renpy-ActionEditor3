@@ -342,13 +342,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                     action [SelectedIf(keyframes_exist(key)),
                                                                     Function(_viewers.toggle_boolean_property, key)]
                                                                     size_group None
-                                                        elif _viewers.exclusive_check(key):
+                                                        else:
                                                             hbox:
                                                                 style_group "new_action_editor_c"
                                                                 textbutton indent*4+"  [shown_p]" action None text_color "#FFF"
                                                                 add DraggableValue(value_format, key, f, is_force_plus(p))
                                                         # if key not in in_graphic_mode:
-                                                        if p not in _viewers.boolean_props | {"function", "perspective"} and _viewers.exclusive_check(key):
+                                                        if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                             fixed:
                                                                 add TimeLine(s, "camera", key=key, changed=f, opened=opened)
                                                         # else:
@@ -487,13 +487,13 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                                                         action [SelectedIf(keyframes_exist(key)),
                                                                         Function(_viewers.toggle_boolean_property, key)]
                                                                         size_group None
-                                                            elif _viewers.exclusive_check(key):
+                                                            else:
                                                                 hbox:
                                                                     style_group "new_action_editor_c"
                                                                     textbutton indent*4+"  [shown_p]":
                                                                         action None text_color "#FFF"
                                                                     add DraggableValue(value_format, key, f, is_force_plus(p))
-                                                            if p not in _viewers.boolean_props | {"function", "perspective"} and _viewers.exclusive_check(key):
+                                                            if p not in _viewers.boolean_props | {"function", "perspective"}:
                                                                 fixed:
                                                                     # if key not in in_graphic_mode:
                                                                     add TimeLine(s, "image", key=key, changed=f, opened=opened)
@@ -611,6 +611,8 @@ init -1597:
     style draggable_value is new_action_editor_text
     style hover_draggable_value is draggable_value:
         underline True
+    style insensitive_draggable_value is draggable_value:
+        insensitive_color "#888"
     if _viewers.check_version(22062600):
         style new_action_editor_text language "unicode"
     style new_action_editor_button_text is new_action_editor_text:
@@ -660,7 +662,8 @@ init -1597:
     style _viewers_alternate_menu_frame:
         background "#222"
     style _viewers_alternate_menu_button is new_action_editor_button
-    style _viewers_alternate_menu_button_text is new_action_editor_button_text
+    style _viewers_alternate_menu_button_text is new_action_editor_button_text:
+        insensitive_color "#AAA"
 
 # tab="images"/"camera", layer="master",  
 screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
@@ -689,6 +692,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         keyframes_exist = _viewers.keyframes_exist
         perspective_enabled =  _viewers.perspective_enabled
         check_new_position_type = _viewers.check_new_position_type
+        exclusive_check = _viewers.exclusive_check
 
         play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
             SelectedIf(False), Function(_viewers.play, play=True), \
@@ -892,14 +896,14 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                                 $bar_value = value + value_range
                                                 $value_range = value_range*2
                                             textbutton value_format.format(value):
-                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                                alternate Function(reset, key) style_group "action_editor_b"
+                                                action [Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p)), SensitiveIf(exclusive_check(key))]
+                                                alternate [Function(reset, key), SensitiveIf(exclusive_check(key))] style_group "action_editor_b"
                                             bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                                 xalign 1. yalign .5 style "action_editor_bar"
                                         elif check_new_position_type(value):
                                             textbutton value_format.format(value.absolute, value.relative):
-                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                                alternate Function(reset, key) style_group "action_editor_b"
+                                                action [Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p)), SensitiveIf(exclusive_check(key))]
+                                                alternate [Function(reset, key), SensitiveIf(exclusive_check(key))] style_group "action_editor_b"
                         else:
                             hbox:
                                 textbutton "+ "+props_set_name:
@@ -970,14 +974,14 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
                                                 $bar_value = value + value_range
                                                 $value_range = value_range*2
                                             textbutton value_format.format(value):
-                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                                alternate Function(reset, key) style_group "action_editor_b"
+                                                action [Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p)), SensitiveIf(exclusive_check(key))]
+                                                alternate [Function(reset, key), SensitiveIf(exclusive_check(key))] style_group "action_editor_b"
                                             bar adjustment ui.adjustment(range=value_range, value=bar_value, page=bar_page, changed=f):
                                                 xalign 1. yalign .5 style "action_editor_bar"
                                         elif check_new_position_type(value):
                                             textbutton value_format.format(value.absolute, value.relative):
-                                                action Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p))
-                                                alternate Function(reset, key) style_group "action_editor_b"
+                                                action [Function(edit_value, f, use_wide_range=use_wide_range, default=value, force_plus=is_force_plus(p)), SensitiveIf(exclusive_check(key))]
+                                                alternate [Function(reset, key), SensitiveIf(exclusive_check(key))] style_group "action_editor_b"
                         else:
                             hbox:
                                 textbutton "+ "+props_set_name:
@@ -1555,7 +1559,7 @@ init 1 python in _viewers:
     class DraggableValue(renpy.Displayable):
 
 
-        def __init__(self, format, key, changed, force_plus, clicked=None, alternate=None, style="draggable_value", hover_style="hover_draggable_value", **properties):
+        def __init__(self, format, key, changed, force_plus, clicked=None, alternate=None, style="draggable_value", hover_style="hover_draggable_value", insensitive_style="insensitive_draggable_value", **properties):
             super(DraggableValue, self).__init__(**properties)
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT
             from pygame.key import get_mods
@@ -1570,6 +1574,7 @@ init 1 python in _viewers:
             self.dragging = False
             self.text_style = style
             self.hover_text_style = hover_style
+            self.insensitive_text_style = insensitive_style
 
             if self.use_wide_range:
                 self.change_per_pix = int(persistent._viewers_wide_dragg_speed)
@@ -1601,6 +1606,8 @@ init 1 python in _viewers:
             value = get_value(self.key, default=True)
             if self.hovered:
                 style = self.hover_text_style
+            elif not exclusive_check(self.key):
+                style = self.insensitive_text_style
             else:
                 style = self.text_style
             if isinstance(value, (int, float)):
@@ -1615,6 +1622,8 @@ init 1 python in _viewers:
 
 
         def event(self, ev, x, y, st):
+            if not exclusive_check(self.key):
+                return
             clicking, _, _ = self.get_pressed()
             if not clicking and self.dragging:
                 self.dragging = False
@@ -1911,7 +1920,8 @@ init 1 python in _viewers:
 #背景をクリックしなくても問題は発生する
 #グラフィックモードでのみ背景のイベントを飛しても問題は発生する
 #背景のイベントをなくしても再描画が有効では問題発生
-            self.background.event(ev, x, y, st)
+            if self.key and self.key[2] is not None and exclusive_check(self.key):
+                self.background.event(ev, x, y, st)
 #以降を飛ばしても問題は発生した
             if redraw:
                 renpy.redraw(self, 0)
@@ -2620,9 +2630,9 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu(
                         [("{}".format(tag), Show("_new_action_editor", opened={scene_num:[(tag, layer, None), (tag, layer, "Child/Pos    ")]})),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range((tag, layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time), SensitiveIf(exclusive_check((tag, layer, "xpos")))]),
                         ("edit: ypos {}".format(ypos),             
-                         [Function(edit_value, self.y_changed, ypos, is_wide_range((tag, layer, "ypos")), is_force_plus("ypos"), time), Function(change_time, time)]),
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range((tag, layer, "ypos")), is_force_plus("ypos"), time), Function(change_time, time), SensitiveIf(exclusive_check((tag, layer, "ypos")))]),
                         ("edit: zpos {}".format(zpos),             
                          [Function(edit_value, self.z_changed, zpos, is_wide_range((tag, layer, "zpos")), is_force_plus("zpos"), time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
@@ -2874,7 +2884,7 @@ init 1 python in _viewers:
             from pygame import MOUSEMOTION, KMOD_CTRL, KMOD_SHIFT, KMOD_ALT
             from pygame.key import get_mods
             from pygame.mouse import get_pressed
-            from renpy.store import Show, QueueEvent, Function, NullAction
+            from renpy.store import Show, QueueEvent, Function, NullAction, SensitiveIf
             self.scene_num = scene_num
             self.time = time
             self.layer = layer
@@ -2901,9 +2911,9 @@ init 1 python in _viewers:
                 self.alternate = ShowAlternateMenu([
                         ("camera", NullAction()),
                         ("edit: xpos {}".format(xpos), 
-                         [Function(edit_value, self.x_changed, xpos, is_wide_range((None, self.layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time)]),
+                         [Function(edit_value, self.x_changed, xpos, is_wide_range((None, self.layer, "xpos")), is_force_plus("xpos"), time), Function(change_time, time), SensitiveIf(exclusive_check((None, layer, "xpos")))]),
                         ("edit: ypos {}".format(ypos),             
-                         [Function(edit_value, self.y_changed, ypos, is_wide_range((None, self.layer, "ypos")), is_force_plus("ypos"), time), Function(change_time, time)]),
+                         [Function(edit_value, self.y_changed, ypos, is_wide_range((None, self.layer, "ypos")), is_force_plus("ypos"), time), Function(change_time, time), SensitiveIf(exclusive_check((None, layer, "ypos")))]),
                         ("edit: zpos {}".format(zpos),             
                          [Function(edit_value, self.z_changed, zpos, is_wide_range((None, self.layer, "zpos")), is_force_plus("zpos"), time), Function(change_time, time)]),
                         ("edit: rotate {}".format(rotate), 
