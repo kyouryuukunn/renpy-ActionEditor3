@@ -1610,10 +1610,19 @@ init 1 python in _viewers:
                 style = self.insensitive_text_style
             else:
                 style = self.text_style
-            if isinstance(value, (int, float)):
-                d = Text(self.format.format(value), align=(.5, .5), style=style)
-            elif check_new_position_type(value):
-                d = Text(self.format.format(value.absolute, value.relative), align=(.5, .5), style=style)
+            if check_new_position_type(value):
+                if value.absolute != 0 and value.relative != 0:
+                    value = self.format.format(value.absolute, value.relative)
+                elif value.absolute != 0:
+                    value = self.format.format(value.absolute)
+                else:
+                    try:
+                        value = self.format.format(value.relative)
+                    except:
+                        raise Exception(value.relative)
+            else:
+                    value = self.format.format(value)
+            d = Text(value, align=(.5, .5), style=style)
             box = Fixed()
             box.add(d)
             render = box.render(width, height, st, at)
@@ -1635,7 +1644,10 @@ init 1 python in _viewers:
                 if isinstance(self.value, (int, float)):
                     v = ((x - self.last_x)*self.change_per_pix)*self.speed+self.value
                 elif check_new_position_type(self.value):
-                    v = renpy.atl.position.from_any(int(((x - self.last_x)*self.change_per_pix)*self.speed))+self.value
+                    if self.use_wide_range:
+                        v = renpy.atl.position.from_any(int(((x - self.last_x)*self.change_per_pix)*self.speed))+self.value
+                    else:
+                        v = renpy.atl.position.from_any(((x - self.last_x)*self.change_per_pix)*self.speed)+self.value
                 self.changed(to_changed_value(v, self.force_plus, self.use_wide_range))
 
             self.hovered = False

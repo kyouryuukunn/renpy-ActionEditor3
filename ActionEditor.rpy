@@ -809,8 +809,30 @@ init -1598 python in _viewers:
                 check_points["at_list"] = [(at_list, 0, None)]
 
                 for prop in camera_state_org[s][layer]:
-                    # if not exclusive_check((None, layer, prop), s):
-                    #     continue
+                    if prop in ("xpos", "ypos"):
+                        for p in ("xaround", "yaround", "radius", "angle"):
+                            if (None, layer, p) in all_keyframes[s]:
+                                skip = True
+                                break
+                        else:
+                            skip = False
+                        if skip:
+                            continue
+                    if prop in ("xaround", "yaround", "radius", "angle"):
+                        for p in ("xpos", "ypos"):
+                            if (None, layer, p) in all_keyframes[s]:
+                                skip = True
+                                break
+                        else:
+                            for p in ("xaround", "yaround", "radius", "angle"):
+                                if (None, layer, p) in all_keyframes[s]:
+                                    skip = False
+                                    break
+                            else:
+                                skip = True
+                        if skip:
+                            continue
+
                     if (None, layer, prop) in all_keyframes[s]:
                         check_points[prop] = all_keyframes[s][(None, layer, prop)]
                         camera_is_used = True
@@ -881,9 +903,9 @@ init -1598 python in _viewers:
                     check_points[gn] = group_cs
 
                 #around has effect only when radius or angle exis at sametime
-                # if "around" in check_points:
-                #     if "radius" not in check_points and "angle" not in check_points:
-                #         del check_points["around"]
+                if "around" in check_points:
+                    if (tag, layer, "radius") not in all_keyframes[s] and (tag, layer, "angle") not in all_keyframes[s]:
+                        check_points["around"] = [((camera_state_org[s][layer]["xaround"], camera_state_org[s][layer]["yaround"]), 0, None)]
 
                 #viewerで使用するプロパティー(functionはblur等が含まれる可能性がある)
                 #These properties are shown in side viewer(function property has danger of including blur)
@@ -915,8 +937,30 @@ init -1598 python in _viewers:
                     at_list = state[tag].get("at_list")
                     check_points[tag]["at_list"] = [(at_list, t, None)]
                     for prop in state[tag]:
-                        # if not exclusive_check((tag, layer, prop), s):
-                        #     continue
+                        if prop in ("xpos", "ypos"):
+                            for p in ("xaround", "yaround", "radius", "angle"):
+                                if (tag, layer, p) in all_keyframes[s]:
+                                    skip = True
+                                    break
+                            else:
+                                skip = False
+                            if skip:
+                                continue
+                        if prop in ("xaround", "yaround", "radius", "angle"):
+                            for p in ("xpos", "ypos"):
+                                if (tag, layer, p) in all_keyframes[s]:
+                                    skip = True
+                                    break
+                            else:
+                                for p in ("xaround", "yaround", "radius", "angle"):
+                                    if (tag, layer, p) in all_keyframes[s]:
+                                        skip = False
+                                        break
+                                else:
+                                    skip = True
+                            if skip:
+                                continue
+
                         if (tag, layer, prop) in all_keyframes[s]:
                             check_points[tag][prop] = all_keyframes[s][(tag, layer, prop)]
                         elif prop in props_groups["focusing"] and prop in camera_check_points[s]:
@@ -952,10 +996,11 @@ init -1598 python in _viewers:
                             del check_points[tag][prop]
                         check_points[tag][gn] = group_cs
 
-                    #around has effect only when radius or angle exis at sametime
-                    # if "around" in check_points:
-                    #     if "radius" not in check_points and "angle" not in check_points:
-                    #         del check_points["around"]
+                    # around has effect only when radius or angle exis at sametime
+                    if "around" in check_points[tag]:
+                        if (tag, layer, "radius") not in all_keyframes[s] and (tag, layer, "angle") not in all_keyframes[s]:
+                            check_points[tag]["around"] = [(((state[tag]["xaround"], state[tag]["yaround"])), 0, None)]
+                            print(check_points[tag]["around"])
 
                     if persistent._viewer_focusing and perspective_enabled(layer, s, time=t):
                         if "blur" in check_points[tag]:
@@ -964,6 +1009,10 @@ init -1598 python in _viewers:
                         for p in ("focusing", "dof"):
                             if p in check_points[tag]:
                                 del check_points[tag][p]
+
+                    # if "around" in check_points:
+                    #     if "radius" not in all_keyframes[s][(tag, layer, "radius")] or "angle" not in all_keyframes[s][(tag, layer, "angle")]:
+                    #         del check_points["around"]
 
                 image_check_points.append(check_points)
 
@@ -1168,6 +1217,7 @@ init -1598 python in _viewers:
         items = list(check_points.items())
         for i, (p, cs) in enumerate(items):
             if p == "around":
+                for_around_time = max(check_points["radius"][-1][1],  check_points["angle"][-1][1])
                 break
         items = [items[i]] + items[:i] + items[i+1:]
 
@@ -1181,6 +1231,11 @@ init -1598 python in _viewers:
             if p+"_loop" in loop and loop[p+"_loop"] and cs[-1][1]:
                 if (time - scene_start) % (cs[-1][1] - scene_start) != 0:
                     looped_time = (time - scene_start) % (cs[-1][1] - scene_start) + scene_start
+
+            if p == "around":
+                if not loop.get("angle_loop", None) and not loop.get("radius_loop", None):
+                    if time > for_around_time:
+                        looped_time = for_around_time
 
             for i in range(1, len(cs)):
                 checkpoint = cs[i][1]
@@ -1282,8 +1337,6 @@ init -1598 python in _viewers:
                             at_v = get_at_list_props(check_points["at_list"][0][0], p, time, at)
                             if at_v is not None:
                                 v = at_v
-                            # if "child" in check_points and check_points["child"][0][0][0] == "t0 a" and p == "xpos":
-                            #     raise Exception(check_points["child"], check_points["props_use_default"][0][0])
                         if p in ("matrixtransform", "matrixcolor"):
                             v = v(1.0, None)
                         setattr(tran, p, v)
@@ -1505,21 +1558,6 @@ init -1598 python in _viewers:
                         m = Matrix.offset(xplacement, yplacement, zpos) * m
 
                         setattr(tran, "matrixtransform", m)
-
-
-        # if not camera:
-        #     showing_pool = {
-        #         "scene_num":scene_num
-        #         "tag":tag
-        #         "pos": getattr(tran, "pos")
-        #     }
-        # if not camera:
-        #     tran.around = (0.5+time*0.1, 0.5)
-        #     tran.angle = 0
-        #     tran.around = (0.5, 0.5)
-        #     tran.angle = 315
-        #     tran.radius=0.71
-        #     renpy.store.test = tran.alignaround
 
         return 0
 
@@ -1967,6 +2005,20 @@ init -1598 python in _viewers:
         if loops[scene_num][key] and cs[-1][1]:
             if (time - scene_start) % (cs[-1][1] - scene_start) != 0:
                 looped_time = (time - scene_start) % (cs[-1][1] - scene_start) + scene_start
+
+        # if consider_around and prop in ("xaround", "yaround"):
+        #     if not loops[scene_num].get((tag, layer, "angle"), None) and not loops[scene_num].get((tag, layer, "radius"), None):
+        #         if (tag, layer, "angle") in all_keyframes[scene_num]:
+        #             a = all_keyframes[scene_num][(tag, layer, "angle")][-1][1]
+        #         else:
+        #             a = 0
+        #         if (tag, layer, "radius") in all_keyframes[scene_num]:
+        #             b = all_keyframes[scene_num][(tag, layer, "radius")][-1][1]
+        #         else:
+        #             b = 0
+        #         for_around_time = max(a, b)
+        #         if time > for_around_time:
+        #             looped_time = for_around_time
 
         for i in range(1, len(cs)):
             checkpoint = cs[i][1]
