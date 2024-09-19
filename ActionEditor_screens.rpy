@@ -2135,7 +2135,7 @@ init 1 python in _viewers:
                 gn, ps = check_result
                 if n is not None or gn != "focusing":
                     self.key_list = [(n, l, p) for p in ps]
-                self.force_plus = is_force_plus(key)
+            self.force_plus = is_force_plus(p)
 
             if is_wide_range(key):
                 self.range = persistent._graphic_editor_wide_range
