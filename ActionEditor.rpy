@@ -9,9 +9,6 @@
 #ATLtransitionのdelayを所得できない
 
 #極座標表示対応
-#ATLではaroundはradius, angle変更時に参照されて始めて効果を持ち、単独で動かしても反映されない
-#aroundの動作をEditorで再現するには、同時刻にradiusかangleが明示的に操作されているかチェックしなければいけない
-#時間ベースで考えるとループが面倒
 
 init -1098 python:
     # Added keymap
@@ -275,13 +272,14 @@ init -1598 python in _viewers:
             image_state[current_scene][layer] = {}
             for image in sle.layers[layer]:
 
-                if not image[0]:
+                tag = image[0]
+                if not tag:
                     continue
+                d = sle.get_displayable_by_tag(layer, tag)
+
                 if isinstance(d, renpy.display.screen.ScreenDisplayable):
                     continue
 
-                tag = image[0]
-                d = sle.get_displayable_by_tag(layer, tag)
                 image_name_tuple = getattr(d, "name", None)
                 child = d
                 while image_name_tuple is None:
