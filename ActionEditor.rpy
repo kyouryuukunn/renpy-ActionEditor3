@@ -1635,6 +1635,9 @@ init -1598 python in _viewers:
 
     def exclusive_check(key, scene_num=None):
         #check exclusive properties
+        if key == "sound":
+            return True
+
         if scene_num is None:
             scene_num = current_scene
         tag, layer, prop = key
