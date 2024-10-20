@@ -10,7 +10,7 @@
 
 #極座標表示対応
 
-init -1098 python:
+init -900 python:
     # Added keymap
     config.underlay.append(renpy.Keymap(
         action_editor = renpy.curry(renpy.invoke_in_new_context)(_viewers.open_action_editor),
@@ -19,7 +19,7 @@ init -1098 python:
         ))
 
 
-init -1600 python in _viewers:
+init -999 python in _viewers:
     from renpy.store import Solid, Fixed, Transform, persistent, Null, Matrix, config, Movie
     from renpy import config
 
@@ -125,7 +125,7 @@ init python in _viewers:
         function = rotate_matrix2
 
 
-init -1598 python in _viewers:
+init -997 python in _viewers:
     from copy import deepcopy
     from math import sqrt
     from collections import defaultdict

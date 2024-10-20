@@ -1,4 +1,4 @@
-init 1100 python:
+init 999 python:
     config.locked = False
     if _viewers.check_version(23060707):
         config.keymap["action_editor"] = ['shift_K_p']

@@ -40,7 +40,7 @@ init python:
             renpy.restart_interaction()
 
 
-init -1500:
+init -999:
     $_alternate_menu_pos = None
     screen _alternate_menu(button_list, menu_width=300, menu_height=200, style_prefix=None):
         key ["game_menu", "dismiss"] action [Hide("_alternate_menu"), SetVariable("_alternate_menu_pos", None)]

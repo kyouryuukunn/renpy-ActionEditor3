@@ -51,7 +51,7 @@ init:
         outlines [ (absolute(1), "#000", absolute(0), absolute(0)) ]
         xalign .0
 
-init -2000 python in _viewers:
+init -999 python in _viewers:
     def open_image_viewer():
         if not renpy.config.developer:
             return

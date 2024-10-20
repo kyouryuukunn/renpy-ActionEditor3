@@ -1,8 +1,8 @@
-init 1600 python in _viewers:
+init 999 python in _viewers:
     #this is used for default transition
     #デフォルトで使用されるトランジションの文字列です。Noneも指定可能です。
     default_transition = "dissolve"
-init -1600 python in _viewers:
+init -999 python in _viewers:
     #hide winodw during animation in clipboard data
     #アニメーション中ウィンドウを隠すようにクリップボードを出力するか決定します
     #シーンが1つのとき動作します。
@@ -201,7 +201,7 @@ init -1600 python in _viewers:
     in_editor = False
     aspect_16_9 = round(float(config.screen_width)/config.screen_height, 2) == 1.78
 
-init 1600 python in _viewers:
+init 999 python in _viewers:
     #The properties used in image tag tab
     #画像タブに表示されるプロパティー
     #(property name,  default value)

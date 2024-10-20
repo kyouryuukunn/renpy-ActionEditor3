@@ -559,7 +559,7 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                                     size_group None
 
 
-init -1599 python in _viewers:
+init -998 python in _viewers:
     return_margin = 0.5
     time_column_height = 30
     key_xsize = 22
@@ -593,7 +593,7 @@ init python in _viewers:
     screen_background = box
 
 
-init -1597:
+init -996:
     style new_action_editor_frame:
         background None
     style new_action_editor_button:
@@ -990,7 +990,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
 transform _no_show():
     alpha 0
 
-init -1598:
+init -997:
     style action_editor_frame:
         background "#0003"
     style action_editor_button:
@@ -1312,7 +1312,7 @@ screen _scene_editor():
             xfill True
             textbutton _("close") action Hide("_scene_editor") xalign .9
 
-init -1598:
+init -997:
     style action_editor_modal_frame background "#000D"
     style action_editor_modal_text is action_editor_text color "#AAA"
     style action_editor_modal_button is action_editor_button
