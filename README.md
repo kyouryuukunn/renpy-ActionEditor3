@@ -8,10 +8,8 @@
 
  Ren'Py <http://www.renpy.org/>
 
-lemma forum
-<https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
-
-![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
+ lemma forum
+ <https://lemmasoft.renai.us/forums/viewtopic.php?f=8&t=29778>
 
  youtube samples:
  * Tutorials チュートリアル <https://www.youtube.com/playlist?list=PLVAQBcrPbK5J33EbslA6sRSsNAeUZ92EG>
@@ -19,6 +17,8 @@ lemma forum
  * Introduce ATL_functions <https://www.youtube.com/watch?v=AXf4JQVq3v8>
  * Introduce generate warper <https://www.youtube.com/watch?v=7Mosa88gY-c>
  * Introduce ActionEditor Update 20220212 <https://www.youtube.com/watch?v=h2Zdhugiho8>
+
+![Demo](https://dl.dropboxusercontent.com/s/cyfizgl2pvk8w9x/ActionEditor.png)
 
 
 
