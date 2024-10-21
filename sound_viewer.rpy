@@ -20,7 +20,7 @@ screen _sound_selector(default=""):
                 vbox:
                     for sound_name in filtered_list:
                         if "<" not in sound_name:
-                            $file = renpy.python.py_eval(sound_name, locals=renpy.python.store_dicts["store.audio"])
+                            $file = renpy.python.store_dicts["store.audio"].get(sound_name)
                         else:
                             $file = "<silence 0.>"
                         textbutton sound_name action Function(_viewers.return_sound, filter_string, sound_name) hovered Play("music", file) unhovered Stop("music")
@@ -68,7 +68,7 @@ init -999 python in _viewers:
             return filtered_list
         for name in renpy.python.store_dicts["store.audio"].keys():
             if name.startswith(last_element):
-                file = renpy.python.py_eval(name, locals=renpy.python.store_dicts["store.audio"])
+                file = renpy.python.store_dicts["store.audio"].get(name)
                 if isinstance(file, str) and renpy.loadable(file):
                     filtered_list.append(name)
         return filtered_list
@@ -92,7 +92,7 @@ init -999 python in _viewers:
             else:
                 for name in renpy.python.store_dicts["store.audio"].keys():
                     if name.startswith(last_element):
-                        file = renpy.python.py_eval(name, locals=renpy.python.store_dicts["store.audio"])
+                        file = renpy.python.store_dicts["store.audio"].get(name)
                         if isinstance(file, str) and renpy.loadable(file):
                             candidate.append(name)
             if candidate:

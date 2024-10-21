@@ -790,7 +790,8 @@ init -997 python in _viewers:
                         duration = t - time
                         if duration > 0:
                             files.append("<silence {}>".format(duration))
-                        file = renpy.python.py_eval(times[t], locals=renpy.python.store_dicts["store.audio"])
+                        file = get_sound_files(times[t])
+                        file = get_sound_files(times[t])
                         files += file
                         time = t
                         for f in file:
@@ -799,7 +800,7 @@ init -997 python in _viewers:
         else:
             for channel, times in sound_keyframes.items():
                 if current_time in times:
-                    files = renpy.python.py_eval(times[current_time], locals=renpy.python.store_dicts["store.audio"])
+                    files = get_sound_files(times[current_time])
                     renpy.music.play(files, channel, loop=False)
 
         for layer in get_layers():
@@ -2266,7 +2267,7 @@ show {imagename}""".format(imagename=child)
                     fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
-                    file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
+                    file = get_sound_files(fs)
                     time = t
                     for f in file:
                         time += get_file_duration(f)
@@ -2284,6 +2285,19 @@ show {imagename}""".format(imagename=child)
         else:
             renpy.notify(__('Placed \n"%s"\n on clipboard') % string)
 
+
+    def get_sound_files(fs):
+        # if "[" not in fs:  #]"
+        #     fs = "[" + v   #]"
+        # if "]" not in v:
+        #     v += "]"
+        file_list = []
+        for f in fs[1:-1].split(","):
+            if "<silence" not in f:
+                file_list.append(renpy.python.store_dicts["store.audio"].get(f.strip()))
+            else:
+                file_list.append(f)
+        return file_list
 
     def edit_warper(check_points, old, value_org):
         warper = renpy.invoke_in_new_context(renpy.call_screen, "_warper_selecter", current_warper=value_org)
@@ -2604,7 +2618,7 @@ show {imagename}""".format(imagename=child)
         try:
             for f in v[1:-1].split(","):
                 if "<silence" not in f:
-                    evaled = renpy.python.py_eval(f.strip(), locals=renpy.python.store_dicts["store.audio"])
+                    evaled = renpy.python.store_dicts["store.audio"].get(f.strip())
                     if not renpy.loadable(evaled):
                         raise
         except Exception as e:
@@ -2613,7 +2627,7 @@ show {imagename}""".format(imagename=child)
             renpy.notify(message)
             return
         duration = 0
-        for f in renpy.python.py_eval(v, locals=renpy.python.store_dicts["store.audio"]):
+        for f in get_sound_files(v):
             duration += get_file_duration(f)
         for t in sound_keyframes[channel].keys():
             if t <= time + duration and t > time:
@@ -2869,7 +2883,7 @@ show {imagename}""".format(imagename=child)
             for t in times:
                 if t > new_time:
                     duration = 0
-                    files = renpy.python.py_eval(sound_keyframes[channel][old_time], locals=renpy.python.store_dicts["store.audio"])
+                    files = get_sound_files(sound_keyframes[channel][old_time])
                     for f in files:
                         duration += get_file_duration(f)
                     if new_time+duration >= t:
@@ -2879,7 +2893,7 @@ show {imagename}""".format(imagename=child)
         for t in times:
             if t < new_time:
                 duration = 0
-                files = renpy.python.py_eval(sound_keyframes[channel][t], locals=renpy.python.store_dicts["store.audio"])
+                files = get_sound_files(sound_keyframes[channel][t])
                 for f in files:
                     duration += get_file_duration(f)
                 if t+duration >= new_time:
@@ -3001,7 +3015,7 @@ show {imagename}""".format(imagename=child)
                 start_time = time_list[-1]
                 files = times[start_time]
                 try:
-                    for f in renpy.python.py_eval(files, locals=renpy.python.store_dicts["store.audio"]):
+                    for f in get_sound_files(files):
                         start_time += get_file_duration(f)
                 except:
                     raise Exception(files)
@@ -3197,7 +3211,7 @@ show {imagename}""".format(imagename=child)
                     fs = times[t]
                     files += fs[1:-1] + ",\n        "
 
-                    file = renpy.python.py_eval(fs, locals=renpy.python.store_dicts["store.audio"])
+                    file = get_sound_files(fs)
                     time = t
                     for f in file:
                         time += get_file_duration(f)
