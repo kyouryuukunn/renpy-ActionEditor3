@@ -27,6 +27,22 @@ screen _sound_selector(default=""):
             textbutton _("clipboard") action [SensitiveIf(filter_string), Function(_viewers.put_clipboard_text, filter_string)] xalign 1.0 idle_background None insensitive_background None
     key "K_TAB" action Function(_viewers.completion, filter_string, filtered_list)
 
+init python:
+    import re
+    
+    def audio_list(dir=""):
+        list = renpy.list_files()
+        ext = [ ".aac", ".flac", ".mp2", ".mp3", ".ogg", ".opus", ".wav", ".weba"]
+        for f in list:
+            if re.match(dir,f):
+                if f.lower().endswith(tuple(ext)):
+                    if not renpy.python.store_dicts["store.audio"].get("\""+str(f[(len(dir)):])+"\""):
+                        renpy.python.store_dicts["store.audio"]["\""+str(f[(len(dir)):])+"\""] = str(f[(len(dir)):])
+        return
+        
+    # Load all audio into Store.Audio
+    audio_list()
+
 init:
     style sound_selecter_frame:
         background "#0006"
