@@ -1931,8 +1931,9 @@ init 1 python in _viewers:
 #背景をクリックしなくても問題は発生する
 #グラフィックモードでのみ背景のイベントを飛しても問題は発生する
 #背景のイベントをなくしても再描画が有効では問題発生
-            if self.key and self.key[2] is not None and exclusive_check(self.key):
-                self.background.event(ev, x, y, st)
+            if self.kind in ("camera", "image"):
+                if self.key and self.key[2] is not None and exclusive_check(self.key):
+                    self.background.event(ev, x, y, st)
 #以降を飛ばしても問題は発生した
             if redraw:
                 renpy.redraw(self, 0)
