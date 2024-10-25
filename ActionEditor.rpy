@@ -2964,18 +2964,24 @@ show {imagename}""".format(imagename=child)
             renpy.music.stop(c)
         renpy.store._viewers.at_clauses_flag = False
         action_editor_init()
+
         in_editor = True
-        _window = renpy.store._window
+        _window_org = renpy.store._window
         renpy.store._window = False
         _skipping_org = renpy.store._skipping
         renpy.store._skipping = False
+        _quick_menu_org = renpy.store.quick_menu
+        renpy.store.quick_menu = False
+
         change_time(0)
         if persistent._viewer_legacy_gui:
             renpy.call_screen("_action_editor")
         else:
             renpy.call_screen("_new_action_editor")
+
         renpy.store._skipping = _skipping_org
-        renpy.store._window = _window
+        renpy.store._window = _window_org
+        renpy.store.quick_menu = _quick_menu_org
 
 
     def get_transition_delay(tran):
