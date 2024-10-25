@@ -2607,7 +2607,12 @@ show {imagename}""".format(imagename=child)
         default = ""
         if time in sound_keyframes[channel]:
             default = sound_keyframes[channel][time]
+
         v = renpy.invoke_in_new_context(renpy.call_screen, "_sound_selector", default=default)
+        if v.strip() == "":
+            renpy.notify(_("No audio file was selected"))
+            return
+
         if "[" not in v:  #]"
             v = "[" + v   #]"
         if "]" not in v:
