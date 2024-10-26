@@ -54,8 +54,9 @@ init python in _viewers:
     def get_layers():
         r = []
         for l in config.layers:
-            if l not in not_included_layer:
-                r.append(l)
+            if isinstance(l, str):
+                if l not in not_included_layer:
+                    r.append(l)
         return r
 
     #z -> y -> x order roate
