@@ -8,6 +8,9 @@
 #   このクラスは複数の関数を引数に取り、それらは tran, st, atを引数に呼び出されます。
 #   これはATLのfunctionステートメントで複数の関数を使用するために使用できます。
 #    example:
+#    init python:
+#        example_func = mfn(func1, func2)
+#    label start:
 #        show test:
 #            function mfn(func1, func2)
 #
@@ -64,13 +67,19 @@
 #
 #    For example, This reproduces camera shake.
 #    例: 手ぶれを再現します。
-#    camera:   
-#        function mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=10), atl_wiggle("xoffset", max=20, deviation=40, cycle=10))
+#    init python:   
+#        camera_shake = mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=10), atl_wiggle("xoffset", max=20, deviation=40, cycle=10))
+#    label start:
+#        camera:
+#            function camera_shake
 #
 #    For example, This reproduces the 10 seconds earthquake
 #    例: 10秒間の地震を再現します。
-#    camera:   
-#        function mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=100, fast_forward=10, end=10, damped=True, damped_warper="ease"), atl_wiggle("xoffset", max=20, deviation=40, cycle=100, fast_forward=10, end=10, damped=True, damped_warper="ease"))
+#    init python:   
+#        earthquake = mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=100, fast_forward=10, end=10, damped=True, damped_warper="ease"), atl_wiggle("xoffset", max=20, deviation=40, cycle=100, fast_forward=10, end=10, damped=True, damped_warper="ease"))
+#    label start:
+#        camera:
+#            function earthquake
 #
 #
 #def atl_swiggle(deviation, fast_forward=1, start=None, end=None, damped=False, damped_warper='ease', property=("xoffset", "yoffset")):
@@ -79,10 +88,9 @@
 #    Below two code is mostly equivalent.
 #    次の2つのコードはほぼ同じ動作をします。
 #
-#    camera:   
-#        function mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=10), atl_wiggle("xoffset", max=20, deviation=40, cycle=10))
-#    camera:   
-#        function atl_swiggle(deviation=40)
+#    init python:   
+#        sample1 = mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=10), atl_wiggle("xoffset", max=20, deviation=40, cycle=10))
+#        sample2 atl_swiggle(deviation=40)
 
 init python in _viewers:
     in_editor = False
