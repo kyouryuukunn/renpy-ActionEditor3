@@ -12,7 +12,7 @@
 #        example_func = mfn(func1, func2)
 #    label start:
 #        show test:
-#            function mfn(func1, func2)
+#            function example_func(func1, func2)
 #
 #class atl_sin(property, peak, hz, start=None, end=None, damped=False, damped_warper='ease')
 #    This change the property value with a sine wave.
@@ -90,7 +90,7 @@
 #
 #    init python:   
 #        sample1 = mfn(atl_wiggle("yoffset", max=20, deviation=40, cycle=10), atl_wiggle("xoffset", max=20, deviation=40, cycle=10))
-#        sample2 atl_swiggle(deviation=40)
+#        sample2 = atl_swiggle(deviation=40)
 
 init python in _viewers:
     in_editor = False
