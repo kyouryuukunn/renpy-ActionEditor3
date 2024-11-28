@@ -1272,7 +1272,10 @@ init -997 python in _viewers:
                                 knots = [start[0]] + knots + [goal[0]]
 
                         if knots:
-                            v = renpy.atl.interpolate_spline(complete, knots)
+                            if check_version(24011701):
+                                v = renpy.atl.interpolate_spline(complete, knots, renpy.atl.PROPERTIES[p])
+                            else:
+                                v = renpy.atl.interpolate_spline(complete, knots)
                         elif p not in props_groups["focusing"]:
                             old = start[0]
                             new = goal[0]
@@ -2085,7 +2088,10 @@ init -997 python in _viewers:
                                 knots = [old] + knots + [new]
 
                     if knots:
-                        v = renpy.atl.interpolate_spline(complete, knots)
+                            if check_version(24011701):
+                                v = renpy.atl.interpolate_spline(complete, knots, renpy.atl.PROPERTIES[prop])
+                            else:
+                                v = renpy.atl.interpolate_spline(complete, knots)
                     elif check_result and gn in ("focusing", "matrixtransform", "matrixcolor"):
                         v = complete*(new-old)+old
                     elif check_result:
