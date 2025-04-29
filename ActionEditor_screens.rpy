@@ -97,12 +97,12 @@ screen _new_action_editor(opened=None, time=0, previous_time=None, in_graphic_mo
                             Function(_viewers.return_start_time, previous_time)]
         key "game_menu" action [Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode, layer=layer), \
                             Function(change_time, previous_time)]
-        $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+        $play_action = [SensitiveIf(len(get_sorted_keyframes(current_scene)) > 0 or len(scene_keyframes) > 1), SelectedIf(time > 0), \
             _viewers.pause, \
             Show("_new_action_editor", opened=opened, in_graphic_mode=in_graphic_mode, layer=layer)]
     else:
         key "game_menu" action Confirm("Close Editor?", Return())
-        $play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), SelectedIf(time > 0), \
+        $play_action = [SensitiveIf(len(get_sorted_keyframes(current_scene)) > 0 or len(scene_keyframes) > 1), SelectedIf(time > 0), \
             [If(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1, Function(_viewers.play, play=True))], \
             Show("_new_action_editor", opened=opened, time=_viewers.get_animation_delay(), previous_time=current_time, in_graphic_mode=in_graphic_mode, layer=layer)]
 
@@ -694,7 +694,7 @@ screen _action_editor(tab="camera", layer="master", opened=0, time=0, page=0):
         check_new_position_type = _viewers.check_new_position_type
         exclusive_check = _viewers.exclusive_check
 
-        play_action = [SensitiveIf(get_sorted_keyframes(current_scene) or len(scene_keyframes) > 1), \
+        play_action = [SensitiveIf(len(get_sorted_keyframes(current_scene)) > 0 or len(scene_keyframes) > 1), \
             SelectedIf(False), Function(_viewers.play, play=True), \
             Show("_action_editor", tab=tab, layer=layer, opened=opened, page=page, time=_viewers.get_animation_delay())]
 
